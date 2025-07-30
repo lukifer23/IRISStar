@@ -32,7 +32,7 @@ project("llama-android")
 #
 
 #load local llama.cpp
-add_subdirectory(../../../../../llama.cpp build-llama)
+add_subdirectory(../../../../llama.cpp build-llama)
 
 # In order to load a library into your app from Java/Kotlin, you must call
 # System.loadLibrary() and pass the name of the library defined here;
@@ -41,6 +41,9 @@ add_subdirectory(../../../../../llama.cpp build-llama)
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
         llama-android.cpp)
+
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../llama.cpp/vendor)
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this

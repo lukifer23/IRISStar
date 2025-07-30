@@ -3,11 +3,13 @@
 #include <iomanip>
 #include <math.h>
 #include <string>
+#include <vector>
 #include <unistd.h>
 #include "llama.h"
 #include "common.h"
+#include "chat.h"
 #define JSON_ASSERT GGML_ASSERT
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 using json = nlohmann::ordered_json;
 
@@ -168,7 +170,7 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
     auto path_to_model = env->GetStringUTFChars(filename, 0);
     LOGi("Loading model from %s", path_to_model);
 
-    auto model = llama_load_model_from_file(path_to_model, model_params);
+    auto model = llama_model_load_from_file(path_to_model, model_params);
     env->ReleaseStringUTFChars(filename, path_to_model);
 
     if (!model) {
@@ -183,7 +185,7 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1model(JNIEnv *, jobject, jlong model) {
-    llama_free_model(reinterpret_cast<llama_model *>(model));
+    llama_model_free(reinterpret_cast<llama_model *>(model));
 }
 
 extern "C"
@@ -204,12 +206,12 @@ Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject, jlong jmo
     LOGi("Using %d threads for computation", userSpecifiedThreads);
     llama_context_params ctx_params = llama_context_default_params();
 
-    ctx_params.n_ctx           = 4096;
+    ctx_params.n_ctx           = 32768;  // Increased to match Qwen3 context length
     ctx_params.n_threads       = userSpecifiedThreads;
     ctx_params.n_threads_batch = n_threads;
     LOGi("Checking my threads %d", ctx_params.n_threads);
 
-    llama_context * context = llama_new_context_with_model(model, ctx_params);
+    llama_context * context = llama_init_from_model(model, ctx_params);
 
     if (!context) {
         LOGe("llama_new_context_with_model() returned null)");
@@ -278,7 +280,7 @@ Java_android_llama_cpp_LLamaAndroid_bench_1model(
         }
 
         batch->logits[batch->n_tokens - 1] = true;
-        llama_kv_cache_clear(context);
+        llama_memory_clear(llama_get_memory(context), true);
 
         const auto t_pp_start = ggml_time_us();
         if (llama_decode(context, *batch) != 0) {
@@ -290,7 +292,7 @@ Java_android_llama_cpp_LLamaAndroid_bench_1model(
 
         LOGi("Benchmark text generation (tg)");
 
-        llama_kv_cache_clear(context);
+        llama_memory_clear(llama_get_memory(context), true);
         const auto t_tg_start = ggml_time_us();
         for (i = 0; i < tg; i++) {
 
@@ -307,7 +309,7 @@ Java_android_llama_cpp_LLamaAndroid_bench_1model(
 
         const auto t_tg_end = ggml_time_us();
 
-        llama_kv_cache_clear(context);
+        llama_memory_clear(llama_get_memory(context), true);
 
         const auto t_pp = double(t_pp_end - t_pp_start) / 1000000.0;
         const auto t_tg = double(t_tg_end - t_tg_start) / 1000000.0;
@@ -543,25 +545,57 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     // sample the most likely token
     const auto new_token_id = llama_sampler_sample(sampler, context, -1);
 
-    const auto eot = llama_token_eot(model);
+    const auto eot = llama_vocab_eot(llama_model_get_vocab(model));
     LOGi("eot is: %d", eot);
     LOGi("new_token_id is: %d", new_token_id);
 
     const auto n_cur = env->CallIntMethod(intvar_ncur, la_int_var_value);
-    if (llama_token_is_eog(model, new_token_id) || n_cur == n_len || new_token_id == eot) {
+    if (llama_vocab_is_eog(llama_model_get_vocab(model), new_token_id) || n_cur == n_len || new_token_id == eot) {
         return nullptr;
     }
-
-
-
 
     auto new_token_chars = common_token_to_piece(context, new_token_id);
     cached_token_chars += new_token_chars;
 
+    // Enhanced thinking token processing
+    std::string filtered_chars = cached_token_chars;
     jstring new_token = nullptr;
-    if (is_valid_utf8(cached_token_chars.c_str())) {
-        new_token = env->NewStringUTF(cached_token_chars.c_str());
-        LOGi("cached: %s, new_token_chars: `%s`, id: %d", cached_token_chars.c_str(), new_token_chars.c_str(), new_token_id);
+    
+    // Check for repetitive patterns that indicate stuck generation
+    if (filtered_chars.length() > 100) {
+        std::string last_100 = filtered_chars.substr(filtered_chars.length() - 100);
+        if (last_100.find("Wait, can I help you out? No, that's the opposite") != std::string::npos ||
+            last_100.find("I apologize, but I cannot") != std::string::npos ||
+            last_100.find("I'm sorry, but I") != std::string::npos) {
+            // Model is stuck in a loop, stop generation
+            return nullptr;
+        }
+    }
+    
+    // Enhanced thinking token detection and preservation
+    bool containsThinkingTokens = false;
+    if (filtered_chars.find("<|im_start|>") != std::string::npos ||
+        filtered_chars.find("<|user|>") != std::string::npos ||
+        filtered_chars.find("<|assistant|>") != std::string::npos ||
+        filtered_chars.find("<think>") != std::string::npos ||
+        filtered_chars.find("</think>") != std::string::npos ||
+        filtered_chars.find("Let me think") != std::string::npos ||
+        filtered_chars.find("Let me analyze") != std::string::npos ||
+        filtered_chars.find("I need to") != std::string::npos ||
+        filtered_chars.find("First,") != std::string::npos ||
+        filtered_chars.find("Step") != std::string::npos ||
+        filtered_chars.find("thinking") != std::string::npos ||
+        filtered_chars.find("reasoning") != std::string::npos) {
+        containsThinkingTokens = true;
+        LOGi("Thinking tokens detected: %s", filtered_chars.c_str());
+    }
+    
+    // Always preserve thinking tokens and let UI handle display
+    if (is_valid_utf8(filtered_chars.c_str())) {
+        new_token = env->NewStringUTF(filtered_chars.c_str());
+        LOGi("cached: %s, new_token_chars: `%s`, id: %d, thinking: %s", 
+             filtered_chars.c_str(), new_token_chars.c_str(), new_token_id, 
+             containsThinkingTokens ? "true" : "false");
         cached_token_chars.clear();
     } else {
         new_token = env->NewStringUTF("");
@@ -582,7 +616,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_kv_1cache_1clear(JNIEnv *, jobject, jlong context) {
-    llama_kv_cache_clear(reinterpret_cast<llama_context *>(context));
+    llama_memory_clear(llama_get_memory(reinterpret_cast<llama_context *>(context)), true);
 }
 
 // Format given chat. If tmpl is empty, we take the template from model metadata
@@ -611,25 +645,362 @@ inline std::string format_chat(const llama_model *model, const std::string &tmpl
             throw std::runtime_error("Missing 'content'.");
         }
 
-        chat.push_back({role, content});
+        common_chat_msg msg;
+        msg.role = role;
+        msg.content = content;
+        chat.push_back(msg);
     }
 
-    const auto formatted_chat = common_chat_apply_template(model, tmpl, chat, true);
-    LOGi("formatted_chat: '%s'\n", formatted_chat.c_str());
+    // Create chat templates inputs
+    common_chat_templates_inputs inputs;
+    inputs.messages = chat;
+    inputs.add_generation_prompt = true;
+    inputs.use_jinja = true;
 
-    return formatted_chat;
+    // Get chat templates from model
+    auto tmpls = common_chat_templates_init(model, tmpl);
+    if (!tmpls) {
+        throw std::runtime_error("Failed to initialize chat templates");
+    }
+
+    // Apply templates
+    auto params = common_chat_templates_apply(tmpls.get(), inputs);
+    LOGi("formatted_chat: '%s'\n", params.prompt.c_str());
+
+    return params.prompt;
 }
 
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_oaicompat_1completion_1param_1parse(
-        JNIEnv *env, jobject, jobjectArray allMessages, jlong model) {
+        JNIEnv *env, jobject, jobjectArray allMessages, jlong model, jstring chatFormat) {
     try {
         // Convert the messages to JSON
         std::string parsedData = mapListToJSONString(env, allMessages);
         // Parse and format
         std::vector<json> jsonMessages = json::parse(parsedData);
-        const auto formattedPrompts = format_chat(reinterpret_cast<const llama_model *>(model), "", jsonMessages);
+        
+        LOGi("Processing %zu messages", jsonMessages.size());
+        for (size_t i = 0; i < jsonMessages.size(); ++i) {
+            const auto& msg = jsonMessages[i];
+            std::string role = json_value(msg, "role", std::string(""));
+            std::string content = json_value(msg, "content", std::string(""));
+            LOGi("Message %zu: role='%s', content='%s'", i, role.c_str(), content.substr(0, 100).c_str());
+        }
+        
+        // Extract the chat format string
+        const char* chatFormatStr = env->GetStringUTFChars(chatFormat, nullptr);
+        std::string chatFormatStr_cpp = std::string(chatFormatStr);
+        env->ReleaseStringUTFChars(chatFormat, chatFormatStr);
+        
+        LOGi("Received chat format: '%s'", chatFormatStr_cpp.c_str());
+        
+        // Try to detect Qwen3 model and use appropriate template
+        auto model_ptr = reinterpret_cast<const llama_model *>(model);
+        std::string template_content = "";
+        
+        // Use the chat format from the UI to select the appropriate template
+        if (chatFormatStr_cpp == "QWEN3") {
+            // Use Qwen3 template with thinking support
+            template_content = R"(
+{%- if tools %}
+ {{- '<|im_start|>system\n' }}
+ {%- if messages[0].role == 'system' %}
+ {{- messages[0].content + '\n\n' }}
+ {%- endif %}
+ {{- "# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+ {%- for tool in tools %}
+ {{- "\n" }}
+ {{- tool | tojson }}
+ {%- endfor %}
+ {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n" }}
+{%- else %}
+{%- if messages[0].role == 'system' %}
+ {{- '<|im_start|>system\n' + messages[0].content + '<|im_end|>\n' }}
+ {%- endif %}
+{%- endif %}
+{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
+{%- for message in messages[::-1] %}
+ {%- set index = (messages|length - 1) - loop.index0 %}
+ {%- set tool_start = "<tool_response>" %}
+ {%- set tool_start_length = tool_start|length %}
+ {%- set start_of_message = message.content[:tool_start_length] %}
+ {%- set tool_end = "</tool_response>" %}
+ {%- set tool_end_length = tool_end|length %}
+ {%- set start_pos = (message.content|length) - tool_end_length %}
+ {%- if start_pos < 0 %}
+ {%- set start_pos = 0 %}
+ {%- endif %}
+ {%- set end_of_message = message.content[start_pos:] %}
+ {%- if ns.multi_step_tool and message.role == "user" and not(start_of_message == tool_start and end_of_message == tool_end) %}
+ {%- set ns.multi_step_tool = false %}
+ {%- set ns.last_query_index = index %}
+ {%- endif %}
+{%- endfor %}
+{%- for message in messages %}
+ {%- if (message.role == "user") or (message.role == "system" and not loop.first) %}
+ {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+ {%- elif message.role == "assistant" %}
+ {%- set content = message.content %}
+ {%- set reasoning_content = '' %}
+ {%- if message.reasoning_content is defined and message.reasoning_content is not none %}
+ {%- set reasoning_content = message.reasoning_content %}
+ {%- else %}
+ {%- if '</think>' in message.content %}
+ {%- set content = (message.content.split('</think>')|last).lstrip('\n') %}
+{%- set reasoning_content = (message.content.split('</think>')|first).rstrip('\n') %}
+{%- set reasoning_content = (reasoning_content.split('<think>')|last).lstrip('\n') %}
+ {%- endif %}
+ {%- endif %}
+ {%- if loop.index0 > ns.last_query_index %}
+ {%- if loop.last or (not loop.last and reasoning_content) %}
+ {{- '<|im_start|>' + message.role + '\n<think>\n' + reasoning_content.strip('\n') + '\n</think>\n\n' + content.lstrip('\n') }}
+ {%- else %}
+ {{- '<|im_start|>' + message.role + '\n' + content }}
+ {%- endif %}
+ {%- else %}
+ {{- '<|im_start|>' + message.role + '\n' + content }}
+ {%- endif %}
+ {%- if message.tool_calls %}
+ {%- for tool_call in message.tool_calls %}
+ {%- if (loop.first and content) or (not loop.first) %}
+ {{- '\n' }}
+ {%- endif %}
+ {%- if tool_call.function %}
+ {%- set tool_call = tool_call.function %}
+ {%- endif %}
+ {{- '<tool_call>\n{"name": "' }}
+ {{- tool_call.name }}
+ {{- '", "arguments": ' }}
+ {%- if tool_call.arguments is string %}
+ {{- tool_call.arguments }}
+ {%- else %}
+ {{- tool_call.arguments | tojson }}
+ {%- endif %}
+ {{- '}\n</tool_call>' }}
+ {%- endfor %}
+ {%- endif %}
+ {{- '<|im_end|>\n' }}
+ {%- elif message.role == "tool" %}
+ {%- if loop.first or (messages[loop.index0 - 1].role != "tool") %}
+ {{- '<|im_start|>user' }}
+ {%- endif %}
+ {{- '\n<tool_response>\n' }}
+ {{- message.content }}
+ {{- '\n</tool_response>' }}
+ {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
+ {{- '<|im_end|>\n' }}
+ {%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+ {{- '<|im_start|>assistant\n' }}
+ {{- '<think>\n' }}
+ {{- 'Let me think through this step by step:\n' }}
+ {{- '1. First, I need to understand the question\n' }}
+ {{- '2. Then I will work through the solution\n' }}
+ {{- '3. Finally, I will provide the answer\n' }}
+ {{- '</think>\n' }}
+ {{- '\n' }}
+ {%- endif %}
+)";
+            LOGi("Using Qwen3 template with thinking support");
+        } else if (chatFormatStr_cpp == "CHATML") {
+            // Use ChatML template
+            template_content = R"(
+{%- if messages[0].role == 'system' %}
+{{- '<|im_start|>system\n' + messages[0].content + '<|im_end|>\n' }}
+{%- endif %}
+{%- for message in messages %}
+{%- if message.role != 'system' %}
+{{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' }}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+{{- '<|im_start|>assistant\n<think>\n' }}
+{%- endif %}
+)";
+            LOGi("Using ChatML template");
+        } else if (chatFormatStr_cpp == "ALPACA") {
+            // Use Alpaca template
+            template_content = R"(
+{%- if messages[0].role == 'system' %}
+{{- '### Instruction:\n' + messages[0].content + '\n\n' }}
+{%- endif %}
+{%- for message in messages %}
+{%- if message.role == 'user' %}
+{{- '### Input:\n' + message.content + '\n\n' }}
+{%- elif message.role == 'assistant' %}
+{{- '### Response:\n' + message.content + '\n\n' }}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+{{- '### Response:\n' }}
+{%- endif %}
+)";
+            LOGi("Using Alpaca template");
+        } else if (chatFormatStr_cpp == "VICUNA") {
+            // Use Vicuna template
+            template_content = R"(
+{%- if messages[0].role == 'system' %}
+{{- messages[0].content + '\n\n' }}
+{%- endif %}
+{%- for message in messages %}
+{%- if message.role == 'user' %}
+{{- 'USER: ' + message.content + '\n' }}
+{%- elif message.role == 'assistant' %}
+{{- 'ASSISTANT: ' + message.content + '\n' }}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+{{- 'ASSISTANT: ' }}
+{%- endif %}
+)";
+            LOGi("Using Vicuna template");
+        } else if (chatFormatStr_cpp == "LLAMA2") {
+            // Use Llama2 template
+            template_content = R"(
+{%- if messages[0].role == 'system' %}
+{{- '[INST] <<SYS>>\n' + messages[0].content + '\n<</SYS>>\n\n' }}
+{%- endif %}
+{%- for message in messages %}
+{%- if message.role == 'user' %}
+{{- message.content + ' [/INST]' }}
+{%- elif message.role == 'assistant' %}
+{{- ' ' + message.content + ' [INST] ' }}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+{{- ' ' }}
+{%- endif %}
+)";
+            LOGi("Using Llama2 template");
+        } else if (chatFormatStr_cpp == "ZEPHYR") {
+            // Use Zephyr template
+            template_content = R"(
+{%- if messages[0].role == 'system' %}
+{{- '<|system|>\n' + messages[0].content + '\n<|end|>\n' }}
+{%- endif %}
+{%- for message in messages %}
+{%- if message.role == 'user' %}
+{{- '<|user|>\n' + message.content + '\n<|end|>\n' }}
+{%- elif message.role == 'assistant' %}
+{{- '<|assistant|>\n' + message.content + '\n<|end|>\n' }}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+{{- '<|assistant|>\n' }}
+{%- endif %}
+)";
+            LOGi("Using Zephyr template");
+        } else {
+            // Default to Qwen3 template for unknown formats
+            template_content = R"(
+{%- if tools %}
+ {{- '<|im_start|>system\n' }}
+ {%- if messages[0].role == 'system' %}
+ {{- messages[0].content + '\n\n' }}
+ {%- endif %}
+ {{- "# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+ {%- for tool in tools %}
+ {{- "\n" }}
+ {{- tool | tojson }}
+ {%- endfor %}
+ {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n" }}
+{%- else %}
+{%- if messages[0].role == 'system' %}
+ {{- '<|im_start|>system\n' + messages[0].content + '<|im_end|>\n' }}
+ {%- endif %}
+{%- endif %}
+{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
+{%- for message in messages[::-1] %}
+ {%- set index = (messages|length - 1) - loop.index0 %}
+ {%- set tool_start = "<tool_response>" %}
+ {%- set tool_start_length = tool_start|length %}
+ {%- set start_of_message = message.content[:tool_start_length] %}
+ {%- set tool_end = "</tool_response>" %}
+ {%- set tool_end_length = tool_end|length %}
+ {%- set start_pos = (message.content|length) - tool_end_length %}
+ {%- if start_pos < 0 %}
+ {%- set start_pos = 0 %}
+ {%- endif %}
+ {%- set end_of_message = message.content[start_pos:] %}
+ {%- if ns.multi_step_tool and message.role == "user" and not(start_of_message == tool_start and end_of_message == tool_end) %}
+ {%- set ns.multi_step_tool = false %}
+ {%- set ns.last_query_index = index %}
+ {%- endif %}
+{%- endfor %}
+{%- for message in messages %}
+ {%- if (message.role == "user") or (message.role == "system" and not loop.first) %}
+ {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+ {%- elif message.role == "assistant" %}
+ {%- set content = message.content %}
+ {%- set reasoning_content = '' %}
+ {%- if message.reasoning_content is defined and message.reasoning_content is not none %}
+ {%- set reasoning_content = message.reasoning_content %}
+ {%- else %}
+ {%- if '</think>' in message.content %}
+ {%- set content = (message.content.split('</think>')|last).lstrip('\n') %}
+{%- set reasoning_content = (message.content.split('</think>')|first).rstrip('\n') %}
+{%- set reasoning_content = (reasoning_content.split('<think>')|last).lstrip('\n') %}
+ {%- endif %}
+ {%- endif %}
+ {%- if loop.index0 > ns.last_query_index %}
+ {%- if loop.last or (not loop.last and reasoning_content) %}
+ {{- '<|im_start|>' + message.role + '\n<think>\n' + reasoning_content.strip('\n') + '\n</think>\n\n' + content.lstrip('\n') }}
+ {%- else %}
+ {{- '<|im_start|>' + message.role + '\n' + content }}
+ {%- endif %}
+ {%- else %}
+ {{- '<|im_start|>' + message.role + '\n' + content }}
+ {%- endif %}
+ {%- if message.tool_calls %}
+ {%- for tool_call in message.tool_calls %}
+ {%- if (loop.first and content) or (not loop.first) %}
+ {{- '\n' }}
+ {%- endif %}
+ {%- if tool_call.function %}
+ {%- set tool_call = tool_call.function %}
+ {%- endif %}
+ {{- '<tool_call>\n{"name": "' }}
+ {{- tool_call.name }}
+ {{- '", "arguments": ' }}
+ {%- if tool_call.arguments is string %}
+ {{- tool_call.arguments }}
+ {%- else %}
+ {{- tool_call.arguments | tojson }}
+ {%- endif %}
+ {{- '}\n</tool_call>' }}
+ {%- endfor %}
+ {%- endif %}
+ {{- '<|im_end|>\n' }}
+ {%- elif message.role == "tool" %}
+ {%- if loop.first or (messages[loop.index0 - 1].role != "tool") %}
+ {{- '<|im_start|>user' }}
+ {%- endif %}
+ {{- '\n<tool_response>\n' }}
+ {{- message.content }}
+ {{- '\n</tool_response>' }}
+ {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
+ {{- '<|im_end|>\n' }}
+ {%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+ {{- '<|im_start|>assistant\n' }}
+ {%- if enable_thinking is defined and enable_thinking is false %}
+ {{- '<think>\n\n</think>\n\n' }}
+ {%- endif %}
+{%- endif %}
+)";
+            LOGi("Using default Qwen3 template for format: %s", chatFormatStr_cpp.c_str());
+        }
+        
+        const auto formattedPrompts = format_chat(model_ptr, template_content, jsonMessages);
+        
+        LOGi("Template content length: %zu", template_content.length());
+        LOGi("Formatted prompt length: %zu", formattedPrompts.length());
+        LOGi("Formatted prompt preview: %s", formattedPrompts.substr(0, 200).c_str());
 
         return env->NewStringUTF(formattedPrompts.c_str());
     } catch (const std::exception &e) {
@@ -641,7 +1012,7 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_get_1eot_1str(JNIEnv *env, jobject , jlong jmodel) {
     auto model = reinterpret_cast<llama_model *>(jmodel);
-    const auto eot = llama_token_eot(model);
+    const auto eot = llama_vocab_eot(llama_model_get_vocab(model));
 
     if (eot == -1){
         std::string piece = "<|im_end|>";
@@ -650,10 +1021,10 @@ Java_android_llama_cpp_LLamaAndroid_get_1eot_1str(JNIEnv *env, jobject , jlong j
 
     std::string piece;
     piece.resize(piece.capacity());  // using string internal cache, 15 bytes + '\n'
-    const int n_chars = llama_token_to_piece(model, eot, &piece[0], piece.size(), 0, true);
+    const int n_chars = llama_token_to_piece(llama_model_get_vocab(model), eot, &piece[0], piece.size(), 0, true);
     if (n_chars < 0) {
         piece.resize(-n_chars);
-        int check = llama_token_to_piece(model, eot, &piece[0], piece.size(), 0, true);
+        int check = llama_token_to_piece(llama_model_get_vocab(model), eot, &piece[0], piece.size(), 0, true);
         GGML_ASSERT(check == -n_chars);
     }
     else {
@@ -662,4 +1033,28 @@ Java_android_llama_cpp_LLamaAndroid_get_1eot_1str(JNIEnv *env, jobject , jlong j
 
      return env->NewStringUTF(piece.c_str());
 
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_android_llama_cpp_LLamaAndroid_count_1tokens(JNIEnv *env, jobject, jlong jmodel, jstring jtext) {
+    const llama_model *model = reinterpret_cast<llama_model *>(jmodel);
+    if (model == nullptr) {
+        return 0;
+    }
+    const char *c_text = env->GetStringUTFChars(jtext, nullptr);
+    std::string text(c_text);
+    env->ReleaseStringUTFChars(jtext, c_text);
+
+    std::vector<llama_token> tokens(text.size() + 2);
+    const struct llama_vocab * vocab = llama_model_get_vocab(model);
+    int32_t n_tokens = llama_tokenize(vocab,
+                                      text.c_str(),
+                                      static_cast<int32_t>(text.size()),
+                                      tokens.data(),
+                                      static_cast<int32_t>(tokens.size()),
+                                      /*add_special*/ false,
+                                      /*parse_special*/ true);
+
+    if (n_tokens < 0) n_tokens = 0;
+    return n_tokens;
 }

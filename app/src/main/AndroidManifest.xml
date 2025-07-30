@@ -17,9 +17,7 @@
         android:theme="@style/Theme.LlamaAndroid"
         android:windowSplashScreenBackground="#00FF00">
 
-        <activity
-            android:name=".Copy_screen"
-            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

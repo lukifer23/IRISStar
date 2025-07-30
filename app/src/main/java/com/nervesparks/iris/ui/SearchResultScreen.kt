@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
+import com.nervesparks.iris.data.HuggingFaceApiService
+import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.components.InfoModal
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.ModelCard
@@ -69,6 +73,10 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
     val kc = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    
+    // Initialize API service and preferences
+    val preferencesRepository = remember { UserPreferencesRepository.getInstance(context) }
+    val apiService = remember { HuggingFaceApiService(preferencesRepository) }
     var UserGivenModel by remember {
         mutableStateOf(
             TextFieldValue(
@@ -94,28 +102,49 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         // Search Input and Button Row
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
-            modifier = Modifier.wrapContentSize()
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
-                modifier = Modifier.padding(4.dp),
-                color = Color.White,
-                fontSize = 10.sp
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
+                    modifier = Modifier.padding(4.dp),
+                    color = Color.White,
+                    fontSize = 10.sp
+                )
 
+                IconButton(
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString("bartowski/Llama-3.2-1B-Instruct-GGUF"))
+                        Toast.makeText(context, "Text copied", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.size(16.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.copy1),
+                        contentDescription = "Copy text",
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+            
+            // Settings button
             IconButton(
                 onClick = {
-                    clipboardManager.setText(AnnotatedString("bartowski/Llama-3.2-1B-Instruct-GGUF"))
-                    Toast.makeText(context, "Text copied", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.size(16.dp)
+                    // Show a message to guide users to settings
+                    Toast.makeText(context, "Go to Settings > HuggingFace Integration to add credentials", Toast.LENGTH_LONG).show()
+                }
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.copy1),
-                    contentDescription = "Copy text",
+                    painter = painterResource(id = R.drawable.setting_4_svgrepo_com),
+                    contentDescription = "Settings",
                     tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -148,75 +177,54 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         Button(
             onClick = {
                 kc?.hide()
+                
+                // Check if credentials are set
+                if (!preferencesRepository.hasHuggingFaceCredentials()) {
+                    errorMessage = "Please set your HuggingFace credentials in Settings first"
+                    return@Button
+                }
+                
                 coroutineScope.launch {
                     isLoading = true
                     errorMessage = null
 
                     try {
-                        val response = withContext(Dispatchers.IO) {
-                            val url = URL("https://huggingface.co/api/models/${UserGivenModel.text}")
-                            val connection = url.openConnection() as HttpURLConnection
-                            connection.requestMethod = "GET"
-                            connection.setRequestProperty("Accept", "application/json")
-                            connection.connectTimeout = 10000
-                            connection.readTimeout = 10000
-
-                            val responseCode = connection.responseCode
-                            if (responseCode == HttpURLConnection.HTTP_OK) {
-                                connection.inputStream.bufferedReader().use { it.readText() }
-                            } else {
-                                val errorStream = connection.errorStream?.bufferedReader()
-                                    ?.use { it.readText() }
-                                throw Exception(
-                                    "HTTP error code: $responseCode - ${errorStream ?: "No additional error details"}"
+                        // Use searchModels instead of getModelDetails for search functionality
+                        val response = apiService.searchModels(UserGivenModel.text)
+                        
+                        if (response.success && response.data != null) {
+                            // Convert search results to the expected format
+                            // Note: Search results don't include siblings, so we'll show model info directly
+                            modelData = response.data.map { model ->
+                                mapOf(
+                                    "modelId" to model.id,
+                                    "modelName" to model.name,
+                                    "description" to (model.description ?: ""),
+                                    "downloads" to model.downloads.toString(),
+                                    "likes" to model.likes.toString(),
+                                    "tags" to model.tags.joinToString(", ")
                                 )
                             }
-                        }
-
-                        val jsonResponse = JSONObject(response)
-                        val siblingsArray = jsonResponse.getJSONArray("siblings")
-                        modelData = (0 until siblingsArray.length()).mapNotNull { index ->
-                            val jsonObject = siblingsArray.getJSONObject(index)
-                            val filename = jsonObject.optString("rfilename", "")
-
-                            if (filename.isNotEmpty()) {
-                                mapOf("rfilename" to filename)
-                            } else {
-                                null
-                            }
+                        } else {
+                            errorMessage = response.error ?: "Failed to search models"
+                            modelData = null
                         }
                     } catch (e: Exception) {
-                        Log.e("ModelFetch", "Failed to fetch model", e)
-                        errorMessage = when (e) {
-                            is UnknownHostException -> "No internet connection"
-                            is SocketTimeoutException -> "Connection timed out"
-                            else -> "Failed to fetch model: ${e.localizedMessage ?: "Unknown error"}"
-                        }
+                        Log.e("SearchResultScreen", "Error searching models", e)
+                        errorMessage = "Error: ${e.localizedMessage}"
                         modelData = null
                     } finally {
                         isLoading = false
                     }
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            enabled = UserGivenModel.text.isNotBlank() && !isLoading,
+            modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF171E24),
-                contentColor = Color.White,
-                disabledContainerColor = Color(0xFF171E2C),
-                disabledContentColor = Color.White.copy(alpha = 0.5f)
-            ),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                text = when {
-                    isLoading -> "Searching..."
-                    else -> "Search Model"
-                },
-                style = MaterialTheme.typography.bodyLarge,
+                containerColor = Color(0xFFcfcfd1),
+                contentColor = Color.Black
             )
+        ) {
+            Text("Search Models")
         }
 
         // Error Message
@@ -236,16 +244,95 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val filteredModels = models.filter { model -> model["rfilename"]?.endsWith("gguf") == true }
-                items(filteredModels) { model ->
-                    ModelCard(
-                        modelName = model["rfilename"] ?: "Unknown Model",
-                        dm = dm,
-                        viewModel = viewModel,
-                        extFilesDir = extFilesDir,
-                        downloadLink = "",
-                        showDeleteButton = false
-                    )
+                items(models) { model ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xff0f172a),
+                            contentColor = Color.White
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            // Model header
+                            Text(
+                                text = model["modelName"] ?: "Unknown Model",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                            
+                            if (model["description"]?.isNotEmpty() == true) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = model["description"] ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray,
+                                    maxLines = 2
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Stats row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Downloads: ${model["downloads"] ?: "0"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.LightGray
+                                )
+                                Text(
+                                    text = "Likes: ${model["likes"] ?: "0"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.LightGray
+                                )
+                            }
+                            
+                            if (model["tags"]?.isNotEmpty() == true) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Tags: ${model["tags"]}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.LightGray,
+                                    maxLines = 1
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Note about getting files
+                            Text(
+                                text = "Note: To download files, search for the specific model ID",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Yellow,
+                                fontSize = 10.sp
+                            )
+                            
+                            // Copy model ID button
+                            Button(
+                                onClick = {
+                                    val modelId = model["modelId"] ?: ""
+                                    clipboardManager.setText(AnnotatedString(modelId))
+                                    Toast.makeText(context, "Model ID copied: $modelId", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFcfcfd1),
+                                    contentColor = Color.Black
+                                )
+                            ) {
+                                Text("Copy Model ID")
+                            }
+                        }
+                    }
                 }
             }
         }

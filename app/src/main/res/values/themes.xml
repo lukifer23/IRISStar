@@ -2,6 +2,5 @@
 <resources>
 
     <style name="Theme.LlamaAndroid" parent="android:Theme.Material.Light.NoActionBar" >
-    <item name="android:windowSplashScreenBackground">@color/black</item>
     </style>
 </resources>

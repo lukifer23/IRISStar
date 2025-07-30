@@ -52,10 +52,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.rememberNavController
 import com.nervesparks.iris.ui.AboutScreen
 import com.nervesparks.iris.ui.BenchMarkScreen
 import com.nervesparks.iris.ui.MainChatScreen
+import com.nervesparks.iris.ui.ChatListScreen
 import com.nervesparks.iris.ui.ModelsScreen
 import com.nervesparks.iris.ui.ParametersScreen
 import com.nervesparks.iris.ui.SearchResultScreen
@@ -64,6 +67,7 @@ import java.io.File
 
 
 enum class ChatScreen(@StringRes val title: Int) {
+    ChatList(title = R.string.app_name),
     Start(title = R.string.app_name),
     Settings(title = R.string.settings_screen_title),
     SearchResults(title = R.string.search_results_screen_title),
@@ -83,6 +87,7 @@ fun ChatScreenAppBar(
     canNavigateBack: Boolean,
     navigateUp: () -> Unit,
     onSettingsClick: () -> Unit,
+    onNewChat: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MainViewModel,
 ) {
@@ -164,6 +169,7 @@ fun ChatScreenAppBar(
                         kc?.hide()
                         viewModel.stop()
                         viewModel.clear()
+                        onNewChat()
                     }
                 ) {
                     Icon(
@@ -247,13 +253,15 @@ fun ChatScreen(
             backgroundColor = Color.Transparent, // Make Scaffold background transparent
             topBar = {
                 ChatScreenAppBar(
-                    currentScreen = ChatScreen.valueOf(
-                        navController.currentBackStackEntryAsState().value?.destination?.route
-                            ?: ChatScreen.Start.name
-                    ),
+                    onNewChat = { navController.navigate("${ChatScreen.Start.name}/-1") },
+                    currentScreen = run {
+                        val route = navController.currentBackStackEntryAsState().value?.destination?.route ?: ChatScreen.ChatList.name
+                        val screenName = route.substringBefore("/")
+                        ChatScreen.valueOf(screenName)
+                    },
                     canNavigateBack = navController.previousBackStackEntry != null,
                     navigateUp = { navController.navigateUp() },
-                    onSettingsClick = {navController.navigate(ChatScreen.Settings.name)},
+                    onSettingsClick = {viewModel.showModelSettings()},
                     viewModel = viewModel,
                     extFileDir = extFileDir
                 )
@@ -261,11 +269,36 @@ fun ChatScreen(
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = ChatScreen.Start.name,
+                startDestination = ChatScreen.ChatList.name,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                composable(route = ChatScreen.ChatList.name) {
+                    ChatListScreen(
+                        onChatSelected = { id -> navController.navigate("${ChatScreen.Start.name}/$id") },
+                        onNewChat = { navController.navigate("${ChatScreen.Start.name}/-1") }
+                    )
+                }
+                composable(
+                    route = "${ChatScreen.Start.name}/{chatId}",
+                    arguments = listOf(navArgument("chatId") { type = NavType.LongType; defaultValue = -1L })
+                ) { backStackEntry ->
+                    val chatId = backStackEntry.arguments?.getLong("chatId") ?: -1L
+                    MainChatScreen(
+                        onNextButtonClicked = {
+                            navController.navigate(ChatScreen.Settings.name)
+                        },
+                        viewModel = viewModel,
+                        dm = downloadManager,
+                        clipboard = clipboardManager,
+                        models = models,
+                        extFileDir = extFileDir,
+                        chatId = if (chatId == -1L) null else chatId
+                    )
+                }
+
+                // legacy route without param for backwards compatibility
                 composable(route = ChatScreen.Start.name) {
                     MainChatScreen(
                         onNextButtonClicked = {

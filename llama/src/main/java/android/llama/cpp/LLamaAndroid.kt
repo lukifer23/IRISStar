@@ -77,7 +77,7 @@ class LLamaAndroid {
     }.asCoroutineDispatcher()
 
     private val nlen: Int = 1024
-    private val context_size: Int = 4096
+    private val context_size: Int = 32768  // Increased to match Qwen3 context length
 
     private external fun log_to_android()
     private external fun load_model(filename: String): Long
@@ -111,7 +111,8 @@ class LLamaAndroid {
 
     private external fun oaicompat_completion_param_parse(
         allmessages: Array<Map<String, String>>,
-        model: Long
+        model: Long,
+        chatFormat: String
     ): String
 
     private external fun completion_loop(
@@ -125,6 +126,7 @@ class LLamaAndroid {
     private external fun kv_cache_clear(context: Long)
 
     private external fun get_eot_str(model: Long): String
+    private external fun count_tokens(model: Long, text: String): Int
 
 
 
@@ -172,7 +174,7 @@ class LLamaAndroid {
     }
 
 
-    suspend fun getTemplate(messages: List<Map<String, String>>): String {
+    suspend fun getTemplate(messages: List<Map<String, String>>, chatFormat: String = "CHATML"): String {
         var data = ""
         withContext(runLoop) {
             when (val state = threadLocalState.get()) {
@@ -180,7 +182,8 @@ class LLamaAndroid {
                     val arrayMessages = messages.toTypedArray() // Convert list to array for JNI compatibility
                     data = oaicompat_completion_param_parse(
                         allmessages = arrayMessages,
-                        model = state.model
+                        model = state.model,
+                        chatFormat = chatFormat
                     )
                 }
                 else -> {}
@@ -188,6 +191,19 @@ class LLamaAndroid {
         }
 
         return data
+    }
+
+    suspend fun countTokens(text: String): Int {
+        var res = 0
+        withContext(runLoop) {
+            when (val state = threadLocalState.get()) {
+                is State.Loaded -> {
+                    res = count_tokens(state.model, text)
+                }
+                else -> {}
+            }
+        }
+        return res
     }
 
     suspend fun send(message: String): Flow<String> = flow {

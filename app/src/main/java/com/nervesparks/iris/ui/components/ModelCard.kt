@@ -129,11 +129,7 @@ fun ModelCard(
                                                 }
                                                 coroutineScope.launch { viewModel.unload() }
                                                 File(extFilesDir, modelName).delete()
-                                                viewModel.showModal = false
-                                                if (modelName == viewModel.loadedModelName.value) {
-                                                    viewModel.newShowModal = true
-                                                    showDeleteConfirmation = false
-                                                }
+                                                viewModel.showModal = true
                                                 if (modelName == viewModel.loadedModelName.value) {
                                                     viewModel.loadedModelName.value = ""
                                                 }

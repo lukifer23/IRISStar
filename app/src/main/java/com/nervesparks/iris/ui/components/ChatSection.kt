@@ -9,6 +9,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
 import androidx.compose.ui.text.AnnotatedString
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -30,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
+import com.nervesparks.iris.ui.components.PerformanceMonitor
+import com.nervesparks.iris.ui.components.ThinkingMessage
 
 
 @Composable
@@ -37,33 +40,88 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
     val messages = viewModel.messages
     val context = LocalContext.current
 
-    LazyColumn(state = scrollState) {
-        itemsIndexed(messages.drop(3)) { index, messageMap ->
-            val role = messageMap["role"] ?: ""
-            val content = (messageMap["content"] ?: "").trimEnd()
+    Column {
+        
+        LazyColumn(state = scrollState) {
+            // Add performance monitor at the top
+            item {
+                PerformanceMonitor(viewModel = viewModel)
+            }
+            
+            itemsIndexed(messages.drop(3)) { index, messageMap ->
+                val role = messageMap["role"] ?: ""
+                val content = (messageMap["content"] ?: "").trimEnd()
 
-            if (role != "system") {
-                when (role) {
-                    "codeBlock" -> CodeBlockMessage(content)
-                    else -> UserOrAssistantMessage(
-                        role = role,
-                        message = content,
-                        onLongClick = {
-                            if (viewModel.getIsSending()) {
-                                Toast.makeText(
-                                    context,
-                                    "Wait till generation is done!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                if (role != "system") {
+                    when (role) {
+                        "codeBlock" -> CodeBlockMessage(content)
+                        "assistant" -> {
+                            // Format-aware reasoning detection
+                            val tagMatch = Regex("<think>[\\s\\S]*?</think>", RegexOption.IGNORE_CASE).containsMatchIn(content)
+                            val phraseMatch = content.contains("Let me think", ignoreCase = true)
+                            val hasThinkingTokens = tagMatch || phraseMatch
+                            
+                            android.util.Log.d("ChatSection", "Assistant message content: $content")
+                            android.util.Log.d("ChatSection", "Has thinking tokens: $hasThinkingTokens")
+                            android.util.Log.d("ChatSection", "Contains <think>: ${content.contains("<think>")}")
+                            android.util.Log.d("ChatSection", "Contains </think>: ${content.contains("</think>")}")
+                            android.util.Log.d("ChatSection", "Contains <|im_start|>: ${content.contains("<|im_start|>")}")
+                            android.util.Log.d("ChatSection", "Contains Let me think: ${content.contains("Let me think")}")
+                            
+                            if (hasThinkingTokens) {
+                                ThinkingMessage(
+                                    message = content,
+                                    viewModel = viewModel,
+                                    onLongClick = {
+                                        if (viewModel.getIsSending()) {
+                                            Toast.makeText(
+                                                context,
+                                                "Wait till generation is done!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+                                            viewModel.toggler = true
+                                        }
+                                    }
+                                )
                             } else {
-                                viewModel.toggler = true
+                                UserOrAssistantMessage(
+                                    role = role,
+                                    message = content,
+                                    onLongClick = {
+                                        if (viewModel.getIsSending()) {
+                                            Toast.makeText(
+                                                context,
+                                                "Wait till generation is done!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+                                            viewModel.toggler = true
+                                        }
+                                    }
+                                )
                             }
                         }
-                    )
+                        else -> UserOrAssistantMessage(
+                            role = role,
+                            message = content,
+                            onLongClick = {
+                                if (viewModel.getIsSending()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Wait till generation is done!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    viewModel.toggler = true
+                                }
+                            }
+                        )
+                    }
                 }
             }
+            item { Spacer(modifier = Modifier.height(1.dp).fillMaxWidth()) }
         }
-        item { Spacer(modifier = Modifier.height(1.dp).fillMaxWidth()) }
     }
 }
 

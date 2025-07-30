@@ -13,7 +13,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.data.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,21 +24,59 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 
-class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instance(), private val userPreferencesRepository: UserPreferencesRepository): ViewModel() {
+import android.app.Application
+import com.nervesparks.iris.data.ChatRepository
+import com.nervesparks.iris.data.db.Chat
+import com.nervesparks.iris.data.db.Message
+
+import kotlinx.coroutines.flow.first
+
+class MainViewModel(
+    application: Application,
+    private val llamaAndroid: LLamaAndroid = LLamaAndroid.instance(),
+    private val userPreferencesRepository: UserPreferencesRepository
+) : AndroidViewModel(application) {
+
+    private val chatRepository = ChatRepository.get(application)
+    private var currentChat: com.nervesparks.iris.data.db.Chat? = null
     companion object {
 //        @JvmStatic
 //        private val NanosPerSecond = 1_000_000_000.0
     }
 
+    // Load existing chat
+    fun loadChat(chatId: Long) {
+        if (chatId <= 0) return
+        viewModelScope.launch {
+            val chat = chatRepository.observeChat(chatId).first()
+            val msgs = chatRepository.loadMessages(chatId)
+            messages = msgs.sortedBy { it.index }.map { m ->
+                mapOf("role" to m.role, "content" to m.content)
+            }
+            currentChat = chat
+            first = false
+        }
+    }
+
+    // Thinking token settings - moved to top to ensure initialization
+    var showThinkingTokens by mutableStateOf(true)
+    var thinkingTokenStyle by mutableStateOf("COLLAPSIBLE") // COLLAPSIBLE, ALWAYS_VISIBLE, HIDDEN
 
     private val _defaultModelName = mutableStateOf("")
     val defaultModelName: State<String> = _defaultModelName
 
     init {
         loadDefaultModelName()
+        loadModelSettings()
+        loadThinkingTokenSettings()
     }
     private fun loadDefaultModelName(){
-        _defaultModelName.value = userPreferencesRepository.getDefaultModelName()
+        try {
+            _defaultModelName.value = userPreferencesRepository.getDefaultModelName()
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error loading default model name, using empty string", e)
+            _defaultModelName.value = ""
+        }
     }
 
     fun setDefaultModelName(modelName: String){
@@ -53,31 +92,42 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
             listOf<Map<String, String>>(),
         )
         private set
-    var newShowModal by mutableStateOf(false)
+    var showModal by mutableStateOf(true)
     var showDownloadInfoModal by mutableStateOf(false)
+    var showModelSelection by mutableStateOf(false)
+    var selectedModelForSwitch by mutableStateOf("")
     var user_thread by mutableStateOf(0f)
-    var topP by mutableStateOf(0f)
-    var topK by mutableStateOf(0)
-    var temp by mutableStateOf(0f)
+    var topP by mutableStateOf(0.9f)
+    var topK by mutableStateOf(40)
+    var temp by mutableStateOf(0.7f)
 
     var allModels by mutableStateOf(
         listOf(
-            mapOf(
-                "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
-                "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
-            ),
             mapOf(
                 "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
                 "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
                 "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf"
             ),
             mapOf(
+                "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
+                "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
+                "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
+            ),
+            mapOf(
                 "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
                 "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
                 "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf"
             ),
-
+            mapOf(
+                "name" to "NemoTron-1.5B-Q4_K_M.gguf",
+                "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
+                "destination" to "NemoTron-1.5B-Q4_K_M.gguf"
+            ),
+            mapOf(
+                "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
+                "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+            )
         )
     )
 
@@ -99,6 +149,241 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
 
     var eot_str = ""
 
+    // Performance monitoring variables
+    var tps by mutableStateOf(0.0) // Tokens per second
+    var ttft by mutableStateOf(0L) // Time to first token (milliseconds)
+    var latency by mutableStateOf(0L) // Average latency per token (milliseconds)
+    var memoryUsage by mutableStateOf(0L) // Memory usage in MB
+    var contextLimit by mutableStateOf(0) // Current context length
+    var maxContextLimit by mutableStateOf(0) // Maximum context limit
+    var isGenerating by mutableStateOf(false) // Whether currently generating
+    var generationStartTime by mutableStateOf(0L) // Start time of generation
+    var tokensGenerated by mutableStateOf(0) // Number of tokens generated in current session
+    var totalGenerationTime by mutableStateOf(0L) // Total generation time in milliseconds
+
+    // Performance monitoring functions
+    fun startGeneration() {
+        isGenerating = true
+        generationStartTime = System.currentTimeMillis()
+        tokensGenerated = 0
+        totalGenerationTime = 0L
+        ttft = 0L
+        tps = 0.0
+        latency = 0L
+    }
+
+    fun endGeneration() {
+        isGenerating = false
+        val endTime = System.currentTimeMillis()
+        totalGenerationTime = endTime - generationStartTime
+        
+        // Calculate TPS if we have tokens and time
+        if (tokensGenerated > 0 && totalGenerationTime > 0) {
+            tps = (tokensGenerated * 1000.0) / totalGenerationTime
+        }
+        
+        // Calculate average latency
+        if (tokensGenerated > 0) {
+            latency = totalGenerationTime / tokensGenerated
+        persistChat()
+        }
+    }
+
+    fun updateTokenCount(count: Int) {
+        tokensGenerated = count
+        if (ttft == 0L && count > 0) {
+            // First token received
+            ttft = System.currentTimeMillis() - generationStartTime
+        }
+        
+        // Update TPS in real-time
+        val currentTime = System.currentTimeMillis()
+        val elapsedTime = currentTime - generationStartTime
+        if (elapsedTime > 0) {
+            tps = (count * 1000.0) / elapsedTime
+        }
+    }
+
+    fun updateMemoryUsage(usageMB: Long) {
+        memoryUsage = usageMB
+    }
+
+    fun updateContextLimit(current: Int, max: Int) {
+        contextLimit = current
+        maxContextLimit = max
+    }
+
+    fun resetPerformanceMetrics() {
+        tps = 0.0
+        ttft = 0L
+        latency = 0L
+        tokensGenerated = 0
+        totalGenerationTime = 0L
+        isGenerating = false
+    }
+
+    // Model configuration variables
+    var modelTemperature by mutableStateOf(0.7f)
+    var modelTopP by mutableStateOf(0.9f)
+    var modelTopK by mutableStateOf(40)
+    var modelMaxTokens by mutableStateOf(2048)
+    var modelContextLength by mutableStateOf(32768) // Increased for Qwen3 support
+    var modelSystemPrompt by mutableStateOf("You are a helpful AI assistant.")
+    var modelChatFormat by mutableStateOf("QWEN3")
+    var modelThreadCount by mutableStateOf(4)
+    var showModelSettings by mutableStateOf(false)
+
+    // Model configuration functions
+    fun updateModelSettings(
+        temperature: Float = modelTemperature,
+        topP: Float = modelTopP,
+        topK: Int = modelTopK,
+        maxTokens: Int = modelMaxTokens,
+        contextLength: Int = modelContextLength,
+        systemPrompt: String = modelSystemPrompt,
+        chatFormat: String = modelChatFormat,
+        threadCount: Int = modelThreadCount
+    ) {
+        modelTemperature = temperature
+        modelTopP = topP
+        modelTopK = topK
+        modelMaxTokens = maxTokens
+        modelContextLength = contextLength
+        modelSystemPrompt = systemPrompt
+        modelChatFormat = chatFormat
+        modelThreadCount = threadCount
+        
+        // Save to preferences
+        userPreferencesRepository.setModelTemperature(temperature)
+        userPreferencesRepository.setModelTopP(topP)
+        userPreferencesRepository.setModelTopK(topK)
+        userPreferencesRepository.setModelMaxTokens(maxTokens)
+        userPreferencesRepository.setModelContextLength(contextLength)
+        userPreferencesRepository.setModelSystemPrompt(systemPrompt)
+        userPreferencesRepository.setModelChatFormat(chatFormat)
+        userPreferencesRepository.setModelThreadCount(threadCount)
+    }
+
+    fun loadModelSettings() {
+        try {
+            Log.d("MainViewModel", "Loading model settings...")
+            
+            // Try to load each setting with individual try-catch blocks
+            try {
+                modelTemperature = userPreferencesRepository.getModelTemperature()
+                Log.d("MainViewModel", "Loaded temperature: $modelTemperature")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading temperature, using default", e)
+                modelTemperature = 0.7f
+            }
+            
+            try {
+                modelTopP = userPreferencesRepository.getModelTopP()
+                Log.d("MainViewModel", "Loaded topP: $modelTopP")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading topP, using default", e)
+                modelTopP = 0.9f
+            }
+            
+            try {
+                modelTopK = userPreferencesRepository.getModelTopK()
+                Log.d("MainViewModel", "Loaded topK: $modelTopK")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading topK, using default", e)
+                modelTopK = 40
+            }
+            
+            try {
+                modelMaxTokens = userPreferencesRepository.getModelMaxTokens()
+                Log.d("MainViewModel", "Loaded maxTokens: $modelMaxTokens")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading maxTokens, using default", e)
+                modelMaxTokens = 2048
+            }
+            
+            try {
+                modelContextLength = userPreferencesRepository.getModelContextLength()
+                Log.d("MainViewModel", "Loaded contextLength: $modelContextLength")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading contextLength, using default", e)
+                modelContextLength = 32768  // Increased for Qwen3 support
+            }
+            
+            try {
+                modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
+                Log.d("MainViewModel", "Loaded systemPrompt: $modelSystemPrompt")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading systemPrompt, using default", e)
+                modelSystemPrompt = "You are a helpful AI assistant."
+            }
+            
+            try {
+                modelChatFormat = userPreferencesRepository.getModelChatFormat()
+                Log.d("MainViewModel", "Loaded chatFormat: $modelChatFormat")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading chatFormat, using default", e)
+                modelChatFormat = "CHATML"
+            }
+            
+            try {
+                modelThreadCount = userPreferencesRepository.getModelThreadCount()
+                Log.d("MainViewModel", "Loaded threadCount: $modelThreadCount")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading threadCount, using default", e)
+                modelThreadCount = 4
+            }
+            
+            Log.d("MainViewModel", "Model settings loaded successfully")
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error in loadModelSettings", e)
+        }
+    }
+
+    fun showModelSettings() {
+        showModelSettings = true
+    }
+
+    fun hideModelSettings() {
+        showModelSettings = false
+    }
+
+    // Thinking token settings
+    fun updateShowThinkingTokens(show: Boolean) {
+        showThinkingTokens = show
+        userPreferencesRepository.setShowThinkingTokens(show)
+    }
+
+    fun updateThinkingTokenStyle(style: String) {
+        thinkingTokenStyle = style
+        userPreferencesRepository.setThinkingTokenStyle(style)
+    }
+
+    fun loadThinkingTokenSettings() {
+        try {
+            Log.d("MainViewModel", "Loading thinking token settings...")
+            
+            try {
+                showThinkingTokens = userPreferencesRepository.getShowThinkingTokens()
+                Log.d("MainViewModel", "Loaded showThinkingTokens: $showThinkingTokens")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading showThinkingTokens, using default", e)
+                showThinkingTokens = true
+            }
+            
+            try {
+                thinkingTokenStyle = userPreferencesRepository.getThinkingTokenStyle()
+                Log.d("MainViewModel", "Loaded thinkingTokenStyle: $thinkingTokenStyle")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading thinkingTokenStyle, using default", e)
+                thinkingTokenStyle = "COLLAPSIBLE"
+            }
+            
+            Log.d("MainViewModel", "Thinking token settings loaded successfully")
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error in loadThinkingTokenSettings", e)
+        }
+    }
+
 
     var refresh by mutableStateOf(false)
 
@@ -116,54 +401,105 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
             }
         }
 
-        if (defaultModelName.value.isNotEmpty()) {
-            val loadedDefaultModel = allModels.find { model -> model["name"] == defaultModelName.value }
+        // Check if we have any models available
+        val availableModels = allModels.filter { model ->
+            val destinationPath = File(directory, model["destination"].toString())
+            destinationPath.exists()
+        }
 
-            if (loadedDefaultModel != null) {
-                val destinationPath = File(directory, loadedDefaultModel["destination"].toString())
-                if(loadedModelName.value == "") {
-                    load(destinationPath.path, userThreads = user_thread.toInt())
-                }
-                currentDownloadable = Downloadable(
-                    loadedDefaultModel["name"].toString(),
-                    Uri.parse(loadedDefaultModel["source"].toString()),
-                    destinationPath
-                )
-            } else {
-                // Handle case where the model is not found
-                allModels.find { model ->
-                    val destinationPath = File(directory, model["destination"].toString())
-                    destinationPath.exists()
-                }?.let { model ->
-                    val destinationPath = File(directory, model["destination"].toString())
-                    if(loadedModelName.value == "") {
-                        load(destinationPath.path, userThreads = user_thread.toInt())
-                    }
+        if (availableModels.isNotEmpty()) {
+            // Set the first available model as currentDownloadable but don't auto-load
+            val firstModel = availableModels.first()
+            val destinationPath = File(directory, firstModel["destination"].toString())
+            currentDownloadable = Downloadable(
+                firstModel["name"].toString(),
+                Uri.parse(firstModel["source"].toString()),
+                destinationPath
+            )
+            
+            // If we have a default model and it exists, use it
+            if (defaultModelName.value.isNotEmpty()) {
+                val defaultModel = availableModels.find { model -> model["name"] == defaultModelName.value }
+                if (defaultModel != null) {
+                    val defaultPath = File(directory, defaultModel["destination"].toString())
                     currentDownloadable = Downloadable(
-                        model["name"].toString(),
-                        Uri.parse(model["source"].toString()),
-                        destinationPath
+                        defaultModel["name"].toString(),
+                        Uri.parse(defaultModel["source"].toString()),
+                        defaultPath
                     )
                 }
             }
-        } else{
-            allModels.find { model ->
-                val destinationPath = File(directory, model["destination"].toString())
-                destinationPath.exists()
-            }?.let { model ->
-                val destinationPath = File(directory, model["destination"].toString())
-                if(loadedModelName.value == "") {
-                    load(destinationPath.path, userThreads = user_thread.toInt())
+            
+            // DON'T show download modal when models exist - show model selection instead
+            showModal = false
+            showModelSelection = true
+        } else {
+            // No models available, show download modal
+            showModal = true
+            showModelSelection = false
+        }
+    }
+
+    // New function to switch between models
+    fun switchModel(modelName: String, directory: File) {
+        val model = allModels.find { it["name"] == modelName }
+        if (model != null) {
+            val destinationPath = File(directory, model["destination"].toString())
+            if (destinationPath.exists()) {
+                // Unload current model if any
+                viewModelScope.launch {
+                    try {
+                        llamaAndroid.unload()
+                    } catch (e: Exception) {
+                        Log.e("MainViewModel", "Error unloading model", e)
+                    }
                 }
+                
+                // Set new model as current
                 currentDownloadable = Downloadable(
                     model["name"].toString(),
                     Uri.parse(model["source"].toString()),
                     destinationPath
                 )
+                
+                // Load the new model
+                load(destinationPath.path, userThreads = user_thread.toInt())
+                
+                // Update default model name
+                setDefaultModelName(modelName)
+                
+                Log.i("MainViewModel", "Switched to model: $modelName")
             }
-        // Attempt to find and load the first model that exists in the combined logic
+        }
+    }
 
-         }
+    // New function to get available models
+    fun getAvailableModels(directory: File): List<Map<String, String>> {
+        return allModels.filter { model ->
+            val destinationPath = File(directory, model["destination"].toString())
+            destinationPath.exists()
+        }
+    }
+
+    // Model selection UI functions
+    fun showModelSelectionDialog() {
+        showModelSelection = true
+    }
+
+    fun hideModelSelectionDialog() {
+        showModelSelection = false
+        selectedModelForSwitch = ""
+    }
+
+    fun selectModelForSwitch(modelName: String) {
+        selectedModelForSwitch = modelName
+    }
+
+    fun confirmModelSwitch(directory: File) {
+        if (selectedModelForSwitch.isNotEmpty()) {
+            switchModel(selectedModelForSwitch, directory)
+            hideModelSelectionDialog()
+        }
     }
 
 
@@ -232,7 +568,6 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
 
 
     var toggler by mutableStateOf(false)
-    var showModal by  mutableStateOf(true)
     var showAlert by mutableStateOf(false)
     var switchModal by mutableStateOf(false)
     var currentDownloadable: Downloadable? by mutableStateOf(null)
@@ -253,51 +588,86 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
     }
 
     fun send() {
+        val reserveTokens = 256
         val userMessage = removeExtraWhiteSpaces(message)
         message = ""
 
         // Add to messages console.
         if (userMessage != "" && userMessage != " ") {
             if(first){
-                addMessage("system", "This is a conversation between User and Iris, a friendly chatbot. Iris is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision.")
+                addMessage("system", "This is a conversation between User and Iris, a friendly chatbot. Iris is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision. When responding, Iris should use <think> tags to show its reasoning process before providing the final answer.")
                 addMessage("user", "Hi")
                 addMessage("assistant", "How may I help You?")
                 first = false
             }
 
             addMessage("user", userMessage)
+            persistChat()
 
+            // Start performance monitoring
+            startGeneration()
 
             viewModelScope.launch {
                 try {
-                    llamaAndroid.send(llamaAndroid.getTemplate(messages))
+                    var workingMessages = messages.toMutableList()
+                    var prompt: String
+                    var promptTokens: Int
+                    val reserve = reserveTokens
+
+                    // Trim history until it fits within the context window
+                    while (true) {
+                        prompt = com.nervesparks.iris.llm.TemplateRegistry.render(
+                            modelChatFormat,
+                            workingMessages,
+                            modelSystemPrompt,
+                            includeThinkingTags = true
+                        )
+                        promptTokens = llamaAndroid.countTokens(prompt)
+                        if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
+                            break
+                        }
+                        val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
+                        if (removeIdx >= 0) {
+                            workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
+                        } else {
+                            break
+                        }
+                    }
+
+                    if (workingMessages.size != messages.size) {
+                        messages = workingMessages
+                    }
+
+                    contextLimit = promptTokens
+                    maxContextLimit = modelContextLength
+
+                    var generatedTokens = 0
+                    llamaAndroid.send(prompt)
                         .catch {
                             Log.e(tag, "send() failed", it)
                             addMessage("error", it.message ?: "")
                         }
                         .collect { response ->
-                            // Create a new assistant message with the response
+                            generatedTokens++
+                            updateTokenCount(generatedTokens)
+                            contextLimit = promptTokens + generatedTokens
+
                             if (getIsMarked()) {
                                 addMessage("codeBlock", response)
-
                             } else {
                                 addMessage("assistant", response)
                             }
                         }
-                }
-                finally {
+                } finally {
+                    endGeneration()
                     if (!getIsCompleteEOT()) {
                         trimEOT()
                     }
                 }
-
-
+            
 
             }
         }
-
-
-
     }
 
 //    fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1) {
@@ -398,10 +768,17 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
             try {
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
-                newShowModal = false
-                showModal= false
+                showModal = false
                 showAlert = true
-                llamaAndroid.load(pathToModel, userThreads = userThreads, topK = topK, topP = topP, temp = temp)
+                
+                // Use model settings instead of default parameters
+                llamaAndroid.load(
+                    pathToModel, 
+                    userThreads = modelThreadCount, 
+                    topK = modelTopK, 
+                    topP = modelTopP, 
+                    temp = modelTemperature
+                )
                 showAlert = false
 
             } catch (exc: IllegalStateException) {
@@ -447,6 +824,29 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
         return input.replace("\\s+".toRegex(), " ")
     }
 
+    private fun persistChat() {
+        val title = messages.firstOrNull { it["role"] == "user" }?.get("content")?.take(64) ?: "Chat"
+        val baseChat = currentChat?.copy(title = title, updated = System.currentTimeMillis())
+            ?: Chat(title = title)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val id = chatRepository.saveChatWithMessages(
+                baseChat,
+                messages.mapIndexed { idx, m ->
+                    Message(
+                        chatId = baseChat.id,
+                        role = m["role"] ?: "assistant",
+                        content = m["content"] ?: "",
+                        index = idx
+                    )
+                }
+            )
+            if (currentChat == null || currentChat?.id != id) {
+                currentChat = baseChat.copy(id = id)
+            }
+        }
+    }
+
     private fun parseTemplateJson(chatData: List<Map<String, String>> ):String{
         var chatStr = ""
         for (data in chatData){
@@ -489,6 +889,7 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
     fun stop() {
         llamaAndroid.stopTextGeneration()
     }
+
 
 }
 

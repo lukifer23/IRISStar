@@ -72,7 +72,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.Indication
+import androidx.compose.foundation.IndicationInstance
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -116,6 +126,9 @@ import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.DownloadModal
 import com.nervesparks.iris.ui.components.LoadingModal
+import com.nervesparks.iris.ui.components.PerformanceMonitor
+import com.nervesparks.iris.ui.components.ModelSettingsScreen
+import com.nervesparks.iris.ui.components.ModelSelectionModal
 
 import kotlinx.coroutines.launch
 import java.io.File
@@ -130,9 +143,18 @@ fun MainChatScreen (
     dm: DownloadManager,
     models: List<Downloadable>,
     extFileDir: File?,
-
+    chatId: Long? = null,
 ){
     val kc = LocalSoftwareKeyboardController.current
+
+    // Load chat when ID provided
+    LaunchedEffect(chatId) {
+        if (chatId != null) {
+            viewModel.loadChat(chatId)
+        } else {
+            viewModel.clear()
+        }
+    }
     val windowInsets = WindowInsets.ime
     val focusManager = LocalFocusManager.current
     println("Thread started: ${Thread.currentThread().name}")
@@ -193,12 +215,27 @@ fun MainChatScreen (
                 if (viewModel.showModal) {
                     // Modal dialog to show download options
                     DownloadModal(viewModel = viewModel, dm = dm, models = models)
+                }
 
+                // Show model selection modal
+                if (viewModel.showModelSelection) {
+                    ModelSelectionModal(
+                        viewModel = viewModel,
+                        onDismiss = { viewModel.hideModelSelectionDialog() }
+                    )
                 }
 
                 if (viewModel.showAlert) {
                     // Modal dialog to show download options
                     LoadingModal(viewModel)
+                }
+
+                // Model Settings Screen
+                if (viewModel.showModelSettings) {
+                    ModelSettingsScreen(
+                        viewModel = viewModel,
+                        onBackPressed = { viewModel.hideModelSettings() }
+                    )
                 }
 
                 Column {
@@ -249,6 +286,37 @@ fun MainChatScreen (
                                             .padding(16.dp)
                                             .wrapContentHeight()
                                     )
+                                }
+                                
+                                // Model Management Buttons
+                                item {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { 
+                                                viewModel.showModelSelectionDialog()
+                                                android.util.Log.d("MainChatScreen", "Switch Model button clicked")
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                        ) {
+                                            Text("Switch Model", color = Color.White)
+                                        }
+                                        
+                                        Button(
+                                            onClick = { 
+                                                viewModel.showModal = true
+                                                viewModel.showModelSelection = false
+                                                android.util.Log.d("MainChatScreen", "Download Model button clicked")
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                        ) {
+                                            Text("Download New Model", color = Color.White)
+                                        }
+                                    }
                                 }
 
                                 // Items for Prompts_Home
@@ -309,6 +377,11 @@ fun MainChatScreen (
                         else {
 
                             LazyColumn(state = scrollState) {
+                                // Add performance monitor at the top
+                                item {
+                                    PerformanceMonitor(viewModel = viewModel)
+                                }
+                                
                                 // Track the first user and assistant messages
 
                                 var length = viewModel.messages.size
@@ -376,7 +449,7 @@ fun MainChatScreen (
                                                         )
                                                         .combinedClickable(
                                                             interactionSource = interactionSource,
-                                                            indication = ripple(color = Color.Gray),
+                                                            indication = rememberRipple(color = Color.Gray),
                                                             onLongClick = {
                                                                 if (viewModel.getIsSending()) {
                                                                     Toast
@@ -460,7 +533,7 @@ fun MainChatScreen (
                                                 }
                                                 Column(modifier = Modifier.combinedClickable(
                                                         interactionSource = interactionSource,
-                                                indication = ripple(color = Color.LightGray),
+                                                indication = rememberRipple(color = Color.LightGray),
                                                 onLongClick = {
                                                     if (viewModel.getIsSending()) {
                                                         Toast

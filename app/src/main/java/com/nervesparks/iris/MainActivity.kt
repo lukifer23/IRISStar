@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
 import java.io.File
 import androidx.compose.foundation.BorderStroke
+import android.app.Application
 import androidx.compose.foundation.border
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -67,6 +68,7 @@ import com.nervesparks.iris.ui.SettingsBottomSheet
 
 
 class MainViewModelFactory(
+    private val application: Application,
     private val llamaAndroid: LLamaAndroid,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModelProvider.Factory {
@@ -74,7 +76,7 @@ class MainViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(llamaAndroid, userPreferencesRepository) as T
+            return MainViewModel(application, llamaAndroid, userPreferencesRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
@@ -126,7 +128,7 @@ class MainActivity(
         val userPrefsRepo = UserPreferencesRepository.getInstance(applicationContext)
 
         val lLamaAndroid = LLamaAndroid.instance()
-        val viewModelFactory = MainViewModelFactory(lLamaAndroid, userPrefsRepo)
+        val viewModelFactory = MainViewModelFactory(application, lLamaAndroid, userPrefsRepo)
         viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
 
 
@@ -162,6 +164,16 @@ class MainActivity(
                 "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
                 Uri.parse("https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true"),
                 File(extFilesDir, "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf")
+            ),
+            Downloadable(
+                "NemoTron-1.5B-Q4_K_M.gguf",
+                Uri.parse("https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true"),
+                File(extFilesDir, "NemoTron-1.5B-Q4_K_M.gguf")
+            ),
+            Downloadable(
+                "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                Uri.parse("https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true"),
+                File(extFilesDir, "Qwen_Qwen3-0.6B-Q4_K_M.gguf")
             )
         )
 
@@ -254,6 +266,40 @@ class MainActivity(
                             Column (modifier = Modifier.padding(6.dp)){
                                 Text(text = "Active Model", fontSize = 16.sp, color = Color(0xFF636466), modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp))
                                 Text(text = viewModel.loadedModelName.value, fontSize = 16.sp, color = Color.White, modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp) )
+                                
+                                // Model selection button
+                                val extFilesDir = LocalContext.current.getExternalFilesDir(null)
+                                val availableModels = extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
+                                
+                                if (availableModels.size >= 1) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(40.dp)
+                                            .padding(horizontal = 8.dp)
+                                            .background(
+                                                color = Color(0xFF00BCD4),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .clickable {
+                                                viewModel.showModelSelectionDialog()
+                                            }
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Text(
+                                                text = "Switch Model (${availableModels.size} available)",
+                                                color = Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             Column(
