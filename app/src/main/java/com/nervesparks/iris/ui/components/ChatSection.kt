@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
-import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.components.ThinkingMessage
+import com.nervesparks.iris.ui.components.MetricsDashboard
 
 
 @Composable
@@ -46,7 +46,7 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
         LazyColumn(state = scrollState) {
             // Add performance monitor at the top
             item {
-                PerformanceMonitor(viewModel = viewModel)
+                MetricsDashboard(viewModel = viewModel)
             }
             
             itemsIndexed(messages.drop(3)) { index, messageMap ->

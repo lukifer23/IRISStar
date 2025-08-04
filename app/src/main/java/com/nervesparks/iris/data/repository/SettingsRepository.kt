@@ -44,6 +44,16 @@ interface SettingsRepository {
      * Save UI settings
      */
     suspend fun saveUISettings(settings: UISettings)
+
+    /**
+     * Save a snapshot of current performance metrics
+     */
+    suspend fun saveMetricsSnapshot(snapshot: MetricsSnapshot)
+
+    /**
+     * Retrieve all saved metrics snapshots
+     */
+    suspend fun getMetricsSnapshots(): List<MetricsSnapshot>
     
     /**
      * Export all settings to JSON
@@ -87,4 +97,15 @@ data class UISettings(
     val fontSize: Float = 1.0f,
     val enableAnimations: Boolean = true,
     val enableHapticFeedback: Boolean = true
-) 
+)
+
+/**
+ * Data class representing a snapshot of performance metrics
+ */
+data class MetricsSnapshot(
+    val timestamp: Long = System.currentTimeMillis(),
+    val tps: Double,
+    val ttft: Long,
+    val latency: Long,
+    val memoryUsage: Long
+)

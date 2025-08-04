@@ -1,12 +1,12 @@
 package com.nervesparks.iris.data.repository.impl
 
-import android.content.Context
 import android.util.Log
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.SettingsRepository
 import com.nervesparks.iris.data.repository.ThinkingTokenSettings
 import com.nervesparks.iris.data.repository.PerformanceSettings
 import com.nervesparks.iris.data.repository.UISettings
+import com.nervesparks.iris.data.repository.MetricsSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -18,8 +18,9 @@ import javax.inject.Inject
 class SettingsRepositoryImpl @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : SettingsRepository {
-    
+
     private val tag = "SettingsRepositoryImpl"
+    private val metricsHistory = mutableListOf<MetricsSnapshot>()
     
     override suspend fun getDefaultModelName(): String {
         return withContext(Dispatchers.IO) {
@@ -115,6 +116,17 @@ class SettingsRepositoryImpl @Inject constructor(
                 Log.e(tag, "Error saving UI settings", e)
             }
         }
+    }
+
+    override suspend fun saveMetricsSnapshot(snapshot: MetricsSnapshot) {
+        withContext(Dispatchers.IO) {
+            metricsHistory.add(snapshot)
+            Log.d(tag, "Saved metrics snapshot: $snapshot")
+        }
+    }
+
+    override suspend fun getMetricsSnapshots(): List<MetricsSnapshot> {
+        return withContext(Dispatchers.IO) { metricsHistory.toList() }
     }
     
     override suspend fun exportSettings(): String {

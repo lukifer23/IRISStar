@@ -128,7 +128,7 @@ import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.DownloadModal
 import com.nervesparks.iris.ui.components.LoadingModal
-import com.nervesparks.iris.ui.components.PerformanceMonitor
+import com.nervesparks.iris.ui.components.MetricsDashboard
 import com.nervesparks.iris.ui.components.ModelSettingsScreen
 import com.nervesparks.iris.ui.components.ModelSelectionModal
 
@@ -513,7 +513,7 @@ fun MainChatScreen (
                             LazyColumn(state = scrollState) {
                                 // Add performance monitor at the top
                                 item {
-                                    PerformanceMonitor(viewModel = viewModel)
+                                    MetricsDashboard(viewModel = viewModel)
                                 }
                                 
                                 // Track the first user and assistant messages

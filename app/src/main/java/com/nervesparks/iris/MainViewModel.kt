@@ -20,6 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import com.nervesparks.iris.data.repository.SettingsRepository
+import com.nervesparks.iris.data.repository.MetricsSnapshot
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -39,6 +41,7 @@ class MainViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val chatRepository: ChatRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
+    private val settingsRepository: SettingsRepository,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -730,7 +733,20 @@ class MainViewModel @Inject constructor(
 //        }
 //    }
 
-    suspend fun unload(){
+    suspend fun unload() {
+        try {
+            settingsRepository.saveMetricsSnapshot(
+                MetricsSnapshot(
+                    tps = tps,
+                    ttft = ttft,
+                    latency = latency,
+                    memoryUsage = memoryUsage
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(tag, "Error saving metrics snapshot", e)
+        }
+        resetPerformanceMetrics()
         llamaAndroid.unload()
     }
 
@@ -791,27 +807,40 @@ class MainViewModel @Inject constructor(
 
 
 
-    var loadedModelName = mutableStateOf("");
+    var loadedModelName = mutableStateOf("")
 
-    fun load(pathToModel: String, userThreads: Int)  {
+    fun load(pathToModel: String, userThreads: Int) {
         viewModelScope.launch {
-            try{
+            try {
+                settingsRepository.saveMetricsSnapshot(
+                    MetricsSnapshot(
+                        tps = tps,
+                        ttft = ttft,
+                        latency = latency,
+                        memoryUsage = memoryUsage
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e(tag, "Error saving metrics snapshot", e)
+            }
+            resetPerformanceMetrics()
+            try {
                 llamaAndroid.unload()
-            } catch (exc: IllegalStateException){
+            } catch (exc: IllegalStateException) {
                 Log.e(tag, "load() failed", exc)
             }
             try {
-                var modelName = pathToModel.split("/")
+                val modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
                 showModal = false
                 showAlert = true
-                
+
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
-                    pathToModel, 
-                    userThreads = modelThreadCount, 
-                    topK = modelTopK, 
-                    topP = modelTopP, 
+                    pathToModel,
+                    userThreads = modelThreadCount,
+                    topK = modelTopK,
+                    topP = modelTopP,
                     temp = modelTemperature
                 )
                 showAlert = false
