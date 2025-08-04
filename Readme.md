@@ -1,4 +1,4 @@
-<h2><a href="https://play.google.com/store/apps/details?id=com.nervesparks.irisGPT&hl=en_IN"  style="color: white;">Iris</a></h2>
+<h2>IrisStar</h2>
 
 ## Project Description
 
@@ -36,13 +36,9 @@
   </div>
 </div>
 
-## Installation
-- Get IRIS (offline GPT) on Google Play:
-
-  [Get it on Google Play](https://play.google.com/store/apps/details?id=com.nervesparks.irisGPT&hl=en_IN)
 ## Run
 
-- Go to releases : https://github.com/nerve-sparks/iris_android/releases
+- Go to releases : https://github.com/lukifer23/IRISStar/releases
 - Download app
 - Install app
 
@@ -85,20 +81,13 @@ On opening the app, users can download suggested models to optimize performance 
 - Clone this repository and import into Android Studio
 
 ```bash
- git clone https://github.com/nerve-sparks/iris_android.git
+ git clone https://github.com/lukifer23/IRISStar.git
 ```
 
-- Clone the llama.cpp repository in the same folder as iris_android
+- Clone the llama.cpp repository in the same folder as IRISStar
 
 ```bash
  git clone https://github.com/ggerganov/llama.cpp
-```
-- Navigate to the llama.cpp directory and checkout a specific commit for proper compatibility:
-
-```bash
-cd llama.cpp
-git checkout 1f922254f0c984a8fb9fbaa0c390d7ffae49aedb
-cd ..
 ```
 - Open developer options on the Android mobile phone.
 - Enable developer options.
@@ -127,7 +116,3 @@ cd ..
    git push origin my-new-feature
    ```
 5. **Open a Pull Request.**
-
-## Maintained by Nerve Sparks
-
-- Visit www.nervesparks.com to contact us.
