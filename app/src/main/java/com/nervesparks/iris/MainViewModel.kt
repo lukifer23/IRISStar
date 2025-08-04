@@ -170,6 +170,36 @@ class MainViewModel @Inject constructor(
 
     var eot_str = ""
 
+    // Quick action and attachment handlers
+    var lastQuickAction by mutableStateOf<String?>(null)
+        private set
+    var lastAttachmentAction by mutableStateOf<String?>(null)
+        private set
+
+    fun onLatestNews() {
+        lastQuickAction = "latest_news"
+    }
+
+    fun onCreateImages() {
+        lastQuickAction = "create_images"
+    }
+
+    fun onCartoonStyle() {
+        lastQuickAction = "cartoon_style"
+    }
+
+    fun onCameraAttachment() {
+        lastAttachmentAction = "camera"
+    }
+
+    fun onPhotosAttachment() {
+        lastAttachmentAction = "photos"
+    }
+
+    fun onFilesAttachment() {
+        lastAttachmentAction = "files"
+    }
+
     // Performance monitoring variables
     var tps by mutableStateOf(0.0) // Tokens per second
     var ttft by mutableStateOf(0L) // Time to first token (milliseconds)

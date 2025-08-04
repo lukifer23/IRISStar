@@ -42,6 +42,12 @@ fun ModernChatInput(
     onSend: () -> Unit,
     onAttachmentClick: () -> Unit,
     onVoiceClick: () -> Unit,
+    onLatestNews: () -> Unit = {},
+    onCreateImages: () -> Unit = {},
+    onCartoonStyle: () -> Unit = {},
+    onCameraClick: () -> Unit = {},
+    onPhotosClick: () -> Unit = {},
+    onFilesClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     placeholder: String = "Ask anything",
     enabled: Boolean = true
@@ -58,9 +64,9 @@ fun ModernChatInput(
     ) {
         // Quick action buttons (horizontal row)
         QuickActionsRow(
-            onLatestNews = { /* TODO: Implement latest news */ },
-            onCreateImages = { /* TODO: Implement image creation */ },
-            onCartoonStyle = { /* TODO: Implement cartoon style */ }
+            onLatestNews = onLatestNews,
+            onCreateImages = onCreateImages,
+            onCartoonStyle = onCartoonStyle
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -83,7 +89,10 @@ fun ModernChatInput(
         ) {
             // Attachment button
             IconButton(
-                onClick = { showAttachmentDialog = true },
+                onClick = {
+                    showAttachmentDialog = true
+                    onAttachmentClick()
+                },
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -147,9 +156,9 @@ fun ModernChatInput(
         if (showAttachmentDialog) {
             AttachmentDialog(
                 onDismiss = { showAttachmentDialog = false },
-                onCameraClick = { /* TODO: Implement camera */ },
-                onPhotosClick = { /* TODO: Implement photos */ },
-                onFilesClick = { /* TODO: Implement files */ }
+                onCameraClick = onCameraClick,
+                onPhotosClick = onPhotosClick,
+                onFilesClick = onFilesClick
             )
         }
     }
