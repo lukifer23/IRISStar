@@ -208,6 +208,11 @@ class UserPreferencesRepository private constructor(context: Context) {
         return sharedPreferences.getBoolean(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, true)
     }
 
+    // Clear all stored preferences
+    fun clearAll() {
+        sharedPreferences.edit().clear().apply()
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: UserPreferencesRepository? = null
