@@ -21,6 +21,16 @@ private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
 private const val KEY_SHOW_THINKING_TOKENS = "show_thinking_tokens"
 private const val KEY_THINKING_TOKEN_STYLE = "thinking_token_style"
 
+// UI settings keys
+private const val KEY_UI_THEME = "ui_theme"
+private const val KEY_UI_FONT_SIZE = "ui_font_size"
+private const val KEY_UI_ENABLE_ANIMATIONS = "ui_enable_animations"
+private const val KEY_UI_ENABLE_HAPTIC_FEEDBACK = "ui_enable_haptic_feedback"
+
+// Performance settings keys
+private const val KEY_PERF_ENABLE_MEMORY_OPTIMIZATION = "perf_enable_memory_optimization"
+private const val KEY_PERF_ENABLE_BACKGROUND_PROCESSING = "perf_enable_background_processing"
+
 class UserPreferencesRepository private constructor(context: Context) {
 
     private val sharedPreferences =
@@ -146,6 +156,56 @@ class UserPreferencesRepository private constructor(context: Context) {
 
     fun getThinkingTokenStyle(): String {
         return sharedPreferences.getString(KEY_THINKING_TOKEN_STYLE, "COLLAPSIBLE") ?: "COLLAPSIBLE"
+    }
+
+    // UI settings
+    fun setUITheme(theme: String) {
+        sharedPreferences.edit().putString(KEY_UI_THEME, theme).apply()
+    }
+
+    fun getUITheme(): String {
+        return sharedPreferences.getString(KEY_UI_THEME, "DARK") ?: "DARK"
+    }
+
+    fun setUIFontSize(fontSize: Float) {
+        sharedPreferences.edit().putFloat(KEY_UI_FONT_SIZE, fontSize).apply()
+    }
+
+    fun getUIFontSize(): Float {
+        return sharedPreferences.getFloat(KEY_UI_FONT_SIZE, 1.0f)
+    }
+
+    fun setUIEnableAnimations(enable: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_UI_ENABLE_ANIMATIONS, enable).apply()
+    }
+
+    fun getUIEnableAnimations(): Boolean {
+        return sharedPreferences.getBoolean(KEY_UI_ENABLE_ANIMATIONS, true)
+    }
+
+    fun setUIEnableHapticFeedback(enable: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_UI_ENABLE_HAPTIC_FEEDBACK, enable).apply()
+    }
+
+    fun getUIEnableHapticFeedback(): Boolean {
+        return sharedPreferences.getBoolean(KEY_UI_ENABLE_HAPTIC_FEEDBACK, true)
+    }
+
+    // Performance settings
+    fun setPerfEnableMemoryOptimization(enable: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, enable).apply()
+    }
+
+    fun getPerfEnableMemoryOptimization(): Boolean {
+        return sharedPreferences.getBoolean(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, true)
+    }
+
+    fun setPerfEnableBackgroundProcessing(enable: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, enable).apply()
+    }
+
+    fun getPerfEnableBackgroundProcessing(): Boolean {
+        return sharedPreferences.getBoolean(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, true)
     }
 
     companion object {

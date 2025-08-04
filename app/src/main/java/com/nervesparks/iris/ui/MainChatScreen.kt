@@ -211,7 +211,10 @@ fun MainChatScreen (
 
 
             // Screen content
-            Column() {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
 
                 // Model Status Indicator
                 Card(
@@ -326,11 +329,9 @@ fun MainChatScreen (
                     )
                 }
 
-                Column {
-
-
+                // Chat area with weight to take remaining space
+                Column(modifier = Modifier.weight(1f)) {
                     val scrollState = rememberLazyListState()
-
 
                     Box(modifier = Modifier
                         .weight(1f)

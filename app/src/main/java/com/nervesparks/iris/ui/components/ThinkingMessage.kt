@@ -29,10 +29,10 @@ import com.nervesparks.iris.MainViewModel
 fun ThinkingMessage(
     message: String,
     viewModel: MainViewModel,
+    showThinkingTokens: Boolean,
     onLongClick: () -> Unit
 ) {
     var isThinkingExpanded by remember { mutableStateOf(true) } // Start expanded when thinking content is detected
-    var showThinkingTokens by remember { mutableStateOf(true) } // Always show thinking tokens
     
     // Parse via centralised parser
     val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message)
@@ -54,7 +54,7 @@ fun ThinkingMessage(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -69,7 +69,7 @@ fun ThinkingMessage(
                 Icon(
                     imageVector = Icons.Default.Info,
                     contentDescription = "Thinking",
-                    tint = MaterialTheme.colorScheme.tertiary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 
@@ -77,7 +77,7 @@ fun ThinkingMessage(
                 
                 Text(
                     text = "Reasoning Process",
-                    color = MaterialTheme.colorScheme.tertiary,
+                    color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -95,7 +95,7 @@ fun ThinkingMessage(
                     Icon(
                         imageVector = if (isThinkingExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = if (isThinkingExpanded) "Hide thinking" else "Show thinking",
-                        tint = MaterialTheme.colorScheme.tertiary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.graphicsLayer { rotationZ = rotation }
                     )
                 }
@@ -113,7 +113,7 @@ fun ThinkingMessage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Column(
@@ -122,13 +122,13 @@ fun ThinkingMessage(
                             Text(
                                 text = "Thinking Process:",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.tertiary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = thinkingContent,
-                                color = MaterialTheme.colorScheme.tertiary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -144,7 +144,7 @@ fun ThinkingMessage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onLongClick() },
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0f3460)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Column(
@@ -153,14 +153,14 @@ fun ThinkingMessage(
                         Text(
                             text = "Final Answer:",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF4CAF50),
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (outputContent.isNotEmpty()) outputContent else message,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
@@ -176,20 +176,19 @@ fun ThinkingMessage(
                 Text(
                     text = "Show thinking tokens",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Switch(
                     checked = showThinkingTokens,
                     onCheckedChange = { 
-                        showThinkingTokens = it
                         viewModel.updateShowThinkingTokens(it)
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.tertiary,
-                        checkedTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
-                        uncheckedThumbColor = Color.White.copy(alpha = 0.5f),
-                        uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                     )
                 )
             }

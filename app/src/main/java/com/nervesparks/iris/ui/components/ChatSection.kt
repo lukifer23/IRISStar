@@ -74,6 +74,7 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                                 ThinkingMessage(
                                     message = content,
                                     viewModel = viewModel,
+                                    showThinkingTokens = true,
                                     onLongClick = {
                                         if (viewModel.getIsSending()) {
                                             Toast.makeText(

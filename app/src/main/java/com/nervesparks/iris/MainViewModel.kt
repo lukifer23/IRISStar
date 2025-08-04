@@ -80,6 +80,9 @@ class MainViewModel @Inject constructor(
     var showThinkingTokens by mutableStateOf(true)
     var thinkingTokenStyle by mutableStateOf("COLLAPSIBLE") // COLLAPSIBLE, ALWAYS_VISIBLE, HIDDEN
 
+    var downloadableModels by mutableStateOf<List<Downloadable>>(emptyList())
+        private set
+
     private val _defaultModelName = mutableStateOf("")
     val defaultModelName: State<String> = _defaultModelName
 
