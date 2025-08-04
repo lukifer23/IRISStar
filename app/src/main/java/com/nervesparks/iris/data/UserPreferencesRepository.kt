@@ -1,6 +1,7 @@
 package com.nervesparks.iris.data
 
 import android.content.Context
+import com.nervesparks.iris.data.repository.ModelConfiguration
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
@@ -16,6 +17,8 @@ private const val KEY_MODEL_CONTEXT_LENGTH = "model_context_length"
 private const val KEY_MODEL_SYSTEM_PROMPT = "model_system_prompt"
 private const val KEY_MODEL_CHAT_FORMAT = "model_chat_format"
 private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
+private const val KEY_CACHED_MODELS = "cached_models"
+private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
 
 // Thinking token settings keys
 private const val KEY_SHOW_THINKING_TOKENS = "show_thinking_tokens"
@@ -139,6 +142,40 @@ class UserPreferencesRepository private constructor(context: Context) {
 
     fun getModelThreadCount(): Int {
         return sharedPreferences.getInt(KEY_MODEL_THREAD_COUNT, 4)
+    }
+
+    // Per-model configuration
+    fun getModelConfiguration(modelName: String): ModelConfiguration {
+        val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
+        return ModelConfiguration(
+            temperature = sharedPreferences.getFloat(prefix + "temperature", 0.7f),
+            topP = sharedPreferences.getFloat(prefix + "top_p", 0.9f),
+            topK = sharedPreferences.getInt(prefix + "top_k", 40),
+            threadCount = sharedPreferences.getInt(prefix + "thread_count", 2),
+            contextLength = sharedPreferences.getInt(prefix + "context_length", 4096),
+            systemPrompt = sharedPreferences.getString(prefix + "system_prompt", "") ?: ""
+        )
+    }
+
+    fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
+        val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
+        sharedPreferences.edit().apply {
+            putFloat(prefix + "temperature", config.temperature)
+            putFloat(prefix + "top_p", config.topP)
+            putInt(prefix + "top_k", config.topK)
+            putInt(prefix + "thread_count", config.threadCount)
+            putInt(prefix + "context_length", config.contextLength)
+            putString(prefix + "system_prompt", config.systemPrompt)
+            apply()
+        }
+    }
+
+    fun getCachedModels(): String {
+        return sharedPreferences.getString(KEY_CACHED_MODELS, "") ?: ""
+    }
+
+    fun setCachedModels(json: String) {
+        sharedPreferences.edit().putString(KEY_CACHED_MODELS, json).apply()
     }
 
     // Thinking token settings

@@ -38,6 +38,7 @@ class MainViewModel @Inject constructor(
     private val llamaAndroid: LLamaAndroid,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val chatRepository: ChatRepository,
+    private val modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
     application: Application
 ) : AndroidViewModel(application) {
@@ -90,6 +91,9 @@ class MainViewModel @Inject constructor(
         loadDefaultModelName()
         loadModelSettings()
         loadThinkingTokenSettings()
+        viewModelScope.launch {
+            allModels = modelRepository.refreshAvailableModels()
+        }
     }
     private fun loadDefaultModelName(){
         try {
@@ -122,35 +126,7 @@ class MainViewModel @Inject constructor(
     var topK by mutableStateOf(40)
     var temp by mutableStateOf(0.7f)
 
-    var allModels by mutableStateOf(
-        listOf(
-            mapOf(
-                "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
-                "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf"
-            ),
-            mapOf(
-                "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
-                "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
-            ),
-            mapOf(
-                "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
-                "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf"
-            ),
-            mapOf(
-                "name" to "NemoTron-1.5B-Q4_K_M.gguf",
-                "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
-                "destination" to "NemoTron-1.5B-Q4_K_M.gguf"
-            ),
-            mapOf(
-                "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
-                "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
-            )
-        )
-    )
+    var allModels by mutableStateOf<List<Map<String, String>>>(emptyList())
 
     private var first by mutableStateOf(
         true
