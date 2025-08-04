@@ -202,9 +202,9 @@ fun MainChatScreen (
         viewModel.showModal = false
     }
     Box(
-        modifier = Modifier.fillMaxSize()
-
-
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding()
     ) {
         
 
@@ -575,8 +575,8 @@ fun MainChatScreen (
                                                     Box(modifier = Modifier
                                                         .padding(horizontal = 2.dp)
                                                         .background(
-                                                            color = if (role == "user") MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = if (role == "user") MaterialTheme.colorScheme.primaryContainer else Color(0xFF1E293B),
+                                                            shape = RoundedCornerShape(16.dp),
                                                         )
                                                         .combinedClickable(
                                                             interactionSource = interactionSource,
@@ -601,7 +601,7 @@ fun MainChatScreen (
                                                     ) {
                                                         Row(
                                                             modifier = Modifier
-                                                                .padding(5.dp)
+                                                                .padding(12.dp)
                                                         ) {
                                                             Box(
                                                                 modifier = Modifier
@@ -614,7 +614,8 @@ fun MainChatScreen (
                                                                     } else {
                                                                         trimmedMessage
                                                                     },
-                                                                    style = MaterialTheme.typography.bodyLarge.copy(color = if (role == "user") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface),
+                                                                    style = MaterialTheme.typography.bodyMedium,
+                                                                    color = if (role == "user") MaterialTheme.colorScheme.onPrimaryContainer else Color.White,
                                                                     modifier = Modifier
                                                                         .padding(start = 1.dp, end = 1.dp)
                                                                 )
@@ -775,7 +776,8 @@ fun MainChatScreen (
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 5.dp, top = 8.dp, bottom = 12.dp, end = 5.dp),
+                                .padding(start = 5.dp, top = 8.dp, bottom = 12.dp, end = 5.dp)
+                                .imePadding(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
 
