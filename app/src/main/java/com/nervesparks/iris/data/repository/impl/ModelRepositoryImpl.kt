@@ -2,8 +2,12 @@ package com.nervesparks.iris.data.repository.impl
 
 import android.llama.cpp.LLamaAndroid
 import android.util.Log
+import com.nervesparks.iris.data.HuggingFaceApiService
+import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
 import com.nervesparks.iris.data.repository.ModelConfiguration
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import java.io.File
 
 import javax.inject.Inject
@@ -12,47 +16,69 @@ import javax.inject.Inject
  * Implementation of ModelRepository for local model management
  */
 class ModelRepositoryImpl @Inject constructor(
-    private val llamaAndroid: LLamaAndroid
+    private val llamaAndroid: LLamaAndroid,
+    private val huggingFaceApiService: HuggingFaceApiService,
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val moshi: Moshi
 ) : ModelRepository {
     
     private val tag = "ModelRepositoryImpl"
     private var currentLoadedModel: String = ""
-    
+    private var cachedModels: List<Map<String, String>>? = null
+
+    private data class CachedModel(val name: String, val source: String, val destination: String)
+
+    override suspend fun refreshAvailableModels(): List<Map<String, String>> {
+        return try {
+            val token = userPreferencesRepository.getHuggingFaceToken().takeIf { it.isNotEmpty() }
+            val models = huggingFaceApiService.searchModels("gguf", token)
+            val mapped = models.flatMap { info ->
+                info.siblings.filter { it.filename.endsWith(".gguf") }.map { file ->
+                    val source = "https://huggingface.co/${info.id}/resolve/main/${file.filename}?download=true"
+                    mapOf(
+                        "name" to file.filename,
+                        "source" to source,
+                        "destination" to file.filename
+                    )
+                }
+            }
+            cachedModels = mapped
+
+            // persist cache
+            val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
+            val adapter = moshi.adapter<List<CachedModel>>(listType)
+            val cacheData = mapped.map { CachedModel(it["name"] ?: "", it["source"] ?: "", it["destination"] ?: "") }
+            userPreferencesRepository.setCachedModels(adapter.toJson(cacheData))
+
+            mapped
+        } catch (e: Exception) {
+            Log.e(tag, "Error refreshing model catalogue", e)
+            emptyList()
+        }
+    }
+
     override suspend fun getAvailableModels(directory: File): List<Map<String, String>> {
         return try {
-            // This would typically come from a configuration or database
-            // For now, we'll return the hardcoded list and filter by existence
-            val allModels = listOf(
-                mapOf(
-                    "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                    "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
-                    "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf"
-                ),
-                mapOf(
-                    "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                    "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
-                    "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
-                ),
-                mapOf(
-                    "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                    "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
-                    "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf"
-                ),
-                mapOf(
-                    "name" to "NemoTron-1.5B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
-                    "destination" to "NemoTron-1.5B-Q4_K_M.gguf"
-                ),
-                mapOf(
-                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
-                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
-                )
-            )
-            
-            // Filter to only include models that exist on disk
-            allModels.filter { model ->
-                val destinationPath = File(directory, model["destination"].toString())
+            if (cachedModels == null) {
+                val json = userPreferencesRepository.getCachedModels()
+                if (json.isNotEmpty()) {
+                    val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
+                    val adapter = moshi.adapter<List<CachedModel>>(listType)
+                    cachedModels = adapter.fromJson(json)?.map { model ->
+                        mapOf(
+                            "name" to model.name,
+                            "source" to model.source,
+                            "destination" to model.destination
+                        )
+                    }
+                }
+            }
+            if (cachedModels == null) {
+                refreshAvailableModels()
+            }
+
+            (cachedModels ?: emptyList()).filter { model ->
+                val destinationPath = File(directory, model["destination"].orEmpty())
                 destinationPath.exists()
             }
         } catch (e: Exception) {
@@ -102,15 +128,23 @@ class ModelRepositoryImpl @Inject constructor(
     override suspend fun setLoadedModelName(modelName: String) {
         currentLoadedModel = modelName
     }
-    
+
     override suspend fun getModelConfiguration(modelName: String): ModelConfiguration {
-        // TODO: Implement actual configuration loading from database
-        return ModelConfiguration()
+        return try {
+            userPreferencesRepository.getModelConfiguration(modelName)
+        } catch (e: Exception) {
+            Log.e(tag, "Error getting model configuration for $modelName", e)
+            ModelConfiguration()
+        }
     }
-    
+
     override suspend fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
-        // TODO: Implement actual configuration saving to database
-        Log.d(tag, "Saving configuration for model: $modelName")
+        try {
+            userPreferencesRepository.saveModelConfiguration(modelName, config)
+            Log.d(tag, "Saving configuration for model: $modelName")
+        } catch (e: Exception) {
+            Log.e(tag, "Error saving model configuration for $modelName", e)
+        }
     }
     
     override suspend fun modelExists(modelName: String, directory: File): Boolean {

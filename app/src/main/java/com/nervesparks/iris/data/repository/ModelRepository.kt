@@ -11,6 +11,11 @@ interface ModelRepository {
      * Get all available models from the specified directory
      */
     suspend fun getAvailableModels(directory: File): List<Map<String, String>>
+
+    /**
+     * Refresh the model catalogue from remote or local storage and cache the results
+     */
+    suspend fun refreshAvailableModels(): List<Map<String, String>>
     
     /**
      * Load a model by file path
