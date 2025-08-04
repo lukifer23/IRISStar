@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.data.repository.DownloadRepository
+import com.nervesparks.iris.data.repository.DownloadState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -39,10 +41,13 @@ class MainViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val chatRepository: ChatRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
+    private val downloadRepository: DownloadRepository,
     application: Application
 ) : AndroidViewModel(application) {
 
     val chats = chatRepository.observeChats()
+
+    val downloadState = downloadRepository.downloadState
 
     fun renameChat(chat: Chat, title: String) {
         viewModelScope.launch {
@@ -90,6 +95,33 @@ class MainViewModel @Inject constructor(
         loadDefaultModelName()
         loadModelSettings()
         loadThinkingTokenSettings()
+        // Observe downloads and react when completed or failed
+        viewModelScope.launch {
+            downloadState.collect { state ->
+                when (state) {
+                    is DownloadState.Completed -> {
+                        val item = state.item
+                        if (!allModels.any { it["name"] == item.name }) {
+                            val newModel = mapOf(
+                                "name" to item.name,
+                                "source" to item.source.toString(),
+                                "destination" to item.destination.path
+                            )
+                            allModels = allModels + newModel
+                        }
+                        currentDownloadable = item
+                        if (loadedModelName.value.isEmpty()) {
+                            load(item.destination.path, userThreads = user_thread.toInt())
+                        }
+                    }
+                    else -> { /* no-op for progress/failure/cancel */ }
+                }
+            }
+        }
+    }
+
+    fun downloadModel(item: Downloadable) {
+        downloadRepository.enqueue(item)
     }
     private fun loadDefaultModelName(){
         try {

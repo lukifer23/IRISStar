@@ -74,8 +74,7 @@ fun AppNavigation(
             ModelsScreen(
                 extFileDir = extFilesDir,
                 viewModel = viewModel,
-                onSearchResultButtonClick = { navController.popBackStack() },
-                dm = downloadManager
+                onSearchResultButtonClick = { navController.popBackStack() }
             )
         }
         composable(AppDestinations.PARAMS) {

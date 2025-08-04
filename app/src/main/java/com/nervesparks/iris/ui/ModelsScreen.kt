@@ -1,6 +1,5 @@
 package com.nervesparks.iris.ui
 
-import android.app.DownloadManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +30,7 @@ import com.nervesparks.iris.ui.components.ModelCard
 import java.io.File
 
 @Composable
-fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButtonClick: () -> Unit, dm: DownloadManager) {
+fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButtonClick: () -> Unit) {
     // Observe viewModel.refresh to trigger recomposition
     val refresh = viewModel.refresh
 
@@ -104,7 +103,6 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         ModelCard(
                             model["name"].toString(),
                             viewModel = viewModel,
-                            dm = dm,
                             extFilesDir = extFileDir,
                             downloadLink = source,
                             showDeleteButton = true
@@ -138,7 +136,6 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         ModelCard(
                             model["name"].toString(),
                             viewModel = viewModel,
-                            dm = dm,
                             extFilesDir = extFileDir,
                             downloadLink = source,
                             showDeleteButton = true

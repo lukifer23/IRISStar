@@ -1,6 +1,5 @@
 package com.nervesparks.iris.ui.components
 
-import android.app.DownloadManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -24,7 +23,6 @@ import java.io.File
 fun ModelCard(
     modelName: String,
     viewModel: MainViewModel,
-    dm: DownloadManager,
     extFilesDir: File,
     downloadLink: String,
     showDeleteButton: Boolean
@@ -92,7 +90,6 @@ fun ModelCard(
                 if (!showDeletedMessage) {
                     Downloadable.Button(
                         viewModel,
-                        dm,
                         Downloadable(
                             modelName,
                             source = Uri.parse(fullUrl),

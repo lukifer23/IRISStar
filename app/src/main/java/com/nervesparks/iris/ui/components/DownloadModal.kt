@@ -137,7 +137,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             Log.d("DownloadModal", "Model: ${model.name}, exists: ${model.destination.exists()}")
                         }
                         items(filteredModels) { model ->
-                            DefaultModelCard(viewModel, dm, model)
+                            DefaultModelCard(viewModel, model)
                         }
                     }
                 } else {
@@ -276,7 +276,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
 }
 
 @Composable
-private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, model: Downloadable) {
+private fun DefaultModelCard(viewModel: MainViewModel, model: Downloadable) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
@@ -295,7 +295,7 @@ private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, mode
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Downloadable.Button(viewModel, dm, model)
+            Downloadable.Button(viewModel, model)
         }
     }
 }

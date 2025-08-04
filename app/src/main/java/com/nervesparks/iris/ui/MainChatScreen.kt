@@ -174,7 +174,6 @@ fun MainChatScreen (
         "Recommend three books that can improve communication skills."
     )
 
-    val allModelsExist = models.all { model -> model.destination.exists() }
     val Prompts_Home = listOf(
         "Explains complex topics simply.",
         "Remembers previous inputs.",
@@ -198,9 +197,6 @@ fun MainChatScreen (
     val focusRequester = FocusRequester()
     var isFocused by remember { mutableStateOf(false) }
     var textFieldBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
-    if (allModelsExist) {
-        viewModel.showModal = false
-    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1133,24 +1129,6 @@ fun ModelSelectorWithDownloadModal(
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
-
-    // Search for local .gguf models
-    val localModels = remember(extFileDir) {
-        extFileDir?.listFiles { _, name -> name.endsWith(".gguf") }
-            ?.map { file ->
-                mapOf(
-                    "name" to file.nameWithoutExtension,
-                    "source" to file.toURI().toString(),
-                    "destination" to file.name
-                )
-            } ?: emptyList()
-    }
-    // Combine local and remote models, ensuring uniqueness
-    val combinedModels = remember(viewModel.allModels, localModels) {
-        (viewModel.allModels + localModels).distinctBy { it["name"] }
-    }
-    viewModel.allModels = combinedModels
-
 
     Column(Modifier.padding(20.dp)) {
 
