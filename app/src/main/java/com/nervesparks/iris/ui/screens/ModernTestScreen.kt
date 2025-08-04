@@ -87,7 +87,13 @@ fun ModernTestScreen(
                 messageText = ""
             },
             onAttachmentClick = { /* TODO: Implement attachments */ },
-            onVoiceClick = { /* TODO: Implement voice input */ }
+            onVoiceClick = { /* TODO: Implement voice input */ },
+            onLatestNews = { viewModel.onLatestNews() },
+            onCreateImages = { viewModel.onCreateImages() },
+            onCartoonStyle = { viewModel.onCartoonStyle() },
+            onCameraClick = { viewModel.onCameraAttachment() },
+            onPhotosClick = { viewModel.onPhotosAttachment() },
+            onFilesClick = { viewModel.onFilesAttachment() }
         )
     }
-} 
+}
