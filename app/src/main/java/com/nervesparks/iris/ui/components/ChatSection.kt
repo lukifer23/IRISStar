@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.PerformanceMonitor
@@ -56,17 +57,18 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                     when (role) {
                         "codeBlock" -> CodeBlockMessage(content)
                         "assistant" -> {
-                            // Format-aware reasoning detection
-                            val tagMatch = Regex("<think>[\\s\\S]*?</think>", RegexOption.IGNORE_CASE).containsMatchIn(content)
-                            val phraseMatch = content.contains("Let me think", ignoreCase = true)
-                            val hasThinkingTokens = tagMatch || phraseMatch
+                            // Enhanced thinking detection
+                            val hasThinkingTokens = content.contains("<think>") && content.contains("</think>")
                             
-                            android.util.Log.d("ChatSection", "Assistant message content: $content")
+                            android.util.Log.d("ChatSection", "=== ASSISTANT MESSAGE DEBUG ===")
+                            android.util.Log.d("ChatSection", "Content length: ${content.length}")
+                            android.util.Log.d("ChatSection", "Content preview: ${content.take(200)}...")
                             android.util.Log.d("ChatSection", "Has thinking tokens: $hasThinkingTokens")
                             android.util.Log.d("ChatSection", "Contains <think>: ${content.contains("<think>")}")
                             android.util.Log.d("ChatSection", "Contains </think>: ${content.contains("</think>")}")
                             android.util.Log.d("ChatSection", "Contains <|im_start|>: ${content.contains("<|im_start|>")}")
                             android.util.Log.d("ChatSection", "Contains Let me think: ${content.contains("Let me think")}")
+                            android.util.Log.d("ChatSection", "=== END DEBUG ===")
                             
                             if (hasThinkingTokens) {
                                 ThinkingMessage(
@@ -140,20 +142,20 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
             modifier = Modifier
                 .padding(horizontal = 2.dp)
                 .background(
-                    color = if (role == "user") Color(0xFF171E2C) else Color.Transparent,
-                    shape = RoundedCornerShape(12.dp)
+                    color = if (role == "user") Color(0xFF171E2C) else Color(0xFF1E293B),
+                    shape = RoundedCornerShape(16.dp)
                 )
                 .combinedClickable(
                     onLongClick = onLongClick,
                     onClick = {}
                 )
-                .padding(8.dp)
+                .padding(16.dp)
         ) {
             Text(
                 text = message.removePrefix("```"),
-                style = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFFA0A0A5)),
-                maxLines = 10,
-                overflow = TextOverflow.Ellipsis
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                lineHeight = 22.sp
             )
         }
 

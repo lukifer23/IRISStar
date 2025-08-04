@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +44,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
         // Header
         Text(
             "Benchmark Information",
-            style = MaterialTheme.typography.h6,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -55,7 +54,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
-            elevation = 4.dp
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -71,8 +70,8 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
         androidx.compose.material3.Button(
             modifier =Modifier.padding(vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF2563EB).copy(alpha = 1.0f),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             shape = RoundedCornerShape(8.dp),
             elevation = ButtonDefaults.buttonElevation(
@@ -89,7 +88,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             enabled = !state.isRunning,
         )
         {
-            Text(if (state.isRunning) "Benchmarking..." else "Start Benchmark", color = Color.White)
+            Text(if (state.isRunning) "Benchmarking..." else "Start Benchmark", color = MaterialTheme.colorScheme.onPrimary)
         }
 
         // Progress Indicator
@@ -112,12 +111,12 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
-                elevation = 4.dp
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         "Benchmark Results",
-                        style = MaterialTheme.typography.h6,
+                        style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     state.results.forEach { result ->
@@ -137,8 +136,8 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             } else {
                 "Calculating tokens per second..."
             },
-            style = MaterialTheme.typography.body1,
-            color = Color.Green,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -146,7 +145,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
         state.error?.let { error ->
             Text(
                 error,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(16.dp)
             )
         }

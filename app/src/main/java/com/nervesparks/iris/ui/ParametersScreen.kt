@@ -1,6 +1,7 @@
 package com.nervesparks.iris.ui
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,10 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Slider
-import androidx.compose.material.SliderDefaults
-import androidx.compose.material.TabRowDefaults.Divider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -40,13 +41,14 @@ fun ParametersScreen(viewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
 
 
             Text(
                 text = "After changing please Save the changes",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
@@ -61,8 +63,8 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     shape = RoundedCornerShape(8.dp)
                 ),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xff0f172a),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -81,7 +83,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     ) {
                         Text(
                             text = "${viewModel.user_thread.toInt()}",
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Slider(
                             value = viewModel.user_thread,
@@ -89,9 +91,9 @@ fun ParametersScreen(viewModel: MainViewModel) {
                             valueRange = 0f..8f,
                             steps = 7,
                             colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFF2563EB),
-                                activeTrackColor = Color(0xFF2563EB),
-                                inactiveTrackColor = Color.Gray
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -106,7 +108,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     ) {
                         Text(
                             text = String.format("%.2f", viewModel.temp),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Slider(
                             value = viewModel.temp,
@@ -114,9 +116,9 @@ fun ParametersScreen(viewModel: MainViewModel) {
                             valueRange = 0f..1f,
                             steps = 9,
                             colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFF2563EB),
-                                activeTrackColor = Color(0xFF2563EB),
-                                inactiveTrackColor = Color.Gray
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -131,7 +133,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     ) {
                         Text(
                             text = String.format("%.2f", viewModel.topP),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Slider(
                             value = viewModel.topP,
@@ -139,9 +141,9 @@ fun ParametersScreen(viewModel: MainViewModel) {
                             valueRange = 0f..1f,
                             steps = 9,
                             colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFF2563EB),
-                                activeTrackColor = Color(0xFF2563EB),
-                                inactiveTrackColor = Color.Gray
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -156,7 +158,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     ) {
                         Text(
                             text = "${viewModel.topK.toInt()}",
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Slider(
                             value = viewModel.topK.toFloat(),
@@ -164,9 +166,9 @@ fun ParametersScreen(viewModel: MainViewModel) {
                             valueRange = 0f..50f,
                             steps = 49,
                             colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFF2563EB),
-                                activeTrackColor = Color(0xFF2563EB),
-                                inactiveTrackColor = Color.Gray
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -187,8 +189,8 @@ fun ParametersScreen(viewModel: MainViewModel) {
             Button(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF9CA3AF).copy(alpha = 1.0f),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
                 shape = RoundedCornerShape(8.dp),
                 elevation = ButtonDefaults.buttonElevation(
@@ -219,8 +221,8 @@ fun ParametersScreen(viewModel: MainViewModel) {
             Button(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2563EB).copy(alpha = 1.0f),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(8.dp),
                 elevation = ButtonDefaults.buttonElevation(
@@ -251,15 +253,15 @@ private fun SettingSection(
 ) {
     Text(
         text = title,
-        color = Color.White,
-        style = MaterialTheme.typography.subtitle1,
+        color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold
     )
     Spacer(modifier = Modifier.height(4.dp))
     Text(
         text = description,
-        color = Color.Gray,
-        style = MaterialTheme.typography.caption
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
     )
     Spacer(modifier = Modifier.height(8.dp))
     content()
@@ -268,11 +270,11 @@ private fun SettingSection(
 
 @Composable
 private fun SectionDivider() {
-    Divider(
+    HorizontalDivider(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        color = Color.DarkGray,
+        color = MaterialTheme.colorScheme.outline,
         thickness = 1.dp
     )
 }

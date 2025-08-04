@@ -90,6 +90,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         InfoModal(
@@ -110,7 +111,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                 Text(
                     text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
                     modifier = Modifier.padding(4.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 10.sp
                 )
 
@@ -124,7 +125,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                     Icon(
                         painter = painterResource(id = R.drawable.copy1),
                         contentDescription = "Copy text",
-                        tint = Color.White.copy(alpha = 0.7f),
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -140,7 +141,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                 Icon(
                     painter = painterResource(id = R.drawable.setting_4_svgrepo_com),
                     contentDescription = "Settings",
-                    tint = Color.White.copy(alpha = 0.7f),
+                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -159,12 +160,12 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             singleLine = true,
             maxLines = 1,
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color(0xFF666666),
-                focusedBorderColor = Color(0xFFcfcfd1),
-                unfocusedLabelColor = Color(0xFF666666),
-                focusedLabelColor = Color(0xFFcfcfd1),
-                unfocusedTextColor = Color(0xFFf5f5f5),
-                focusedTextColor = Color(0xFFf7f5f5),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
             )
         )
 
@@ -217,8 +218,8 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFcfcfd1),
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             Text("Search Models")
@@ -228,7 +229,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         errorMessage?.let {
             Text(
                 text = it,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
@@ -247,8 +248,8 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xff0f172a),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
@@ -261,7 +262,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             Text(
                                 text = model["modelName"] ?: "Unknown Model",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             
                             if (model["description"]?.isNotEmpty() == true) {
@@ -269,7 +270,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 Text(
                                     text = model["description"] ?: "",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 2
                                 )
                             }
@@ -284,12 +285,12 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 Text(
                                     text = "Downloads: ${model["downloads"] ?: "0"}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.LightGray
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     text = "Likes: ${model["likes"] ?: "0"}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.LightGray
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             
@@ -298,7 +299,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 Text(
                                     text = "Tags: ${model["tags"]}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.LightGray,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1
                                 )
                             }
@@ -309,7 +310,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             Text(
                                 text = "Note: To download files, search for the specific model ID",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Yellow,
+                                color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 10.sp
                             )
                             
@@ -322,8 +323,8 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFcfcfd1),
-                                    contentColor = Color.Black
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                 )
                             ) {
                                 Text("Copy Model ID")
@@ -338,7 +339,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         if (isLoading) {
             Text(
                 text = "Searching for models...",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)

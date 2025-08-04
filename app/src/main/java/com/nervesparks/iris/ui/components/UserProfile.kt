@@ -39,7 +39,7 @@ fun UserProfile(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(DeepBlack)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -48,10 +48,10 @@ fun UserProfile(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(SurfaceDark)
+                .background(MaterialTheme.colorScheme.surface)
                 .border(
                     width = 2.dp,
-                    color = BorderColor,
+                    color = MaterialTheme.colorScheme.outline,
                     shape = CircleShape
                 )
                 .clickable { onProfileClick() },
@@ -61,7 +61,7 @@ fun UserProfile(
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = "User Avatar",
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -75,14 +75,14 @@ fun UserProfile(
             Text(
                 text = userName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium
             )
             
             Text(
                 text = userStatus,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
         
@@ -94,7 +94,7 @@ fun UserProfile(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -113,7 +113,7 @@ fun CompactUserProfile(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(DeepBlack)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -122,10 +122,10 @@ fun CompactUserProfile(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(SurfaceDark)
+                .background(MaterialTheme.colorScheme.surface)
                 .border(
                     width = 1.dp,
-                    color = BorderColor,
+                    color = MaterialTheme.colorScheme.outline,
                     shape = CircleShape
                 )
                 .clickable { onProfileClick() },
@@ -134,7 +134,7 @@ fun CompactUserProfile(
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = "User Avatar",
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -145,7 +145,7 @@ fun CompactUserProfile(
         Text(
             text = userName,
             style = MaterialTheme.typography.bodySmall,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium
         )
     }
@@ -168,7 +168,7 @@ fun UserProfileCard(
             .fillMaxWidth()
             .padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = SurfaceDark
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -181,10 +181,10 @@ fun UserProfileCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(SurfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(
                         width = 3.dp,
-                        color = BorderColor,
+                        color = MaterialTheme.colorScheme.outline,
                         shape = CircleShape
                     )
                     .clickable { onProfileClick() },
@@ -193,7 +193,7 @@ fun UserProfileCard(
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "User Avatar",
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -204,7 +204,7 @@ fun UserProfileCard(
             Text(
                 text = userName,
                 style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold
             )
             
@@ -214,7 +214,7 @@ fun UserProfileCard(
             Text(
                 text = userStatus,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -223,7 +223,7 @@ fun UserProfileCard(
             Text(
                 text = userEmail,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }

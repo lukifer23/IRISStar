@@ -1058,3 +1058,11 @@ Java_android_llama_cpp_LLamaAndroid_count_1tokens(JNIEnv *env, jobject, jlong jm
     if (n_tokens < 0) n_tokens = 0;
     return n_tokens;
 }
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_android_llama_cpp_LLamaAndroid_getMemoryUsageNative(JNIEnv *env, jobject thiz) {
+    // Get current memory usage from llama.cpp context
+    // For now, return a placeholder value since we need to access the context
+    // TODO: Implement proper memory tracking by passing context as parameter
+    return 0;
+}

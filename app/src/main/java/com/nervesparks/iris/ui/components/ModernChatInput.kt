@@ -53,7 +53,7 @@ fun ModernChatInput(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(DeepBlack)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         // Quick action buttons (horizontal row)
@@ -70,12 +70,12 @@ fun ModernChatInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    color = SurfaceDark,
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(20.dp)
                 )
                 .border(
                     width = 1.dp,
-                    color = BorderColor,
+                    color = MaterialTheme.colorScheme.outline,
                     shape = RoundedCornerShape(20.dp)
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -89,7 +89,7 @@ fun ModernChatInput(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Attach",
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -99,7 +99,7 @@ fun ModernChatInput(
                 value = value,
                 onValueChange = onValueChange,
                 textStyle = TextStyle(
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp,
                     textAlign = TextAlign.Start
                 ),
@@ -120,7 +120,7 @@ fun ModernChatInput(
                         Text(
                             text = placeholder,
                             style = TextStyle(
-                                color = TextSecondary,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 fontSize = 16.sp
                             )
                         )
@@ -137,7 +137,7 @@ fun ModernChatInput(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Voice Input",
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -207,12 +207,12 @@ private fun QuickActionButton(
             modifier = Modifier
                 .size(56.dp)
                 .background(
-                    color = SurfaceDark,
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .border(
                     width = 1.dp,
-                    color = BorderColor,
+                    color = MaterialTheme.colorScheme.outline,
                     shape = RoundedCornerShape(16.dp)
                 ),
             contentAlignment = Alignment.Center
@@ -220,7 +220,7 @@ private fun QuickActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -230,7 +230,7 @@ private fun QuickActionButton(
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             fontSize = 12.sp
         )
@@ -259,7 +259,7 @@ private fun AttachmentDialog(
                 .fillMaxWidth()
                 .padding(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = SurfaceDark
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -269,7 +269,7 @@ private fun AttachmentDialog(
                 Text(
                     text = "Choose attachment",
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
                 
@@ -326,7 +326,7 @@ private fun AttachmentOption(
         Icon(
             imageVector = icon,
             contentDescription = text,
-            tint = TextSecondary,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(24.dp)
         )
         
@@ -335,7 +335,7 @@ private fun AttachmentOption(
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 } 

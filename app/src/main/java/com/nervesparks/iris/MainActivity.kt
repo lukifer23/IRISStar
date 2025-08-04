@@ -65,11 +65,16 @@ import androidx.compose.foundation.border
 import androidx.activity.viewModels
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.SettingsBottomSheet
-import com.nervesparks.iris.ui.theme.IRISTheme
+import com.nervesparks.iris.ui.theme.IrisStarTheme
 import com.nervesparks.iris.ui.ChatListScreen
 import com.nervesparks.iris.ui.MainChatScreen
 import com.nervesparks.iris.ui.SettingsScreen
+import com.nervesparks.iris.ui.ModelsScreen
+import com.nervesparks.iris.ui.ParametersScreen
+import com.nervesparks.iris.ui.AboutScreen
+import com.nervesparks.iris.ui.BenchMarkScreen
 import com.nervesparks.iris.ui.components.ModelSelectionModal
+import com.nervesparks.iris.ui.navigation.AppNavigation
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -128,315 +133,20 @@ class MainActivity(
         }
 
         setContent {
-            IRISTheme {
-                var showSettingSheet by remember { mutableStateOf(false) }
-                var currentScreen by remember { mutableStateOf("chat_list") } // chat_list, chat, settings
-                var selectedChatId by remember { mutableStateOf<String?>(null) }
-                
-                val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-                val scope = rememberCoroutineScope()
-                
-                ModalNavigationDrawer(
-                    drawerState = drawerState,
-                    drawerContent = {
-                        ModalDrawerSheet(
-                            modifier = Modifier
-                                .width(300.dp)
-                                .fillMaxHeight(),
-                            drawerContainerColor = Color(0xFF070915)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(5.dp)
-                                    .fillMaxHeight()
-                            ) {
-                                // Top section with logo and name
-                                Column {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.logo),
-                                            contentDescription = "Centered Background Logo",
-                                            modifier = Modifier.size(35.dp),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                        Spacer(Modifier.padding(5.dp))
-                                        Text(
-                                            text = "IRIS Star",
-                                            fontWeight = FontWeight(500),
-                                            color = Color.White,
-                                            fontSize = 30.sp
-                                        )
-                                        Spacer(Modifier.weight(1f))
-                                        if (showSettingSheet) {
-                                            SettingsBottomSheet(
-                                                viewModel = viewModel,
-                                                onDismiss = { showSettingSheet = false }
-                                            )
-                                        }
-                                    }
-                                    Row(
-                                        modifier = Modifier.padding(start = 45.dp)
-                                    ) {
-                                        Text(
-                                            text = "NerveSparks",
-                                            color = Color(0xFF636466),
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                }
-                                
-                                Spacer(modifier = Modifier.height(20.dp))
-                                
-                                // Navigation menu
-                                Column(modifier = Modifier.padding(6.dp)) {
-                                    // Chat List
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(40.dp)
-                                            .padding(horizontal = 8.dp)
-                                            .background(
-                                                color = if (currentScreen == "chat_list") Color(0xFF00BCD4) else Color(0xFF16213e),
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .clickable {
-                                                currentScreen = "chat_list"
-                                                selectedChatId = null
-                                            }
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center,
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            Text(
-                                                text = "Chat List",
-                                                color = Color.White,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    
-                                    // New Chat
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(40.dp)
-                                            .padding(horizontal = 8.dp)
-                                            .background(
-                                                color = if (currentScreen == "chat") Color(0xFF00BCD4) else Color(0xFF16213e),
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .clickable {
-                                                currentScreen = "chat"
-                                                selectedChatId = null
-                                                viewModel.clear()
-                                            }
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center,
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            Text(
-                                                text = "New Chat",
-                                                color = Color.White,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    
-                                    // Settings
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(40.dp)
-                                            .padding(horizontal = 8.dp)
-                                            .background(
-                                                color = if (currentScreen == "settings") Color(0xFF00BCD4) else Color(0xFF16213e),
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .clickable {
-                                                currentScreen = "settings"
-                                            }
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center,
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            Text(
-                                                text = "Settings",
-                                                color = Color.White,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    
-                                    // Active Model Section
-                                    Text(
-                                        text = "Active Model",
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF636466),
-                                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
-                                    )
-                                    Text(
-                                        text = viewModel.loadedModelName.value,
-                                        fontSize = 16.sp,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
-                                    )
-                                    
-                                    // Model selection button
-                                    val availableModels = extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
-                                    
-                                    if (availableModels.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(40.dp)
-                                                .padding(horizontal = 8.dp)
-                                                .background(
-                                                    color = Color(0xFF00BCD4),
-                                                    shape = RoundedCornerShape(8.dp)
-                                                )
-                                                .clickable {
-                                                    viewModel.showModelSelectionDialog()
-                                                }
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.Center,
-                                                modifier = Modifier.fillMaxSize()
-                                            ) {
-                                                Text(
-                                                    text = "Switch Model (${availableModels.size} available)",
-                                                    color = Color.White,
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            }
-                                        }
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    
-                                    // Powered by section
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(end = 16.dp),
-                                        horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "powered by",
-                                            color = Color(0xFF636466),
-                                            fontSize = 14.sp
-                                        )
-                                        val context = LocalContext.current
-                                        Text(
-                                            modifier = Modifier.clickable {
-                                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = Uri.parse("https://github.com/ggerganov/llama.cpp")
-                                                }
-                                                context.startActivity(intent)
-                                            },
-                                            text = " llama.cpp",
-                                            color = Color(0xFF78797a),
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                 }
-                            }
-                        }
-                    }
-                ) {
-                    // Main content based on current screen
-                    when (currentScreen) {
-                        "chat_list" -> {
-                            ChatListScreen(
-                                viewModel = viewModel,
-                                onChatSelected = { chatId ->
-                                    selectedChatId = chatId.toString()
-                                    currentScreen = "chat"
-                                },
-                                onNewChat = {
-                                    selectedChatId = null
-                                    currentScreen = "chat"
-                                    viewModel.clear()
-                                }
-                            )
-                        }
-                        "chat" -> {
-                            MainChatScreen(
-                                onNextButtonClicked = { /* TODO */ },
-                                viewModel = viewModel,
-                                clipboard = clipboardManager,
-                                dm = downloadManager,
-                                models = models,
-                                extFileDir = extFilesDir,
-                                chatId = selectedChatId?.toLongOrNull()
-                            )
-                        }
-                        "settings" -> {
-                            SettingsScreen(
-                                onModelsScreenButtonClicked = { currentScreen = "models" },
-                                onParamsScreenButtonClicked = { currentScreen = "params" },
-                                onAboutScreenButtonClicked = { currentScreen = "about" },
-                                onBenchMarkScreenButtonClicked = { currentScreen = "benchmark" }
-                            )
-                        }
-                    }
-                }
-                
-                // Model selection modal
-                if (viewModel.showModelSelection) {
-                    ModelSelectionModal(
-                        viewModel = viewModel,
-                        onDismiss = { viewModel.showModelSelection = false }
-                    )
-                }
+            IrisStarTheme {
+                AppNavigation(
+                    viewModel = viewModel,
+                    clipboardManager = clipboardManager,
+                    downloadManager = downloadManager,
+                    models = models,
+                    extFilesDir = extFilesDir
+                )
             }
         }
     }
 }
 
-@Composable
-fun LinearGradient() {
-    val darkNavyBlue = Color(0xFF050a14)
-    val lightNavyBlue = Color(0xFF051633)
-    val gradient = Brush.linearGradient(
-        colors = listOf(darkNavyBlue, lightNavyBlue),
-        start = Offset(0f, 300f),
-        end = Offset(0f, 1000f)
 
-    )
-    Box(modifier = Modifier.background(gradient).fillMaxSize())
-}
-
-
-
-
-
-
-
-// [END android_compose_layout_material_modal_drawer]
 
 
 

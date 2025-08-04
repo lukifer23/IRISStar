@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.db.Chat
-import com.nervesparks.iris.ui.theme.CyanAccent
-import com.nervesparks.iris.ui.theme.CardBackground
+import com.nervesparks.iris.ui.theme.IrisStarTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -69,7 +68,7 @@ fun ChatListScreen(
             Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (searchQuery.isEmpty()) "No chats yet. Tap 'New Chat' to start." else "No chats match your search.",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -88,9 +87,9 @@ fun ChatListScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Text("New Chat", color = MaterialTheme.colorScheme.onTertiary)
+            Text("New Chat", color = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
@@ -111,13 +110,13 @@ private fun ChatRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(chat.title, color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Medium)
-                Text(SimpleDateFormat("MMM dd, HH:mm").format(Date(chat.updated)), color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                Text(SimpleDateFormat("MMM dd, HH:mm").format(Date(chat.updated)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = { showMenu = true }) {
                 Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onSecondary)

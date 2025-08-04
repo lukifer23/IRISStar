@@ -128,6 +128,8 @@ class LLamaAndroid {
     private external fun get_eot_str(model: Long): String
     private external fun count_tokens(model: Long, text: String): Int
 
+    private external fun getMemoryUsageNative(): Long
+
 
 
     suspend fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1): String {
@@ -198,6 +200,19 @@ class LLamaAndroid {
             when (val state = threadLocalState.get()) {
                 is State.Loaded -> {
                     res = count_tokens(state.model, text)
+                }
+                else -> {}
+            }
+        }
+        return res
+    }
+    
+    suspend fun getMemoryUsage(): Long {
+        var res = 0L
+        withContext(runLoop) {
+            when (val state = threadLocalState.get()) {
+                is State.Loaded -> {
+                    res = getMemoryUsageNative()
                 }
                 else -> {}
             }

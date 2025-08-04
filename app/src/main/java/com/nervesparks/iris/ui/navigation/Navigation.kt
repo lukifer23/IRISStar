@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.*
-import com.nervesparks.iris.ui.theme.*
+import com.nervesparks.iris.ui.theme.IrisStarTheme
 import com.nervesparks.iris.ui.ChatListScreen
 import java.io.File
 import androidx.compose.material.icons.filled.Check
@@ -45,7 +45,7 @@ private fun SettingsSection(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp)
         )
         
@@ -71,7 +71,7 @@ private fun SettingsItemRow(
         Icon(
             imageVector = item.icon,
             contentDescription = null,
-            tint = TextSecondary,
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.size(24.dp)
         )
         
@@ -80,7 +80,7 @@ private fun SettingsItemRow(
         Text(
             text = item.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         
@@ -89,17 +89,17 @@ private fun SettingsItemRow(
                 checked = item.isEnabled,
                 onCheckedChange = { /* TODO: Implement toggle */ },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = CyanAccent,
-                    checkedTrackColor = CyanAccent.copy(alpha = 0.5f),
-                    uncheckedThumbColor = TextSecondary,
-                    uncheckedTrackColor = BorderColor
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outline
                 )
             )
         } else if (item.isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Selected",
-                tint = CyanAccent,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         }

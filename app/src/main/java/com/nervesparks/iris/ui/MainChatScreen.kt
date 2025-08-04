@@ -53,8 +53,11 @@ import androidx.compose.material.SliderDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,7 +122,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Dialog
 import com.nervesparks.iris.Downloadable
-import com.nervesparks.iris.LinearGradient
 import com.nervesparks.iris.MainViewModel
 
 import com.nervesparks.iris.R
@@ -144,6 +146,7 @@ fun MainChatScreen (
     models: List<Downloadable>,
     extFileDir: File?,
     chatId: Long? = null,
+    onBackPressed: () -> Unit = {},
 ){
     val kc = LocalSoftwareKeyboardController.current
 
@@ -203,7 +206,7 @@ fun MainChatScreen (
 
 
     ) {
-        LinearGradient()
+        
 
 
 
@@ -220,35 +223,78 @@ fun MainChatScreen (
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Current Model",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = viewModel.loadedModelName.value.ifEmpty { "No model loaded" },
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium
-                            )
+                        // Top row with back button and model info
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Back button
+                            IconButton(
+                                onClick = onBackPressed,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = "Back to Chat List",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Current Model",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = viewModel.loadedModelName.value.ifEmpty { "No model loaded" }
+                                        .replace("Qwen_Qwen3-0.6B-Q4_K_M.gguf", "Qwen3-0.6B")
+                                        .replace("Llama-3.2-3B-Instruct-Q4_K_L.gguf", "Llama3.2-3B")
+                                        .replace("Llama-3.2-1B-Instruct-Q6_K_L.gguf", "Llama3.2-1B")
+                                        .replace("stablelm-2-1_6b-chat.Q4_K_M.imx.gguf", "StableLM-2-1.6B")
+                                        .replace("NemoTron-1.5B-Q4_K_M.gguf", "NemoTron-1.5B"),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            
+                            IconButton(
+                                onClick = { viewModel.showModelSelectionDialog() },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Change Model",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                         
-                        Button(
-                            onClick = { viewModel.showModelSelectionDialog() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            shape = RoundedCornerShape(8.dp)
+                        // Compact model settings button
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            Text("Change Model", color = MaterialTheme.colorScheme.onPrimary)
+                            IconButton(
+                                onClick = { viewModel.showModelSettings() },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Model Settings",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -315,7 +361,7 @@ fun MainChatScreen (
                                     Text(
                                         text = "Hello, Ask me " + "Anything",
                                         style = MaterialTheme.typography.bodySmall.copy(
-                                            color = Color.White,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             fontWeight = FontWeight.W300,
                                             letterSpacing = 1.sp,
                                             fontSize = 50.sp,
@@ -386,9 +432,9 @@ fun MainChatScreen (
                                                     android.util.Log.d("MainChatScreen", "Switch Model button clicked")
                                                 },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                             ) {
-                                                Text("Switch Model", color = Color.White)
+                                                Text("Switch Model", color = MaterialTheme.colorScheme.onPrimary)
                                             }
                                             
                                             Button(
@@ -398,9 +444,9 @@ fun MainChatScreen (
                                                     android.util.Log.d("MainChatScreen", "Download Model button clicked")
                                                 },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                                             ) {
-                                                Text("Download New Model", color = Color.White)
+                                                Text("Download New Model", color = MaterialTheme.colorScheme.onSecondary)
                                             }
                                         }
                                     }
@@ -415,7 +461,7 @@ fun MainChatScreen (
                                             .height(60.dp)
                                             .padding(8.dp)
                                             .background(
-                                                Color(0xFF010825),
+                                                MaterialTheme.colorScheme.surfaceVariant,
                                                 shape = RoundedCornerShape(20.dp)
                                             )
                                     ) {
@@ -429,14 +475,14 @@ fun MainChatScreen (
                                             Box(
                                                 modifier = Modifier
                                                     .size(20.dp) // Icon size
-                                                    .background(Color.White, shape = CircleShape)
+                                                    .background(MaterialTheme.colorScheme.onSurfaceVariant, shape = CircleShape)
                                                     .padding(4.dp),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     painter = painterResource(id = R.drawable.info_svgrepo_com),
                                                     contentDescription = null,
-                                                    tint = Color.Black
+                                                    tint = MaterialTheme.colorScheme.surfaceVariant
                                                 )
                                             }
 
@@ -445,7 +491,7 @@ fun MainChatScreen (
                                             // Text
                                             Text(
                                                 text = Prompts_Home.getOrNull(index) ?: "",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
+                                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                                                 textAlign = TextAlign.Start, // Left align the text
                                                 fontSize = 12.sp,
                                                 modifier = Modifier
@@ -529,9 +575,7 @@ fun MainChatScreen (
                                                     Box(modifier = Modifier
                                                         .padding(horizontal = 2.dp)
                                                         .background(
-                                                            color = if (role == "user") Color(
-                                                                0xFF171E2C
-                                                            ) else Color.Transparent,
+                                                            color = if (role == "user") MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                                                             shape = RoundedCornerShape(12.dp),
                                                         )
                                                         .combinedClickable(
@@ -570,7 +614,7 @@ fun MainChatScreen (
                                                                     } else {
                                                                         trimmedMessage
                                                                     },
-                                                                    style = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFFA0A0A5)),
+                                                                    style = MaterialTheme.typography.bodyLarge.copy(color = if (role == "user") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface),
                                                                     modifier = Modifier
                                                                         .padding(start = 1.dp, end = 1.dp)
                                                                 )
@@ -600,7 +644,7 @@ fun MainChatScreen (
                                                 modifier = Modifier
                                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                                                     .background(
-                                                        Color.Black,
+                                                        MaterialTheme.colorScheme.surfaceVariant,
                                                         shape = RoundedCornerShape(8.dp)
                                                     )
                                                     .fillMaxWidth()
@@ -658,7 +702,7 @@ fun MainChatScreen (
                                                             trimmedMessage
                                                         },
                                                         style = MaterialTheme.typography.bodyLarge.copy(
-                                                            color = Color(0xFFA0A0A5)
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         ),
                                                         modifier = Modifier.padding(16.dp)
                                                     )
@@ -699,13 +743,13 @@ fun MainChatScreen (
                                         }
                                         .padding(horizontal = 8.dp),
                                     shape = MaterialTheme.shapes.medium,
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF030815))
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
 
                                     Text(
                                         text = Prompts[index],
                                         style = MaterialTheme.typography.bodySmall.copy(
-                                            color = Color(0xFFA0A0A5),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 12.sp,
                                         ),
                                         textAlign = TextAlign.Center,
@@ -724,7 +768,7 @@ fun MainChatScreen (
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF050B16))
+                            .background(MaterialTheme.colorScheme.surface)
 
 
                     ) {
@@ -757,7 +801,7 @@ fun MainChatScreen (
                                         .weight(1f),
                                     painter = painterResource(id = R.drawable.microphone_new_svgrepo_com),
                                     contentDescription = "Mic",
-                                    tint = Color(0xFFDDDDE4) // Optional: set the color of the icon
+                                    tint = MaterialTheme.colorScheme.onSurface // Optional: set the color of the icon
                                 )
                             }
 
@@ -819,14 +863,14 @@ fun MainChatScreen (
                                     },
                                 shape = RoundedCornerShape(size = 18.dp),
                                 colors = TextFieldDefaults.colors(
-                                    focusedTextColor = Color(0xFFBECBD1),
-                                    unfocusedTextColor = Color(0xFFBECBD1),
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                                     focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent, // Optional, makes the indicator disappear
-                                    focusedLabelColor = Color(0xFF626568),
-                                    cursorColor = Color(0xFF626568),
-                                    unfocusedContainerColor = Color(0xFF171E2C),
-                                    focusedContainerColor = Color(0xFF22314A)
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                                    cursorColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface
                                 )
                             )
 
@@ -853,7 +897,7 @@ fun MainChatScreen (
                                             .weight(1f),
                                         painter = painterResource(id = R.drawable.send_2_svgrepo_com),
                                         contentDescription = "Send",
-                                        tint = Color(0xFFDDDDE4)
+                                        tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             } else if (viewModel.getIsSending()) {
@@ -865,7 +909,7 @@ fun MainChatScreen (
                                             .size(28.dp),
                                         painter = painterResource(id = R.drawable.square_svgrepo_com),
                                         contentDescription = "Stop",
-                                        tint = Color(0xFFDDDDE4)
+                                        tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -890,7 +934,7 @@ fun SettingsBottomSheet(
     ModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF01081a),
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             modifier = Modifier
@@ -898,7 +942,7 @@ fun SettingsBottomSheet(
         ){
             Text(
                 text = "Settings",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -910,13 +954,13 @@ fun SettingsBottomSheet(
                     Box(
                         modifier = Modifier
                             .background(
-                                color = Color(0xFF14161f),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
                                 shape = RoundedCornerShape(8.dp),
                             )
                             .border(
                                 border = BorderStroke(
                                     width = 1.dp,
-                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                    color = MaterialTheme.colorScheme.outline
                                 ),
                                 shape = RoundedCornerShape(8.dp)
                             )
@@ -925,13 +969,13 @@ fun SettingsBottomSheet(
                         Column {
                             Text(
                                 text = "Select thread for process, 0 for default",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(20.dp))
 
                             Text(
                                 text = "${viewModel.user_thread.toInt()}",
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Slider(
                                 value = viewModel.user_thread,
@@ -942,15 +986,15 @@ fun SettingsBottomSheet(
                                 valueRange = 0f..8f,
                                 steps = 7,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = Color(0xFF6200EE),
-                                    activeTrackColor = Color(0xFF6200EE),
-                                    inactiveTrackColor = Color.Gray
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                                 ),
                             )
                             Spacer(modifier = Modifier.height(15.dp))
                             Text(
                                 text = "After changing thread please Save the changes!!",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(15.dp))
                             Button(
@@ -958,8 +1002,8 @@ fun SettingsBottomSheet(
                                     .fillMaxWidth(),
 
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.DarkGray.copy(alpha = 1.0f), // Set the containerColor to transparent
-                                    contentColor = Color.White,
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
                                 ),
                                 shape = RoundedCornerShape(8.dp), // Slightly more rounded corners
                                 elevation = ButtonDefaults.buttonElevation(
@@ -1052,13 +1096,13 @@ fun ScrollToBottomButton(
                     .size(56.dp),
                 // Ensures a circular shape
                 shape = RoundedCornerShape(percent = 50),
-                containerColor = Color.White.copy(alpha = 0.5f),
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
                     contentDescription = "Scroll to bottom",
-                    tint = Color.White // White icon for better visibility
+                    tint = MaterialTheme.colorScheme.onPrimary // White icon for better visibility
                 )
             }
         }
@@ -1134,18 +1178,18 @@ fun ModelSelectorWithDownloadModal(
                     icon,
                     contentDescription = "Toggle dropdown",
                     Modifier.clickable { mExpanded = !mExpanded },
-                    tint =Color(0xFFcfcfd1)
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             },
-            textStyle = TextStyle(color = Color(0xFFf5f5f5)),
+            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface),
             readOnly = true,
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color(0xFF666666),
-                focusedBorderColor = Color(0xFFcfcfd1),
-                unfocusedLabelColor = Color(0xFF666666),
-                focusedLabelColor = Color(0xFFcfcfd1),
-                unfocusedTextColor = Color(0xFFf5f5f5),
-                focusedTextColor = Color(0xFFf7f5f5),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
             )
         )
 
@@ -1153,10 +1197,10 @@ fun ModelSelectorWithDownloadModal(
 
         DropdownMenu(
             modifier = Modifier
-                .background(Color(0xFF01081a))
+                .background(MaterialTheme.colorScheme.surface)
                 .width(with(LocalDensity.current) { mTextFieldSize.width.toDp() })
                 .padding(top = 2.dp)
-                .border(1.dp, color = Color.LightGray.copy(alpha = 0.5f)),
+                .border(1.dp, color = MaterialTheme.colorScheme.outline),
             expanded = mExpanded,
             onDismissRequest = {
                 mExpanded = false
@@ -1165,7 +1209,7 @@ fun ModelSelectorWithDownloadModal(
             viewModel.allModels.forEach { model ->
                 DropdownMenuItem(
                     modifier = Modifier
-                        .background(color = Color(0xFF090b1a))
+                        .background(color = MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 1.dp, vertical = 0.dp),
                     onClick = {
                         mSelectedText = model["name"].toString()
@@ -1183,7 +1227,7 @@ fun ModelSelectorWithDownloadModal(
                         viewModel.currentDownloadable = downloadable
                     }
                 ) {
-                    model["name"]?.let { Text(text = it, color = Color.White) }
+                    model["name"]?.let { Text(text = it, color = MaterialTheme.colorScheme.onSurface) }
                 }
             }
         }
@@ -1207,14 +1251,14 @@ fun MessageBottomSheet(
 
     ModalBottomSheet(
         sheetState = sheetState,
-        containerColor = Color(0xFF01081a),
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(20.dp)
-                .background(color = Color(0xFF01081a))
+                .background(color = MaterialTheme.colorScheme.surface)
         ) {
             var sheetScrollState = rememberLazyListState()
 
@@ -1227,7 +1271,7 @@ fun MessageBottomSheet(
             ) {
                 // Copy Text Button
                 TextButton(
-                    colors = ButtonDefaults.buttonColors(Color(0xFF171E2C)),
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -1237,12 +1281,12 @@ fun MessageBottomSheet(
                         onDismiss()
                     }
                 ) {
-                    Text(text = "Copy Text", color = Color(0xFFA0A0A5))
+                    Text(text = "Copy Text", color = MaterialTheme.colorScheme.onPrimary)
                 }
 
                 // Select Text Button
                 TextButton(
-                    colors = ButtonDefaults.buttonColors(Color(0xFF171E2C)),
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -1251,12 +1295,12 @@ fun MessageBottomSheet(
                         viewModel.toggler = !viewModel.toggler
                     }
                 ) {
-                    Text(text = "Select Text To Copy", color = Color(0xFFA0A0A5))
+                    Text(text = "Select Text To Copy", color = MaterialTheme.colorScheme.onPrimary)
                 }
 
                 // Text to Speech Button
                 TextButton(
-                    colors = ButtonDefaults.buttonColors(Color(0xFF171E2C)),
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -1273,7 +1317,7 @@ fun MessageBottomSheet(
                 ) {
                     Text(
                         text = if (viewModel.stateForTextToSpeech) "Text To Speech" else "Stop",
-                        color = Color(0xFFA0A0A5)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
 
@@ -1286,12 +1330,12 @@ fun MessageBottomSheet(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(color = Color.Black)
+                                        .background(color = MaterialTheme.colorScheme.surfaceVariant)
                                         .padding(25.dp)
                                 ) {
                                     Text(
                                         text = AnnotatedString(message),
-                                        color = Color.White
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }

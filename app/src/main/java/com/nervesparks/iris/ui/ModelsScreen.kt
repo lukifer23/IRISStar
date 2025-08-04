@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -61,12 +62,12 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                             modifier = Modifier.size(20.dp), // Icon size
                             painter = painterResource(id = R.drawable.search_svgrepo_com__3_),
                             contentDescription = "Parameters",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
                             text = "Search Hugging-Face Models",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 18.sp,
                             modifier = Modifier
                                 .padding(vertical = 12.dp, horizontal = 7.dp)
@@ -76,20 +77,20 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                             modifier = Modifier.size(20.dp),
                             painter = painterResource(id = R.drawable.right_arrow_svgrepo_com),
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Divider(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        color = Color.DarkGray, // Set the color of the divider
+                        color = MaterialTheme.colorScheme.outline, // Set the color of the divider
                         thickness = 1.dp
                     )
                     Spacer(Modifier.height(25.dp))
                     // Suggested Models Section
                     Text(
                         text = "Suggested Models",
-                        color = Color.White.copy(alpha = .5f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(5.dp),
                         fontSize = 18.sp
                     )
@@ -115,7 +116,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    color = Color.DarkGray, // Set the color of the divider
+                    color = MaterialTheme.colorScheme.outline, // Set the color of the divider
                     thickness = 1.dp
                 )
             }
@@ -124,7 +125,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 // My Models Section
                 Text(
                     text = "My Models",
-                    color = Color.White.copy(alpha = .5f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(5.dp),
                     fontSize = 18.sp
                 )
@@ -149,7 +150,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 if (viewModel.allModels.drop(3).isEmpty()) {
                     Text(
                         text = "No models to show",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 8.dp, start = 2.dp)
                     )
                 }

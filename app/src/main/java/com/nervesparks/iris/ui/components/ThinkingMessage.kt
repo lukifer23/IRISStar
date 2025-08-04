@@ -31,25 +31,31 @@ fun ThinkingMessage(
     viewModel: MainViewModel,
     onLongClick: () -> Unit
 ) {
-    var isThinkingExpanded by remember { mutableStateOf(false) }
-    var showThinkingTokens by remember { mutableStateOf(viewModel.showThinkingTokens) }
+    var isThinkingExpanded by remember { mutableStateOf(true) } // Start expanded when thinking content is detected
+    var showThinkingTokens by remember { mutableStateOf(true) } // Always show thinking tokens
     
     // Parse via centralised parser
     val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message)
     
     // Debug logging
     LaunchedEffect(message) {
-        android.util.Log.d("ThinkingMessage", "Message: $message")
-        android.util.Log.d("ThinkingMessage", "Thinking content: $thinkingContent")
-        android.util.Log.d("ThinkingMessage", "Output content: $outputContent")
+        android.util.Log.d("ThinkingMessage", "=== THINKING MESSAGE DEBUG ===")
+        android.util.Log.d("ThinkingMessage", "Message length: ${message.length}")
+        android.util.Log.d("ThinkingMessage", "Message preview: ${message.take(200)}...")
+        android.util.Log.d("ThinkingMessage", "Thinking content: '$thinkingContent'")
+        android.util.Log.d("ThinkingMessage", "Output content: '$outputContent'")
+        android.util.Log.d("ThinkingMessage", "Thinking content length: ${thinkingContent.length}")
+        android.util.Log.d("ThinkingMessage", "Contains <think>: ${message.contains("<think>")}")
+        android.util.Log.d("ThinkingMessage", "Contains </think>: ${message.contains("</think>")}")
+        android.util.Log.d("ThinkingMessage", "=== END THINKING DEBUG ===")
     }
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -95,12 +101,13 @@ fun ThinkingMessage(
                 }
             }
             
-            // Thinking content (collapsible)
+            // Thinking content (collapsible) - Always show if thinking content exists
             AnimatedVisibility(
-                visible = isThinkingExpanded && showThinkingTokens && thinkingContent.isNotEmpty(),
+                visible = isThinkingExpanded && thinkingContent.isNotEmpty(),
                 enter = expandVertically(animationSpec = tween(300)),
                 exit = shrinkVertically(animationSpec = tween(300))
             ) {
+                android.util.Log.d("ThinkingMessage", "Thinking visibility: expanded=$isThinkingExpanded, showTokens=$showThinkingTokens, hasContent=${thinkingContent.isNotEmpty()}")
                 if (thinkingContent.isNotEmpty()) {
                     Card(
                         modifier = Modifier

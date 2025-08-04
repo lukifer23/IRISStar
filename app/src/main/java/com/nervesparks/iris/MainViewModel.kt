@@ -225,6 +225,20 @@ class MainViewModel @Inject constructor(
     fun updateMemoryUsage(usageMB: Long) {
         memoryUsage = usageMB
     }
+    
+    fun getCurrentMemoryUsage(): Long {
+        return memoryUsage
+    }
+    
+    suspend fun refreshMemoryUsage() {
+        try {
+            val usage = llamaAndroid.getMemoryUsage()
+            updateMemoryUsage(usage)
+        } catch (e: Exception) {
+            Log.e(tag, "Error getting memory usage: ${e.message}")
+            updateMemoryUsage(0)
+        }
+    }
 
     fun updateContextLimit(current: Int, max: Int) {
         contextLimit = current

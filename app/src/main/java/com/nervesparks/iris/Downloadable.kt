@@ -2,37 +2,33 @@ package com.nervesparks.iris
 
 import android.app.DownloadManager
 import android.net.Uri
-import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import timber.log.Timber
+import java.io.File
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
-import androidx.core.database.getLongOrNull
-import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
+import android.database.Cursor
+import androidx.core.net.toUri
+
+// Extension function for Cursor
+private fun Cursor.getLongOrNull(columnIndex: Int): Long? {
+    return if (isNull(columnIndex)) null else getLong(columnIndex)
+}
 
 data class Downloadable(val name: String, val source: Uri, val destination: File) {
     companion object {
@@ -48,7 +44,6 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
 
 
 
-        @JvmStatic
         @Composable
         fun Button(viewModel: MainViewModel, dm: DownloadManager, item: Downloadable) {
 
@@ -77,13 +72,13 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                     val cursor = dm.query(DownloadManager.Query().setFilterById(result.id))
 
                     if (cursor == null) {
-                        Log.e(tag, "dm.query() returned null")
+                        Timber.e("dm.query() returned null")
                         return Error("dm.query() returned null")
                     }
 
                     if (!cursor.moveToFirst() || cursor.count < 1) {
                         cursor.close()
-                        Log.i(tag, "cursor.moveToFirst() returned false or cursor.count < 1, download canceled?")
+                        Timber.i("cursor.moveToFirst() returned false or cursor.count < 1, download canceled?")
                         return Ready
                     }
 
@@ -95,20 +90,20 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                     cursor.close()
 
                     if (sofar == total) {
-                        Log.d(tag, "Download complete: ${item.destination.path}")
+                        Timber.d("Download complete: ${item.destination.path}")
 
 //                         Ensure model is added dynamically
                         withContext(Dispatchers.Main) {
                             if (!viewModel.allModels.any { it["name"] == item.name }) {
-                                println("testing")
-                                println(item.source.toString())
+                                Timber.d("testing")
+                                Timber.d(item.source.toString())
                                 val newModel = mapOf(
                                     "name" to item.name,
                                     "source" to item.source.toString(),
                                     "destination" to item.destination.path
                                 )
                                 viewModel.allModels = viewModel.allModels + newModel
-                                Log.d(tag, "Model dynamically added to viewModel: $newModel")
+                                Timber.d("Model dynamically added to viewModel: $newModel")
                             }
                         }
 //                        val newModel = mapOf(
@@ -117,7 +112,7 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
 //                            "destination" to item.destination.path
 //                        )
 //                        viewModel.allModels = viewModel.allModels + newModel
-//                        Log.d(tag, "Model dynamically added to viewModel: $newModel")
+//                        Timber.d("Model dynamically added to viewModel: $newModel")
 
                         viewModel.currentDownloadable = item
                         if(viewModel.loadedModelName.value == "") {
@@ -127,7 +122,7 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                             )
                         }
 
-                        println(viewModel.allModels.any {it["name"] == item.name})
+                        Timber.d(viewModel.allModels.any {it["name"] == item.name}.toString())
                         if (!viewModel.allModels.any { it["name"] == item.name }) {
                             val newModel = mapOf(
                                 "name" to item.name,
@@ -135,7 +130,7 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                                 "destination" to item.destination.path
                             )
                             viewModel.allModels += newModel
-                            Log.d(tag, "Outer : Model dynamically added to viewModel: $newModel")
+                            Timber.d("Outer : Model dynamically added to viewModel: $newModel")
                         }
                         return Downloaded(item)
                     }
@@ -154,13 +149,13 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                 when (val s = status) {
                     is Downloaded -> {
                         viewModel.showModal = true
-                        Log.d("item.destination.path", item.destination.path.toString())
+                        Timber.d("item.destination.path", item.destination.path.toString())
                         viewModel.currentDownloadable = item
                         viewModel.load(item.destination.path, userThreads = viewModel.user_thread.toInt())
                     }
 
                     is Downloading -> {
-                        Log.d("Downloading", "Already downloading in background")
+                        Timber.d("Downloading", "Already downloading in background")
                     }
 
                     else -> {
@@ -270,7 +265,7 @@ fun isAlreadyDownloading(dm: DownloadManager, item: Downloadable): Boolean {
             val uriIndex = it.getColumnIndex(DownloadManager.COLUMN_URI)
             val currentUri = it.getString(uriIndex)
             if (currentUri == item.source.toString()) {
-                Log.d("CheckDownload", "Item is already downloading or pending.")
+                Timber.d("Item is already downloading or pending.")
                 return true
             }
         }

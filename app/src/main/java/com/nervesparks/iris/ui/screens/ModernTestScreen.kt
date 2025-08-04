@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.*
-import com.nervesparks.iris.ui.theme.*
+import com.nervesparks.iris.ui.theme.IrisStarTheme
 import java.io.File
 
 /**
@@ -28,7 +28,7 @@ fun ModernTestScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepBlack)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Modern top app bar
         ModernTopAppBar(
@@ -57,7 +57,7 @@ fun ModernTestScreen(
                 Text(
                     text = "Modern UI Components",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -65,7 +65,7 @@ fun ModernTestScreen(
                 Text(
                     text = "Testing our new design system",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,6 +34,7 @@ fun AboutScreen() {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         item {
@@ -42,7 +44,7 @@ fun AboutScreen() {
             Text(
                 text = "Iris is an offline Android chat application powered by the llama.cpp framework. Designed to operate entirely offline, it ensures privacy and independence from external servers. Whether you're a developer exploring AI applications or a privacy-conscious user, this app provides a seamless and secure way to experience conversational AI. Please note that the app may occasionally generate inaccurate results.",
                 fontSize = 16.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 lineHeight = 24.sp
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -76,7 +78,7 @@ private fun SectionHeader(
         text = text,
         fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = modifier.padding(bottom = 12.dp)
     )
 }
@@ -92,13 +94,13 @@ private fun FeatureItem(feature: String) {
         Box(
             modifier = Modifier
                 .size(20.dp)
-                .background(Color(0xFF4CAF50), shape = CircleShape),
+                .background(MaterialTheme.colorScheme.primary, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -106,7 +108,7 @@ private fun FeatureItem(feature: String) {
         Text(
             text = feature,
             fontSize = 16.sp,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             lineHeight = 24.sp
         )
     }
@@ -128,13 +130,13 @@ private fun FaqItem(
             Box(
                 modifier = Modifier
                     .size(20.dp)
-                    .background(Color(0xFF1b384f), shape = CircleShape),
+                    .background(MaterialTheme.colorScheme.secondary, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSecondary,
                     modifier = Modifier.size(14.dp)
                 )
             }
@@ -143,7 +145,7 @@ private fun FaqItem(
                 text = question,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 lineHeight = 24.sp
             )
         }
@@ -151,7 +153,7 @@ private fun FaqItem(
         Text(
             text = answer,
             fontSize = 14.sp,
-            color = Color.White.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 20.sp,
             modifier = Modifier.padding(start = 32.dp)  // Aligned with question text
         )
