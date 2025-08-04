@@ -210,6 +210,48 @@ fun MainChatScreen (
             // Screen content
             Column() {
 
+                // Model Status Indicator
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Current Model",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = viewModel.loadedModelName.value.ifEmpty { "No model loaded" },
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        Button(
+                            onClick = { viewModel.showModelSelectionDialog() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Change Model", color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    }
+                }
 
                 // Show modal if required
                 if (viewModel.showModal) {
@@ -294,27 +336,72 @@ fun MainChatScreen (
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Button(
-                                            onClick = { 
-                                                viewModel.showModelSelectionDialog()
-                                                android.util.Log.d("MainChatScreen", "Switch Model button clicked")
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
-                                        ) {
-                                            Text("Switch Model", color = Color.White)
-                                        }
-                                        
-                                        Button(
-                                            onClick = { 
-                                                viewModel.showModal = true
-                                                viewModel.showModelSelection = false
-                                                android.util.Log.d("MainChatScreen", "Download Model button clicked")
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                                        ) {
-                                            Text("Download New Model", color = Color.White)
+                                        // Show different buttons based on model status
+                                        if (viewModel.loadedModelName.value.isEmpty()) {
+                                            // No model loaded - show prominent load button
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                                ),
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(16.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text(
+                                                        text = "No Model Loaded",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = "Select a model to start chatting",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(12.dp))
+                                                    Button(
+                                                        onClick = { 
+                                                            viewModel.showModelSelectionDialog()
+                                                            android.util.Log.d("MainChatScreen", "Load Model button clicked")
+                                                        },
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            containerColor = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    ) {
+                                                        Text("Load Model", color = MaterialTheme.colorScheme.onPrimary)
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            // Model is loaded - show switch and download buttons
+                                            Button(
+                                                onClick = { 
+                                                    viewModel.showModelSelectionDialog()
+                                                    android.util.Log.d("MainChatScreen", "Switch Model button clicked")
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                            ) {
+                                                Text("Switch Model", color = Color.White)
+                                            }
+                                            
+                                            Button(
+                                                onClick = { 
+                                                    viewModel.showModal = true
+                                                    viewModel.showModelSelection = false
+                                                    android.util.Log.d("MainChatScreen", "Download Model button clicked")
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                            ) {
+                                                Text("Download New Model", color = Color.White)
+                                            }
                                         }
                                     }
                                 }

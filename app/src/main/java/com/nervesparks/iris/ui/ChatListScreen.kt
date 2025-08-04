@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,34 +17,68 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.db.Chat
+import com.nervesparks.iris.ui.theme.CyanAccent
+import com.nervesparks.iris.ui.theme.CardBackground
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 
 @Composable
 fun ChatListScreen(
+    viewModel: MainViewModel,
     onChatSelected: (Long) -> Unit,
     onNewChat: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val repo = remember { ChatRepository.get(context) }
-    val chats by repo.observeChats().collectAsState(initial = emptyList())
+    val chats by viewModel.chats.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
+    
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredChats = remember(chats, searchQuery) {
+        if (searchQuery.isEmpty()) {
+            chats
+        } else {
+            chats.filter { chat ->
+                chat.title.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
-        if (chats.isEmpty()) {
+        // Search bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            placeholder = { Text("Search chats...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+        
+        if (filteredChats.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No chats yet. Tap 'New Chat' to start.", color = Color.White.copy(alpha = 0.7f))
+                Text(
+                    if (searchQuery.isEmpty()) "No chats yet. Tap 'New Chat' to start." else "No chats match your search.",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
             }
         } else {
             LazyColumn(Modifier.weight(1f)) {
-                items(chats) { chat ->
+                items(filteredChats) { chat ->
                     ChatRow(chat,
                         onClick = { onChatSelected(chat.id) },
-                        onRename = { title -> scope.launch { repo.renameChat(chat, title) } },
-                        onDelete = { scope.launch { repo.deleteChat(chat) } }
+                        onRename = { title -> scope.launch { viewModel.renameChat(chat, title) } },
+                        onDelete = { scope.launch { viewModel.deleteChat(chat) } }
                     )
                 }
             }
@@ -53,9 +88,9 @@ fun ChatListScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00BCD4))
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
         ) {
-            Text("New Chat", color = Color.White)
+            Text("New Chat", color = MaterialTheme.colorScheme.onTertiary)
         }
     }
 }
@@ -76,16 +111,16 @@ private fun ChatRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(chat.title, color = Color.White, fontWeight = FontWeight.Medium)
-                Text(SimpleDateFormat("MMM dd, HH:mm").format(Date(chat.updated)), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                Text(chat.title, color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Medium)
+                Text(SimpleDateFormat("MMM dd, HH:mm").format(Date(chat.updated)), color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = { showMenu = true }) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
+                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onSecondary)
             }
             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                 DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; showRename = true })

@@ -28,16 +28,34 @@ import android.app.Application
 import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.Message
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
 import kotlinx.coroutines.flow.first
 
-class MainViewModel(
-    application: Application,
-    private val llamaAndroid: LLamaAndroid = LLamaAndroid.instance(),
-    private val userPreferencesRepository: UserPreferencesRepository
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val llamaAndroid: LLamaAndroid,
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val chatRepository: ChatRepository,
+    private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
+    application: Application
 ) : AndroidViewModel(application) {
 
-    private val chatRepository = ChatRepository.get(application)
+    val chats = chatRepository.observeChats()
+
+    fun renameChat(chat: Chat, title: String) {
+        viewModelScope.launch {
+            chatRepository.renameChat(chat, title)
+        }
+    }
+
+    fun deleteChat(chat: Chat) {
+        viewModelScope.launch {
+            chatRepository.deleteChat(chat)
+        }
+    }
+    
     private var currentChat: com.nervesparks.iris.data.db.Chat? = null
     companion object {
 //        @JvmStatic
@@ -790,6 +808,25 @@ class MainViewModel(
             eot_str = llamaAndroid.send_eot_str()
         }
     }
+    
+    /**
+     * Load a model by file path - wrapper for the load method
+     */
+    fun loadModel(modelPath: String) {
+        load(modelPath, modelThreadCount)
+    }
+    
+    /**
+     * Load a model by name from the external files directory
+     */
+    fun loadModelByName(modelName: String, directory: File) {
+        val modelFile = File(directory, modelName)
+        if (modelFile.exists()) {
+            loadModel(modelFile.absolutePath)
+        } else {
+            Log.e(tag, "Model file not found: ${modelFile.absolutePath}")
+        }
+    }
     private fun addMessage(role: String, content: String) {
         val newMessage = mapOf("role" to role, "content" to content)
 
@@ -890,8 +927,70 @@ class MainViewModel(
         llamaAndroid.stopTextGeneration()
     }
 
+    // Add missing methods for compilation fixes
+    fun searchModels(query: String): SearchResponse {
+        // For now, return a placeholder response
+        // TODO: Implement proper async search with coroutines
+        return SearchResponse(
+            success = false,
+            data = null,
+            error = "Search functionality not yet implemented"
+        )
+    }
 
+    fun getModelDetails(modelId: String): ModelDetailsResponse {
+        // For now, return a placeholder response
+        // TODO: Implement proper async model details with coroutines
+        return ModelDetailsResponse(
+            success = false,
+            data = null,
+            error = "Model details functionality not yet implemented"
+        )
+    }
+
+    fun setTestHuggingFaceToken() {
+        // TODO: Implement test token setting
+        Log.d(tag, "setTestHuggingFaceToken called - not yet implemented")
+    }
 }
+
+// Add data class for search response with proper structure
+data class SearchResponse(
+    val success: Boolean,
+    val data: List<ModelSearchResult>?,
+    val error: String?
+)
+
+data class ModelSearchResult(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val downloads: Int,
+    val likes: Int,
+    val tags: List<String>
+)
+
+data class ModelDetailsResponse(
+    val success: Boolean,
+    val data: List<ModelDetailResult>?,
+    val error: String?
+)
+
+data class ModelDetailResult(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val downloads: Int,
+    val likes: Int,
+    val tags: List<String>,
+    val siblings: List<ModelFile>
+)
+
+data class ModelFile(
+    val filename: String,
+    val size: Long?,
+    val quantType: String?
+)
 
 fun sentThreadsValue(){
 

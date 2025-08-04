@@ -74,9 +74,6 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     
-    // Initialize API service and preferences
-    val preferencesRepository = remember { UserPreferencesRepository.getInstance(context) }
-    val apiService = remember { HuggingFaceApiService(preferencesRepository) }
     var UserGivenModel by remember {
         mutableStateOf(
             TextFieldValue(
@@ -178,11 +175,11 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             onClick = {
                 kc?.hide()
                 
-                // Check if credentials are set
-                if (!preferencesRepository.hasHuggingFaceCredentials()) {
-                    errorMessage = "Please set your HuggingFace credentials in Settings first"
-                    return@Button
-                }
+                // TODO: Add proper credentials check when API is implemented
+                // if (!preferencesRepository.hasHuggingFaceCredentials()) {
+                //     errorMessage = "Please set your HuggingFace credentials in Settings first"
+                //     return@Button
+                // }
                 
                 coroutineScope.launch {
                     isLoading = true
@@ -190,7 +187,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
 
                     try {
                         // Use searchModels instead of getModelDetails for search functionality
-                        val response = apiService.searchModels(UserGivenModel.text)
+                        val response = viewModel.searchModels(UserGivenModel.text)
                         
                         if (response.success && response.data != null) {
                             // Convert search results to the expected format

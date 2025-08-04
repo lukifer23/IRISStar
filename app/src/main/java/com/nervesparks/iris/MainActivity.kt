@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,99 +62,44 @@ import java.io.File
 import androidx.compose.foundation.BorderStroke
 import android.app.Application
 import androidx.compose.foundation.border
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.activity.viewModels
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.SettingsBottomSheet
+import com.nervesparks.iris.ui.theme.IRISTheme
+import com.nervesparks.iris.ui.ChatListScreen
+import com.nervesparks.iris.ui.MainChatScreen
+import com.nervesparks.iris.ui.SettingsScreen
+import com.nervesparks.iris.ui.components.ModelSelectionModal
+import dagger.hilt.android.AndroidEntryPoint
 
 
-class MainViewModelFactory(
-    private val application: Application,
-    private val llamaAndroid: LLamaAndroid,
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MainViewModel(application, llamaAndroid, userPreferencesRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-    }
-}
-
-
+@AndroidEntryPoint
 class MainActivity(
-//    activityManager: ActivityManager? = null,
     downloadManager: DownloadManager? = null,
     clipboardManager: ClipboardManager? = null,
 ): ComponentActivity() {
-//    private val tag: String? = this::class.simpleName
-//
-//    private val activityManager by lazy { activityManager ?: getSystemService<ActivityManager>()!! }
     private val downloadManager by lazy { downloadManager ?: getSystemService<DownloadManager>()!! }
     private val clipboardManager by lazy { clipboardManager ?: getSystemService<ClipboardManager>()!! }
 
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by viewModels()
 
-
-    // Get a MemoryInfo object for the device's current memory status.
-//    private fun availableMemory(): ActivityManager.MemoryInfo {
-//        return ActivityManager.MemoryInfo().also { memoryInfo ->
-//            activityManager.getMemoryInfo(memoryInfo)
-//        }
-//    }
-
-    val darkNavyBlue = Color(0xFF001F3D) // Dark navy blue color
-    val lightNavyBlue = Color(0xFF3A4C7C)
-
-
-
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(darkNavyBlue, lightNavyBlue)
-    )
-
-
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        window.statusBarColor = android.graphics.Color.parseColor("#FF070915")//for status bar color
+        enableEdgeToEdge()
 
-        StrictMode.setVmPolicy(
-            VmPolicy.Builder(StrictMode.getVmPolicy())
-                .detectLeakedClosableObjects()
-                .build()
-        )
-        val userPrefsRepo = UserPreferencesRepository.getInstance(applicationContext)
-
-        val lLamaAndroid = LLamaAndroid.instance()
-        val viewModelFactory = MainViewModelFactory(application, lLamaAndroid, userPrefsRepo)
-        viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
-
-
-//        val free = Formatter.formatFileSize(this, availableMemory().availMem)
-//        val total = Formatter.formatFileSize(this, availableMemory().totalMem)
-        val transparentColor = Color.Transparent.toArgb()
-        window.decorView.rootView.setBackgroundColor(transparentColor)
-//        viewModel.log("Current memory: $free / $total")
-//        viewModel.log("Downloads directory: ${getExternalFilesDir(null)}")
-
+        // Allow network operations on main thread for development
+        val policy = VmPolicy.Builder()
+            .detectAll()
+            .build()
+        StrictMode.setVmPolicy(policy)
 
         val extFilesDir = getExternalFilesDir(null)
 
         val models = listOf(
-//            Downloadable(
-//                "SmolLM-135M.Q2_K.gguf",
-//                Uri.parse("https://huggingface.co/QuantFactory/SmolLM-135M-GGUF/resolve/main/SmolLM-135M.Q2_K.gguf?download=true"),
-//                File(extFilesDir, "SmolLM-135M.Q2_K.gguf")
-//
-//            ),
             Downloadable(
                 "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
                 Uri.parse("https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true"),
                 File(extFilesDir, "Llama-3.2-3B-Instruct-Q4_K_L.gguf")
-
             ),
             Downloadable(
                 "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
@@ -181,109 +127,86 @@ class MainActivity(
             viewModel.loadExistingModels(extFilesDir)
         }
 
-
-
         setContent {
-
-
-            var showSettingSheet by remember { mutableStateOf(false) }
-            var isBottomSheetVisible by rememberSaveable  { mutableStateOf(false) }
-            var modelData by rememberSaveable  { mutableStateOf<List<Map<String, String>>?>(null) }
-            var selectedModel by remember { mutableStateOf<String?>(null) }
-            var isLoading by remember { mutableStateOf(false) }
-            var errorMessage by remember { mutableStateOf<String?>(null) }
-            val sheetState = rememberModalBottomSheetState()
-
-            var UserGivenModel by remember {
-                mutableStateOf(
-                    TextFieldValue(
-                        text = viewModel.userGivenModel,
-                        selection = TextRange(viewModel.userGivenModel.length) // Ensure cursor starts at the end
-                    )
-                )
-            }
-            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-            val scope = rememberCoroutineScope()
-            ModalNavigationDrawer(
-
-                drawerState = drawerState,
-                drawerContent = {
-                    ModalDrawerSheet(
-                        modifier = Modifier
-                            .width(300.dp)
-                            .fillMaxHeight(),
-                        drawerContainerColor= Color(0xFF070915),
-
-                        ) {
-                        /*Drawer content wrapper */
-                        Column(
+            IRISTheme {
+                var showSettingSheet by remember { mutableStateOf(false) }
+                var currentScreen by remember { mutableStateOf("chat_list") } // chat_list, chat, settings
+                var selectedChatId by remember { mutableStateOf<String?>(null) }
+                
+                val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+                
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        ModalDrawerSheet(
                             modifier = Modifier
-                                .padding(5.dp)
+                                .width(300.dp)
                                 .fillMaxHeight(),
+                            drawerContainerColor = Color(0xFF070915)
                         ) {
-                            // Top section with logo and name
-                            Column {
-                                Row(
-                                    modifier =  Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.logo),
-                                        contentDescription = "Centered Background Logo",
-                                        modifier = Modifier.size(35.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                    Spacer(Modifier.padding(5.dp))
-                                    Text(
-                                        text = "Iris",
-                                        fontWeight = FontWeight(500),
-                                        color = Color.White,
-                                        fontSize = 30.sp
-                                    )
-                                    Spacer(Modifier.weight(1f))
-                                    if (showSettingSheet) {
-                                        SettingsBottomSheet(
-                                            viewModel= viewModel,
-                                            onDismiss = { showSettingSheet = false } // Control visibility from here
+                            Column(
+                                modifier = Modifier
+                                    .padding(5.dp)
+                                    .fillMaxHeight()
+                            ) {
+                                // Top section with logo and name
+                                Column {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.logo),
+                                            contentDescription = "Centered Background Logo",
+                                            modifier = Modifier.size(35.dp),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                        Spacer(Modifier.padding(5.dp))
+                                        Text(
+                                            text = "IRIS Star",
+                                            fontWeight = FontWeight(500),
+                                            color = Color.White,
+                                            fontSize = 30.sp
+                                        )
+                                        Spacer(Modifier.weight(1f))
+                                        if (showSettingSheet) {
+                                            SettingsBottomSheet(
+                                                viewModel = viewModel,
+                                                onDismiss = { showSettingSheet = false }
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        modifier = Modifier.padding(start = 45.dp)
+                                    ) {
+                                        Text(
+                                            text = "NerveSparks",
+                                            color = Color(0xFF636466),
+                                            fontSize = 16.sp
                                         )
                                     }
-
                                 }
-                                Row(
-                                    modifier = Modifier.padding(start = 45.dp)
-                                ) {
-                                    Text(
-                                        text = "NerveSparks",
-                                        color = Color(0xFF636466),
-                                        fontSize = 16.sp
-                                    )
-                                }
-
-                            }
-                            Spacer(Modifier.height(20.dp))
-                            Column (modifier = Modifier.padding(6.dp)){
-                                Text(text = "Active Model", fontSize = 16.sp, color = Color(0xFF636466), modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp))
-                                Text(text = viewModel.loadedModelName.value, fontSize = 16.sp, color = Color.White, modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp) )
                                 
-                                // Model selection button
-                                val extFilesDir = LocalContext.current.getExternalFilesDir(null)
-                                val availableModels = extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
+                                Spacer(modifier = Modifier.height(20.dp))
                                 
-                                if (availableModels.size >= 1) {
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                // Navigation menu
+                                Column(modifier = Modifier.padding(6.dp)) {
+                                    // Chat List
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(40.dp)
                                             .padding(horizontal = 8.dp)
                                             .background(
-                                                color = Color(0xFF00BCD4),
+                                                color = if (currentScreen == "chat_list") Color(0xFF00BCD4) else Color(0xFF16213e),
                                                 shape = RoundedCornerShape(8.dp)
                                             )
                                             .clickable {
-                                                viewModel.showModelSelectionDialog()
+                                                currentScreen = "chat_list"
+                                                selectedChatId = null
                                             }
                                     ) {
                                         Row(
@@ -292,153 +215,203 @@ class MainActivity(
                                             modifier = Modifier.fillMaxSize()
                                         ) {
                                             Text(
-                                                text = "Switch Model (${availableModels.size} available)",
+                                                text = "Chat List",
                                                 color = Color.White,
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Medium
                                             )
                                         }
                                     }
-                                }
-                            }
-                            Spacer(modifier = Modifier.weight(1f))
-                            Column(
-                                verticalArrangement = Arrangement.Bottom,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                // Star us button
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .padding(horizontal = 16.dp)
-                                        .background(
-                                            color = Color(0xFF14161f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .border(
-                                            border = BorderStroke(
-                                                width = 1.dp,
-                                                color = Color.LightGray.copy(alpha = 0.5f)
-                                            ),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                ) {
-                                    val context = LocalContext.current
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    
+                                    // New Chat
+                                    Box(
                                         modifier = Modifier
-                                            .fillMaxSize()
+                                            .fillMaxWidth()
+                                            .height(40.dp)
+                                            .padding(horizontal = 8.dp)
+                                            .background(
+                                                color = if (currentScreen == "chat") Color(0xFF00BCD4) else Color(0xFF16213e),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
                                             .clickable {
-                                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                    data =
-                                                        Uri.parse("https://github.com/nerve-sparks/iris_android")
-                                                }
-                                                context.startActivity(intent)
+                                                currentScreen = "chat"
+                                                selectedChatId = null
+                                                viewModel.clear()
                                             }
                                     ) {
-                                        Text(
-                                            text = "Star us",
-                                            color = Color(0xFF78797a),
-                                            fontSize = 14.sp
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-
-                                        Image(
-                                            modifier = Modifier
-                                                .size(24.dp),
-                                            painter = painterResource(id = R.drawable.github_svgrepo_com),
-                                            contentDescription = "Github icon"
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Text(
+                                                text = "New Chat",
+                                                color = Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
-                                }
-                                Spacer(modifier = Modifier.height(5.dp))
-                                // NerveSparks button
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .padding(horizontal = 16.dp)
-                                        .background(
-                                            color = Color(0xFF14161f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .border(
-                                            border = BorderStroke(
-                                                width = 1.dp,
-                                                color = Color.LightGray.copy(alpha = 0.5f)
-                                            ),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                ) {
-                                    val context = LocalContext.current
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    
+                                    // Settings
+                                    Box(
                                         modifier = Modifier
-                                            .fillMaxSize()
+                                            .fillMaxWidth()
+                                            .height(40.dp)
+                                            .padding(horizontal = 8.dp)
+                                            .background(
+                                                color = if (currentScreen == "settings") Color(0xFF00BCD4) else Color(0xFF16213e),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
                                             .clickable {
-                                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                    data = Uri.parse("https://nervesparks.com")
-                                                }
-                                                context.startActivity(intent)
+                                                currentScreen = "settings"
                                             }
                                     ) {
-                                        Text(
-                                            text = "NerveSparks.com",
-                                            color = Color(0xFF78797a),
-                                            fontSize = 14.sp
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-
-
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Text(
+                                                text = "Settings",
+                                                color = Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
-                                }
-                                Spacer(modifier = Modifier.height(5.dp))
-                                // Powered by section - Right-aligned
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(end = 16.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                                    
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    // Active Model Section
                                     Text(
-                                        text = "powered by",
+                                        text = "Active Model",
+                                        fontSize = 16.sp,
                                         color = Color(0xFF636466),
-                                        fontSize = 14.sp
+                                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
                                     )
-                                    val context = LocalContext.current
                                     Text(
+                                        text = viewModel.loadedModelName.value,
+                                        fontSize = 16.sp,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
+                                    )
+                                    
+                                    // Model selection button
+                                    val availableModels = extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
+                                    
+                                    if (availableModels.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(40.dp)
+                                                .padding(horizontal = 8.dp)
+                                                .background(
+                                                    color = Color(0xFF00BCD4),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .clickable {
+                                                    viewModel.showModelSelectionDialog()
+                                                }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center,
+                                                modifier = Modifier.fillMaxSize()
+                                            ) {
+                                                Text(
+                                                    text = "Switch Model (${availableModels.size} available)",
+                                                    color = Color.White,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    
+                                    // Powered by section
+                                    Row(
                                         modifier = Modifier
-                                            .clickable {
+                                            .fillMaxWidth()
+                                            .padding(end = 16.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "powered by",
+                                            color = Color(0xFF636466),
+                                            fontSize = 14.sp
+                                        )
+                                        val context = LocalContext.current
+                                        Text(
+                                            modifier = Modifier.clickable {
                                                 val intent = Intent(Intent.ACTION_VIEW).apply {
                                                     data = Uri.parse("https://github.com/ggerganov/llama.cpp")
                                                 }
                                                 context.startActivity(intent)
                                             },
-                                        text = " llama.cpp",
-                                        color = Color(0xFF78797a),
-                                        fontSize = 16.sp
-                                    )
-
-                                }
+                                            text = " llama.cpp",
+                                            color = Color(0xFF78797a),
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                 }
                             }
                         }
-
                     }
-                },
-            ) {
-
-                ChatScreen(
-                    viewModel,
-                    clipboardManager,
-                    downloadManager,
-                    models,
-                    extFilesDir,
-                )
+                ) {
+                    // Main content based on current screen
+                    when (currentScreen) {
+                        "chat_list" -> {
+                            ChatListScreen(
+                                viewModel = viewModel,
+                                onChatSelected = { chatId ->
+                                    selectedChatId = chatId.toString()
+                                    currentScreen = "chat"
+                                },
+                                onNewChat = {
+                                    selectedChatId = null
+                                    currentScreen = "chat"
+                                    viewModel.clear()
+                                }
+                            )
+                        }
+                        "chat" -> {
+                            MainChatScreen(
+                                onNextButtonClicked = { /* TODO */ },
+                                viewModel = viewModel,
+                                clipboard = clipboardManager,
+                                dm = downloadManager,
+                                models = models,
+                                extFileDir = extFilesDir,
+                                chatId = selectedChatId?.toLongOrNull()
+                            )
+                        }
+                        "settings" -> {
+                            SettingsScreen(
+                                onModelsScreenButtonClicked = { currentScreen = "models" },
+                                onParamsScreenButtonClicked = { currentScreen = "params" },
+                                onAboutScreenButtonClicked = { currentScreen = "about" },
+                                onBenchMarkScreenButtonClicked = { currentScreen = "benchmark" }
+                            )
+                        }
+                    }
+                }
+                
+                // Model selection modal
+                if (viewModel.showModelSelection) {
+                    ModelSelectionModal(
+                        viewModel = viewModel,
+                        onDismiss = { viewModel.showModelSelection = false }
+                    )
+                }
             }
         }
     }

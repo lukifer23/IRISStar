@@ -32,7 +32,7 @@ fun ModelSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0a0a0a))
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -40,7 +40,7 @@ fun ModelSettingsScreen(
         Text(
             text = "Model Configuration",
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold
         )
         
@@ -49,7 +49,7 @@ fun ModelSettingsScreen(
         // Temperature Control
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -58,12 +58,12 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Temperature: ${String.format("%.2f", temperature)}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Controls randomness (0.0 = deterministic, 1.0 = very random)",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Slider(
                     value = temperature,
@@ -71,9 +71,9 @@ fun ModelSettingsScreen(
                     valueRange = 0.0f..2.0f,
                     steps = 19,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFF4CAF50),
-                        activeTrackColor = Color(0xFF4CAF50),
-                        inactiveTrackColor = Color(0xFF2E7D32)
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
                     )
                 )
             }
@@ -84,7 +84,7 @@ fun ModelSettingsScreen(
         // Top-p Control
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -93,12 +93,12 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Top-p: ${String.format("%.2f", topP)}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Controls diversity via nucleus sampling",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Slider(
                     value = topP,
@@ -106,9 +106,9 @@ fun ModelSettingsScreen(
                     valueRange = 0.0f..1.0f,
                     steps = 19,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFF2196F3),
-                        activeTrackColor = Color(0xFF2196F3),
-                        inactiveTrackColor = Color(0xFF1976D2)
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
                     )
                 )
             }
@@ -119,7 +119,7 @@ fun ModelSettingsScreen(
         // Top-k Control
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -128,12 +128,12 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Top-k: $topK",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Limits vocabulary to top k tokens",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Slider(
                     value = topK.toFloat(),
@@ -141,9 +141,9 @@ fun ModelSettingsScreen(
                     valueRange = 1f..100f,
                     steps = 98,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFFFF9800),
-                        activeTrackColor = Color(0xFFFF9800),
-                        inactiveTrackColor = Color(0xFFF57C00)
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
                     )
                 )
             }
@@ -151,10 +151,10 @@ fun ModelSettingsScreen(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Max Tokens
+        // Max Tokens Control
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -163,22 +163,22 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Max Tokens: $maxTokens",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Maximum tokens to generate",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Slider(
                     value = maxTokens.toFloat(),
                     onValueChange = { maxTokens = it.toInt() },
-                    valueRange = 64f..4096f,
-                    steps = 63,
+                    valueRange = 1f..8192f,
+                    steps = 8190,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFFE91E63),
-                        activeTrackColor = Color(0xFFE91E63),
-                        inactiveTrackColor = Color(0xFFC2185B)
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
                     )
                 )
             }
@@ -186,10 +186,10 @@ fun ModelSettingsScreen(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Context Length
+        // Context Length Control
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -198,22 +198,22 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Context Length: $contextLength",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Maximum context window size",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Slider(
                     value = contextLength.toFloat(),
                     onValueChange = { contextLength = it.toInt() },
-                    valueRange = 512f..32768f,  // Increased to support Qwen3's 32k context
-                    steps = 31,
+                    valueRange = 512f..32768f,
+                    steps = 32255,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFF9C27B0),
-                        activeTrackColor = Color(0xFF9C27B0),
-                        inactiveTrackColor = Color(0xFF7B1FA2)
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
                     )
                 )
             }
@@ -221,10 +221,10 @@ fun ModelSettingsScreen(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Thread Count
+        // Thread Count Control
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -233,22 +233,58 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Thread Count: $threadCount",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Number of CPU threads to use",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Slider(
                     value = threadCount.toFloat(),
                     onValueChange = { threadCount = it.toInt() },
-                    valueRange = 1f..8f,
-                    steps = 6,
+                    valueRange = 1f..16f,
+                    steps = 14,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFF00BCD4),
-                        activeTrackColor = Color(0xFF00BCD4),
-                        inactiveTrackColor = Color(0xFF0097A7)
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+                    )
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // System Prompt Control
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "System Prompt",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondary
+                )
+                Text(
+                    text = "Initial system message for the model",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = systemPrompt,
+                    onValueChange = { systemPrompt = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = MaterialTheme.colorScheme.onSecondary,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSecondary
                     )
                 )
             }
@@ -259,7 +295,7 @@ fun ModelSettingsScreen(
         // Chat Format Selection
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
@@ -268,12 +304,12 @@ fun ModelSettingsScreen(
                 Text(
                     text = "Chat Format",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
                 Text(
                     text = "Select the chat format for the model",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -289,14 +325,13 @@ fun ModelSettingsScreen(
                             selected = selectedChatFormat == format,
                             onClick = { selectedChatFormat = format },
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFF4CAF50),
-                                unselectedColor = Color.White.copy(alpha = 0.5f)
+                                selectedColor = MaterialTheme.colorScheme.tertiary,
+                                unselectedColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.5f)
                             )
                         )
                         Text(
                             text = format,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSecondary,
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
@@ -304,139 +339,11 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
-        // System Prompt
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "System Prompt",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
-                Text(
-                    text = "Define the AI's behavior and capabilities",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = systemPrompt,
-                    onValueChange = { systemPrompt = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White.copy(alpha = 0.7f),
-                        focusedBorderColor = Color(0xFF4CAF50),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
-                    ),
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    minLines = 3,
-                    maxLines = 5
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Thinking Token Settings
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Reasoning/Thinking Settings",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
-                Text(
-                    text = "Configure how reasoning models display thinking tokens",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                // Show thinking tokens toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Show thinking tokens",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Switch(
-                        checked = viewModel.showThinkingTokens,
-                        onCheckedChange = { viewModel.updateShowThinkingTokens(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF00BCD4),
-                            checkedTrackColor = Color(0xFF00BCD4).copy(alpha = 0.5f),
-                            uncheckedThumbColor = Color.White.copy(alpha = 0.5f),
-                            uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
-                        )
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Thinking token style selection
-                Text(
-                    text = "Thinking display style:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                val thinkingStyles = listOf("COLLAPSIBLE", "ALWAYS_VISIBLE", "HIDDEN")
-                thinkingStyles.forEach { style ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = viewModel.thinkingTokenStyle == style,
-                            onClick = { viewModel.updateThinkingTokenStyle(style) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFF00BCD4),
-                                unselectedColor = Color.White.copy(alpha = 0.5f)
-                            )
-                        )
-                        Text(
-                            text = when (style) {
-                                "COLLAPSIBLE" -> "Collapsible (default)"
-                                "ALWAYS_VISIBLE" -> "Always visible"
-                                "HIDDEN" -> "Hidden"
-                                else -> style
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White,
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Save Button
+        // Apply Button
         Button(
             onClick = {
-                // Save settings to ViewModel
                 viewModel.updateModelSettings(
                     temperature = temperature,
                     topP = topP,
@@ -450,41 +357,9 @@ fun ModelSettingsScreen(
                 onBackPressed()
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50),
-                contentColor = Color.White
-            ),
-            shape = RoundedCornerShape(8.dp)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
         ) {
-            Text("Save Settings", style = MaterialTheme.typography.titleMedium)
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Reset to Defaults Button
-        OutlinedButton(
-            onClick = {
-                temperature = 0.7f
-                topP = 0.9f
-                topK = 40
-                maxTokens = 2048
-                contextLength = 4096
-                systemPrompt = "You are a helpful AI assistant."
-                selectedChatFormat = "QWEN3"
-                threadCount = 4
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White
-            ),
-            border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                    colors = listOf(Color(0xFF4CAF50), Color(0xFF2E7D32))
-                )
-            ),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text("Reset to Defaults", style = MaterialTheme.typography.titleMedium)
+            Text("Apply Settings", color = MaterialTheme.colorScheme.onTertiary)
         }
     }
 } 

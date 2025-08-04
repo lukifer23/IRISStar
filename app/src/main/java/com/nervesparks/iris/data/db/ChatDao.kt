@@ -18,11 +18,29 @@ interface ChatDao {
     @Query("SELECT * FROM chats ORDER BY updated DESC")
     fun observeChats(): Flow<List<Chat>>
 
+    @Query("SELECT * FROM chats")
+    suspend fun getAllChats(): List<Chat>
+
     @Query("SELECT * FROM chats WHERE id = :chatId")
     fun observeChat(chatId: Long): Flow<Chat>
 
+    @Query("SELECT * FROM chats WHERE id = :chatId")
+    suspend fun getChat(chatId: Long): Chat?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<Message>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessage(message: Message)
+
+    @Update
+    suspend fun updateMessage(message: Message)
+
+    @Delete
+    suspend fun deleteMessage(message: Message)
+
+    @Query("SELECT * FROM messages WHERE id = :messageId")
+    suspend fun getMessage(messageId: Long): Message?
 
     @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY `index`")
     suspend fun loadMessages(chatId: Long): List<Message>

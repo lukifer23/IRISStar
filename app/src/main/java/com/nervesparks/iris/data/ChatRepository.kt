@@ -4,20 +4,14 @@ import android.content.Context
 import androidx.room.Room
 import com.nervesparks.iris.data.db.AppDatabase
 import com.nervesparks.iris.data.db.Chat
+import com.nervesparks.iris.data.db.ChatDao
 import com.nervesparks.iris.data.db.Message
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class ChatRepository private constructor(context: Context) {
-
-    private val db: AppDatabase = Room.databaseBuilder(
-        context.applicationContext,
-        AppDatabase::class.java,
-        "iris_chats.db"
-    ).fallbackToDestructiveMigration().build()
-
-    private val dao = db.chatDao()
+class ChatRepository @Inject constructor(private val dao: ChatDao) {
 
     fun observeChats(): Flow<List<Chat>> = dao.observeChats()
 
@@ -48,10 +42,5 @@ class ChatRepository private constructor(context: Context) {
         }
     }
 
-    companion object {
-        @Volatile private var INSTANCE: ChatRepository? = null
-        fun get(context: Context): ChatRepository = INSTANCE ?: synchronized(this) {
-            INSTANCE ?: ChatRepository(context).also { INSTANCE = it }
-        }
-    }
+    
 }

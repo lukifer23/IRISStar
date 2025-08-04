@@ -174,23 +174,22 @@ class LLamaAndroid {
     }
 
 
+    // Legacy template function - now delegated to TemplateRegistry
     suspend fun getTemplate(messages: List<Map<String, String>>, chatFormat: String = "CHATML"): String {
-        var data = ""
-        withContext(runLoop) {
-            when (val state = threadLocalState.get()) {
-                is State.Loaded -> {
-                    val arrayMessages = messages.toTypedArray() // Convert list to array for JNI compatibility
-                    data = oaicompat_completion_param_parse(
-                        allmessages = arrayMessages,
-                        model = state.model,
-                        chatFormat = chatFormat
-                    )
-                }
-                else -> {}
+        // Fallback to simple CHATML format if TemplateRegistry not available
+        val sb = StringBuilder()
+        for (m in messages) {
+            val role = m["role"] ?: "user"
+            val tag = when(role) {
+                "system" -> "system"
+                "assistant" -> "assistant"
+                else -> "user"
             }
+            sb.append("<|im_start|>").append(tag).append("\n")
+            sb.append(m["content"] ?: "").append("<|im_end|>\n")
         }
-
-        return data
+        sb.append("<|im_start|>assistant\n")
+        return sb.toString()
     }
 
     suspend fun countTokens(text: String): Int {

@@ -38,13 +38,11 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
     var searchError by remember { mutableStateOf<String?>(null) }
     
     val context = LocalContext.current
-    val preferencesRepository = remember { UserPreferencesRepository.getInstance(context) }
-    val apiService = remember { HuggingFaceApiService(preferencesRepository) }
     val coroutineScope = rememberCoroutineScope()
     
     // Set test token for development
     LaunchedEffect(Unit) {
-        preferencesRepository.setTestHuggingFaceToken()
+        viewModel.setTestHuggingFaceToken()
     }
 
     Dialog(onDismissRequest = {}) {
@@ -90,7 +88,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                 // Mode selection
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -103,8 +101,8 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                         Button(
                             onClick = { showSearch = false },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (!showSearch) Color(0xFF0f3460) else Color(0xFF16213e),
-                                contentColor = Color.White
+                                containerColor = if (!showSearch) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
                             ),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f).padding(end = 4.dp)
@@ -114,8 +112,8 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                         Button(
                             onClick = { showSearch = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (showSearch) Color(0xFF0f3460) else Color(0xFF16213e),
-                                contentColor = Color.White
+                                containerColor = if (showSearch) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary
                             ),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f).padding(start = 4.dp)
@@ -171,12 +169,12 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                     isSearching = true
                                     searchError = null
                                     try {
-                                        val response = apiService.searchModels(searchQuery)
+                                        val response = viewModel.searchModels(searchQuery)
                                         if (response.success && response.data != null) {
                                             val detailedModels = mutableListOf<Map<String, String>>()
                                             for (model in response.data.take(3)) {
                                                 try {
-                                                    val detailResponse = apiService.getModelDetails(model.id)
+                                                    val detailResponse = viewModel.getModelDetails(model.id)
                                                     if (detailResponse.success && detailResponse.data != null) {
                                                         val detailedModel = detailResponse.data.first()
                                                         detailedModels.add(mapOf(
