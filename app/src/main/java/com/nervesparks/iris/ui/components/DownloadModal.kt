@@ -26,7 +26,6 @@ import androidx.compose.ui.window.Dialog
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.HuggingFaceApiService
-import com.nervesparks.iris.data.UserPreferencesRepository
 import kotlinx.coroutines.launch
 
 @Composable

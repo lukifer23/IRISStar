@@ -15,7 +15,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.data.repository.ModelRepository
+import com.nervesparks.iris.data.repository.SettingsRepository
+import com.nervesparks.iris.data.repository.ModelConfiguration
+import com.nervesparks.iris.data.repository.ThinkingTokenSettings
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -36,7 +40,8 @@ import kotlinx.coroutines.flow.first
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val llamaAndroid: LLamaAndroid,
-    private val userPreferencesRepository: UserPreferencesRepository,
+    private val modelRepository: ModelRepository,
+    private val settingsRepository: SettingsRepository,
     private val chatRepository: ChatRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
     application: Application
@@ -87,21 +92,26 @@ class MainViewModel @Inject constructor(
     val defaultModelName: State<String> = _defaultModelName
 
     init {
-        loadDefaultModelName()
-        loadModelSettings()
-        loadThinkingTokenSettings()
+        viewModelScope.launch {
+            loadDefaultModelName()
+            loadModelSettings()
+            loadThinkingTokenSettings()
+        }
     }
-    private fun loadDefaultModelName(){
+
+    private suspend fun loadDefaultModelName() {
         try {
-            _defaultModelName.value = userPreferencesRepository.getDefaultModelName()
+            _defaultModelName.value = settingsRepository.getDefaultModelName()
         } catch (e: Exception) {
             Log.e("MainViewModel", "Error loading default model name, using empty string", e)
             _defaultModelName.value = ""
         }
     }
 
-    fun setDefaultModelName(modelName: String){
-        userPreferencesRepository.setDefaultModelName(modelName)
+    fun setDefaultModelName(modelName: String) {
+        viewModelScope.launch {
+            settingsRepository.setDefaultModelName(modelName)
+        }
         _defaultModelName.value = modelName
     }
 
@@ -121,36 +131,6 @@ class MainViewModel @Inject constructor(
     var topP by mutableStateOf(0.9f)
     var topK by mutableStateOf(40)
     var temp by mutableStateOf(0.7f)
-
-    var allModels by mutableStateOf(
-        listOf(
-            mapOf(
-                "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
-                "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf"
-            ),
-            mapOf(
-                "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
-                "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
-            ),
-            mapOf(
-                "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
-                "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf"
-            ),
-            mapOf(
-                "name" to "NemoTron-1.5B-Q4_K_M.gguf",
-                "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
-                "destination" to "NemoTron-1.5B-Q4_K_M.gguf"
-            ),
-            mapOf(
-                "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
-                "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
-            )
-        )
-    )
 
     private var first by mutableStateOf(
         true
@@ -287,90 +267,43 @@ class MainViewModel @Inject constructor(
         modelSystemPrompt = systemPrompt
         modelChatFormat = chatFormat
         modelThreadCount = threadCount
-        
-        // Save to preferences
-        userPreferencesRepository.setModelTemperature(temperature)
-        userPreferencesRepository.setModelTopP(topP)
-        userPreferencesRepository.setModelTopK(topK)
-        userPreferencesRepository.setModelMaxTokens(maxTokens)
-        userPreferencesRepository.setModelContextLength(contextLength)
-        userPreferencesRepository.setModelSystemPrompt(systemPrompt)
-        userPreferencesRepository.setModelChatFormat(chatFormat)
-        userPreferencesRepository.setModelThreadCount(threadCount)
+        viewModelScope.launch {
+            val config = ModelConfiguration(
+                temperature = temperature,
+                topP = topP,
+                topK = topK,
+                threadCount = threadCount,
+                contextLength = contextLength,
+                systemPrompt = systemPrompt
+            )
+            modelRepository.saveModelConfiguration(defaultModelName.value, config)
+        }
     }
 
-    fun loadModelSettings() {
+    private suspend fun loadModelSettings() {
         try {
             Log.d("MainViewModel", "Loading model settings...")
-            
-            // Try to load each setting with individual try-catch blocks
-            try {
-                modelTemperature = userPreferencesRepository.getModelTemperature()
-                Log.d("MainViewModel", "Loaded temperature: $modelTemperature")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading temperature, using default", e)
-                modelTemperature = 0.7f
-            }
-            
-            try {
-                modelTopP = userPreferencesRepository.getModelTopP()
-                Log.d("MainViewModel", "Loaded topP: $modelTopP")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading topP, using default", e)
-                modelTopP = 0.9f
-            }
-            
-            try {
-                modelTopK = userPreferencesRepository.getModelTopK()
-                Log.d("MainViewModel", "Loaded topK: $modelTopK")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading topK, using default", e)
-                modelTopK = 40
-            }
-            
-            try {
-                modelMaxTokens = userPreferencesRepository.getModelMaxTokens()
-                Log.d("MainViewModel", "Loaded maxTokens: $modelMaxTokens")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading maxTokens, using default", e)
-                modelMaxTokens = 2048
-            }
-            
-            try {
-                modelContextLength = userPreferencesRepository.getModelContextLength()
-                Log.d("MainViewModel", "Loaded contextLength: $modelContextLength")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading contextLength, using default", e)
-                modelContextLength = 32768  // Increased for Qwen3 support
-            }
-            
-            try {
-                modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
-                Log.d("MainViewModel", "Loaded systemPrompt: $modelSystemPrompt")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading systemPrompt, using default", e)
-                modelSystemPrompt = "You are a helpful AI assistant."
-            }
-            
-            try {
-                modelChatFormat = userPreferencesRepository.getModelChatFormat()
-                Log.d("MainViewModel", "Loaded chatFormat: $modelChatFormat")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading chatFormat, using default", e)
-                modelChatFormat = "CHATML"
-            }
-            
-            try {
-                modelThreadCount = userPreferencesRepository.getModelThreadCount()
-                Log.d("MainViewModel", "Loaded threadCount: $modelThreadCount")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading threadCount, using default", e)
-                modelThreadCount = 4
-            }
-            
+            val config = modelRepository.getModelConfiguration(defaultModelName.value)
+            modelTemperature = config.temperature
+            modelTopP = config.topP
+            modelTopK = config.topK
+            modelThreadCount = config.threadCount
+            modelContextLength = config.contextLength
+            modelSystemPrompt = config.systemPrompt
+            // Defaults for values not stored in repository
+            modelMaxTokens = 2048
+            modelChatFormat = "QWEN3"
             Log.d("MainViewModel", "Model settings loaded successfully")
         } catch (e: Exception) {
             Log.e("MainViewModel", "Error in loadModelSettings", e)
+            modelTemperature = 0.7f
+            modelTopP = 0.9f
+            modelTopK = 40
+            modelMaxTokens = 2048
+            modelContextLength = 32768
+            modelSystemPrompt = "You are a helpful AI assistant."
+            modelChatFormat = "QWEN3"
+            modelThreadCount = 4
         }
     }
 
@@ -385,37 +318,37 @@ class MainViewModel @Inject constructor(
     // Thinking token settings
     fun updateShowThinkingTokens(show: Boolean) {
         showThinkingTokens = show
-        userPreferencesRepository.setShowThinkingTokens(show)
+        viewModelScope.launch {
+            settingsRepository.saveThinkingTokenSettings(
+                ThinkingTokenSettings(
+                    showThinkingTokens = show,
+                    thinkingTokenStyle = thinkingTokenStyle
+                )
+            )
+        }
     }
 
     fun updateThinkingTokenStyle(style: String) {
         thinkingTokenStyle = style
-        userPreferencesRepository.setThinkingTokenStyle(style)
+        viewModelScope.launch {
+            settingsRepository.saveThinkingTokenSettings(
+                ThinkingTokenSettings(
+                    showThinkingTokens = showThinkingTokens,
+                    thinkingTokenStyle = style
+                )
+            )
+        }
     }
 
-    fun loadThinkingTokenSettings() {
+    private suspend fun loadThinkingTokenSettings() {
         try {
-            Log.d("MainViewModel", "Loading thinking token settings...")
-            
-            try {
-                showThinkingTokens = userPreferencesRepository.getShowThinkingTokens()
-                Log.d("MainViewModel", "Loaded showThinkingTokens: $showThinkingTokens")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading showThinkingTokens, using default", e)
-                showThinkingTokens = true
-            }
-            
-            try {
-                thinkingTokenStyle = userPreferencesRepository.getThinkingTokenStyle()
-                Log.d("MainViewModel", "Loaded thinkingTokenStyle: $thinkingTokenStyle")
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading thinkingTokenStyle, using default", e)
-                thinkingTokenStyle = "COLLAPSIBLE"
-            }
-            
-            Log.d("MainViewModel", "Thinking token settings loaded successfully")
+            val settings = settingsRepository.getThinkingTokenSettings()
+            showThinkingTokens = settings.showThinkingTokens
+            thinkingTokenStyle = settings.thinkingTokenStyle
         } catch (e: Exception) {
             Log.e("MainViewModel", "Error in loadThinkingTokenSettings", e)
+            showThinkingTokens = true
+            thinkingTokenStyle = "COLLAPSIBLE"
         }
     }
 
@@ -423,97 +356,70 @@ class MainViewModel @Inject constructor(
     var refresh by mutableStateOf(false)
 
     fun loadExistingModels(directory: File) {
-        // List models in the directory that end with .gguf
-        directory.listFiles { file -> file.extension == "gguf" }?.forEach { file ->
-            val modelName = file.name
-            Log.i("This is the modelname", modelName)
-            if (!allModels.any { it["name"] == modelName }) {
-                allModels += mapOf(
-                    "name" to modelName,
-                    "source" to "local",
-                    "destination" to file.name
+        viewModelScope.launch {
+            val availableModels = modelRepository.getAvailableModels(directory)
+
+            if (availableModels.isNotEmpty()) {
+                val firstModel = availableModels.first()
+                val destinationPath = File(directory, firstModel["destination"].toString())
+                currentDownloadable = Downloadable(
+                    firstModel["name"].toString(),
+                    Uri.parse(firstModel["source"].toString()),
+                    destinationPath
                 )
-            }
-        }
 
-        // Check if we have any models available
-        val availableModels = allModels.filter { model ->
-            val destinationPath = File(directory, model["destination"].toString())
-            destinationPath.exists()
-        }
-
-        if (availableModels.isNotEmpty()) {
-            // Set the first available model as currentDownloadable but don't auto-load
-            val firstModel = availableModels.first()
-            val destinationPath = File(directory, firstModel["destination"].toString())
-            currentDownloadable = Downloadable(
-                firstModel["name"].toString(),
-                Uri.parse(firstModel["source"].toString()),
-                destinationPath
-            )
-            
-            // If we have a default model and it exists, use it
-            if (defaultModelName.value.isNotEmpty()) {
-                val defaultModel = availableModels.find { model -> model["name"] == defaultModelName.value }
-                if (defaultModel != null) {
-                    val defaultPath = File(directory, defaultModel["destination"].toString())
-                    currentDownloadable = Downloadable(
-                        defaultModel["name"].toString(),
-                        Uri.parse(defaultModel["source"].toString()),
-                        defaultPath
-                    )
+                if (defaultModelName.value.isNotEmpty()) {
+                    val defaultModel = availableModels.find { model -> model["name"] == defaultModelName.value }
+                    if (defaultModel != null) {
+                        val defaultPath = File(directory, defaultModel["destination"].toString())
+                        currentDownloadable = Downloadable(
+                            defaultModel["name"].toString(),
+                            Uri.parse(defaultModel["source"].toString()),
+                            defaultPath
+                        )
+                    }
                 }
+
+                showModal = false
+                showModelSelection = true
+            } else {
+                showModal = true
+                showModelSelection = false
             }
-            
-            // DON'T show download modal when models exist - show model selection instead
-            showModal = false
-            showModelSelection = true
-        } else {
-            // No models available, show download modal
-            showModal = true
-            showModelSelection = false
         }
     }
 
     // New function to switch between models
     fun switchModel(modelName: String, directory: File) {
-        val model = allModels.find { it["name"] == modelName }
-        if (model != null) {
-            val destinationPath = File(directory, model["destination"].toString())
-            if (destinationPath.exists()) {
-                // Unload current model if any
-                viewModelScope.launch {
+        viewModelScope.launch {
+            val models = modelRepository.getAvailableModels(directory)
+            val model = models.find { it["name"] == modelName }
+            if (model != null) {
+                val destinationPath = File(directory, model["destination"].toString())
+                if (destinationPath.exists()) {
                     try {
                         llamaAndroid.unload()
                     } catch (e: Exception) {
                         Log.e("MainViewModel", "Error unloading model", e)
                     }
+
+                    currentDownloadable = Downloadable(
+                        model["name"].toString(),
+                        Uri.parse(model["source"].toString()),
+                        destinationPath
+                    )
+
+                    load(destinationPath.path, userThreads = user_thread.toInt())
+                    setDefaultModelName(modelName)
+                    Log.i("MainViewModel", "Switched to model: $modelName")
                 }
-                
-                // Set new model as current
-                currentDownloadable = Downloadable(
-                    model["name"].toString(),
-                    Uri.parse(model["source"].toString()),
-                    destinationPath
-                )
-                
-                // Load the new model
-                load(destinationPath.path, userThreads = user_thread.toInt())
-                
-                // Update default model name
-                setDefaultModelName(modelName)
-                
-                Log.i("MainViewModel", "Switched to model: $modelName")
             }
         }
     }
 
     // New function to get available models
     fun getAvailableModels(directory: File): List<Map<String, String>> {
-        return allModels.filter { model ->
-            val destinationPath = File(directory, model["destination"].toString())
-            destinationPath.exists()
-        }
+        return runBlocking { modelRepository.getAvailableModels(directory) }
     }
 
     // Model selection UI functions

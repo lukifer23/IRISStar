@@ -63,7 +63,6 @@ import androidx.compose.foundation.BorderStroke
 import android.app.Application
 import androidx.compose.foundation.border
 import androidx.activity.viewModels
-import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.SettingsBottomSheet
 import com.nervesparks.iris.ui.theme.IrisStarTheme
 import com.nervesparks.iris.ui.ChatListScreen
