@@ -1,6 +1,6 @@
 package com.nervesparks.iris.ui.components
 
-import androidx.compose.foundation.background
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -10,11 +10,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.IrisStarTheme
+
+data class PerformanceMonitorState(
+    val tps: Double,
+    val ttft: Long,
+    val latency: Long,
+    val memoryUsage: Long,
+    val contextLimit: Int,
+    val maxContextLimit: Int,
+    val tokensGenerated: Int,
+    val isGenerating: Boolean
+)
 
 @Composable
 fun PerformanceMonitor(viewModel: MainViewModel) {
+    PerformanceMonitor(
+        state = PerformanceMonitorState(
+            tps = viewModel.tps,
+            ttft = viewModel.ttft,
+            latency = viewModel.latency,
+            memoryUsage = viewModel.memoryUsage,
+            contextLimit = viewModel.contextLimit,
+            maxContextLimit = viewModel.maxContextLimit,
+            tokensGenerated = viewModel.tokensGenerated,
+            isGenerating = viewModel.isGenerating
+        )
+    )
+}
+
+@Composable
+fun PerformanceMonitor(state: PerformanceMonitorState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -31,12 +59,12 @@ fun PerformanceMonitor(viewModel: MainViewModel) {
             Text(
                 text = "Performance Metrics",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSecondary,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Real-time metrics
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -44,26 +72,26 @@ fun PerformanceMonitor(viewModel: MainViewModel) {
             ) {
                 MetricItem(
                     label = "TPS",
-                    value = String.format("%.1f", viewModel.tps),
+                    value = String.format("%.1f", state.tps),
                     unit = "tokens/s",
-                    color = if (viewModel.isGenerating) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
+                    color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 MetricItem(
                     label = "TTFT",
-                    value = if (viewModel.ttft > 0) viewModel.ttft.toString() else "N/A",
+                    value = if (state.ttft > 0) state.ttft.toString() else "N/A",
                     unit = "ms",
-                    color = if (viewModel.ttft > 0) Color(0xFF2196F3) else Color(0xFF9E9E9E)
+                    color = if (state.ttft > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 MetricItem(
                     label = "Latency",
-                    value = if (viewModel.latency > 0) viewModel.latency.toString() else "N/A",
+                    value = if (state.latency > 0) state.latency.toString() else "N/A",
                     unit = "ms",
-                    color = if (viewModel.latency > 0) Color(0xFFFF9800) else Color(0xFF9E9E9E)
+                    color = if (state.latency > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Memory and context metrics
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -71,31 +99,31 @@ fun PerformanceMonitor(viewModel: MainViewModel) {
             ) {
                 MetricItem(
                     label = "Memory",
-                    value = viewModel.memoryUsage.toString(),
+                    value = state.memoryUsage.toString(),
                     unit = "MB",
-                    color = Color(0xFFE91E63)
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 MetricItem(
                     label = "Context",
-                    value = "${viewModel.contextLimit}/${viewModel.maxContextLimit}",
+                    value = "${state.contextLimit}/${state.maxContextLimit}",
                     unit = "tokens",
-                    color = Color(0xFF9C27B0)
+                    color = MaterialTheme.colorScheme.tertiary
                 )
                 MetricItem(
                     label = "Generated",
-                    value = viewModel.tokensGenerated.toString(),
+                    value = state.tokensGenerated.toString(),
                     unit = "tokens",
-                    color = if (viewModel.isGenerating) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
+                    color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             // Generation status
-            if (viewModel.isGenerating) {
+            if (state.isGenerating) {
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF4CAF50),
-                    trackColor = Color(0xFF2E7D32)
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer
                 )
             }
         }
@@ -115,7 +143,7 @@ private fun MetricItem(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
         )
         Text(
             text = value,
@@ -126,7 +154,34 @@ private fun MetricItem(
         Text(
             text = unit,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.5f)
+            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.5f)
         )
     }
-} 
+}
+
+private fun sampleState() = PerformanceMonitorState(
+    tps = 10.5,
+    ttft = 200,
+    latency = 150,
+    memoryUsage = 512,
+    contextLimit = 256,
+    maxContextLimit = 512,
+    tokensGenerated = 300,
+    isGenerating = true
+)
+
+@Preview(name = "Light", uiMode = Configuration.UI_MODE_NIGHT_NO, showBackground = true)
+@Composable
+fun PerformanceMonitorLightPreview() {
+    IrisStarTheme(darkTheme = false) {
+        PerformanceMonitor(state = sampleState())
+    }
+}
+
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
+@Composable
+fun PerformanceMonitorDarkPreview() {
+    IrisStarTheme(darkTheme = true) {
+        PerformanceMonitor(state = sampleState())
+    }
+}
