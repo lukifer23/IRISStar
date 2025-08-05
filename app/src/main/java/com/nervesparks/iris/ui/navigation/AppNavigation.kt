@@ -13,7 +13,6 @@ import com.nervesparks.iris.ui.ModelsScreen
 import com.nervesparks.iris.ui.ParametersScreen
 import com.nervesparks.iris.ui.SettingsScreen
 import android.app.DownloadManager
-import android.content.ClipboardManager
 import com.nervesparks.iris.Downloadable
 import java.io.File
 
@@ -30,10 +29,9 @@ object AppDestinations {
 @Composable
 fun AppNavigation(
     viewModel: MainViewModel,
-    clipboardManager: ClipboardManager,
     downloadManager: DownloadManager,
     models: List<Downloadable>,
-    extFilesDir: File?
+    extFilesDir: File?,
 ) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = AppDestinations.CHAT_LIST) {
@@ -52,9 +50,7 @@ fun AppNavigation(
         composable("${AppDestinations.CHAT}?chatId={chatId}") { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId")?.toLongOrNull()
             MainChatScreen(
-                onNextButtonClicked = { /* Not used with NavHost */ },
                 viewModel = viewModel,
-                clipboard = clipboardManager,
                 dm = downloadManager,
                 models = models,
                 extFileDir = extFilesDir,
@@ -91,3 +87,4 @@ fun AppNavigation(
         }
     }
 }
+

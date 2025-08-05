@@ -20,6 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -134,6 +137,32 @@ class MainViewModel @Inject constructor(
     var userSpecifiedThreads by mutableIntStateOf(2)
     var message by mutableStateOf("")
         private set
+
+    // Prompt suggestions exposed as flow
+    private val _prompts = MutableStateFlow(
+        listOf(
+            "Explain how to develop a consistent reading habit.",
+            "Write an email to your manager requesting leave for a day.",
+            "Suggest time management strategies for handling multiple deadlines effectively.",
+            "Draft a professional LinkedIn message to connect with a recruiter.",
+            "Suggest ways to practice mindfulness in a busy daily schedule.",
+            "Recommend a 15-minute daily workout routine to stay fit with a busy schedule.",
+            "Provide a simple and polite Spanish translation of 'Excuse me, can you help me?' with explanation.",
+            "List the top 5 science fiction novels that have most influenced modern technological thinking",
+            "List security tips to protect personal information online.",
+            "Recommend three books that can improve communication skills."
+        )
+    )
+    val prompts: StateFlow<List<String>> = _prompts.asStateFlow()
+
+    // Recognized speech text
+    private val _recognizedText = MutableStateFlow("")
+    val recognizedText: StateFlow<String> = _recognizedText.asStateFlow()
+
+    fun updateRecognizedText(text: String) {
+        _recognizedText.value = text
+        updateMessage(text)
+    }
 
     var userGivenModel by mutableStateOf("")
     var SearchedName by mutableStateOf("")
