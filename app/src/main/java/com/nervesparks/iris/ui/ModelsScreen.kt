@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.TabRowDefaults.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -82,7 +82,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                             tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
-                    Divider(
+                    HorizontalDivider(
                         modifier = Modifier
                             .fillMaxWidth(),
                         color = MaterialTheme.colorScheme.outline, // Set the color of the divider
@@ -116,7 +116,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 }
             }
             item {
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier
                         .fillMaxWidth(),
                     color = MaterialTheme.colorScheme.outline, // Set the color of the divider
