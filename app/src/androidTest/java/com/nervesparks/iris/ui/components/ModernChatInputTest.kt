@@ -85,7 +85,7 @@ class ModernChatInputTest {
             )
         }
 
-        composeTestRule.onNodeWithContentDescription("Attach").performClick()
+        composeTestRule.onNodeWithContentDescription("Attach file").performClick()
         composeTestRule.onNodeWithText("Camera").performClick()
         assertTrue(called)
     }
@@ -104,7 +104,7 @@ class ModernChatInputTest {
             )
         }
 
-        composeTestRule.onNodeWithContentDescription("Attach").performClick()
+        composeTestRule.onNodeWithContentDescription("Attach file").performClick()
         composeTestRule.onNodeWithText("Photos").performClick()
         assertTrue(called)
     }
@@ -123,7 +123,7 @@ class ModernChatInputTest {
             )
         }
 
-        composeTestRule.onNodeWithContentDescription("Attach").performClick()
+        composeTestRule.onNodeWithContentDescription("Attach file").performClick()
         composeTestRule.onNodeWithText("Files").performClick()
         assertTrue(called)
     }

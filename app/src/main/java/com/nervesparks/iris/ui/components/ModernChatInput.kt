@@ -96,8 +96,8 @@ fun ModernChatInput(
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Attach",
+                    imageVector = Icons.Default.AttachFile,
+                    contentDescription = "Attach file",
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
@@ -144,8 +144,8 @@ fun ModernChatInput(
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Voice Input",
+                    imageVector = Icons.Default.Mic,
+                    contentDescription = "Voice input",
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
@@ -184,7 +184,7 @@ private fun QuickActionsRow(
         )
         
         QuickActionButton(
-            icon = Icons.Default.Add,
+            icon = Icons.Default.Image,
             text = "Create images",
             onClick = onCreateImages
         )
@@ -284,27 +284,27 @@ private fun AttachmentDialog(
                 
                 // Camera option
                 AttachmentOption(
-                    icon = Icons.Default.Add,
+                    icon = Icons.Default.Camera,
                     text = "Camera",
                     onClick = {
                         onCameraClick()
                         onDismiss()
                     }
                 )
-                
+
                 // Photos option
                 AttachmentOption(
-                    icon = Icons.Default.Add,
+                    icon = Icons.Default.Image,
                     text = "Photos",
                     onClick = {
                         onPhotosClick()
                         onDismiss()
                     }
                 )
-                
+
                 // Files option
                 AttachmentOption(
-                    icon = Icons.Default.Add,
+                    icon = Icons.Default.AttachFile,
                     text = "Files",
                     onClick = {
                         onFilesClick()
