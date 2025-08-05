@@ -1,110 +1,226 @@
 package com.nervesparks.iris.ui.components
 
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.R
+import com.nervesparks.iris.ui.model.ChatMessage
 
 @Composable
 fun MessageBubble(
-    message: String,
-    isUser: Boolean,
-    timestamp: Long? = null,
+    message: ChatMessage,
+    viewModel: MainViewModel? = null,
+    showThinkingTokens: Boolean = false,
     onLongClick: (() -> Unit)? = null
 ) {
-    val backgroundColor = if (isUser) {
-        MaterialTheme.colorScheme.tertiary
-    } else {
-        MaterialTheme.colorScheme.secondary
-    }
-    
-    val textColor = if (isUser) {
-        MaterialTheme.colorScheme.onTertiary
-    } else {
-        MaterialTheme.colorScheme.onSecondary
-    }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
-        ) {
-            Card(
+    when (message) {
+        is ChatMessage.User -> {
+            Row(
+                horizontalArrangement = Arrangement.End,
                 modifier = Modifier
-                    .widthIn(max = 280.dp)
-                    .clickable { onLongClick?.invoke() },
-                colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isUser) 16.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 16.dp
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .fillMaxWidth()
+                    .padding(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(12.dp)
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 2.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .combinedClickable(
+                            onLongClick = { onLongClick?.invoke() },
+                            onClick = {}
+                        )
+                        .padding(16.dp)
                 ) {
                     Text(
-                        text = message,
-                        color = textColor,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = message.content,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        lineHeight = 22.sp
                     )
-                    
-                    if (timestamp != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                .format(java.util.Date(timestamp)),
-                            color = textColor.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.bodySmall
+
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(message.content))
+                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(20.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy message",
+                            tint = Color.White
                         )
                     }
                 }
+
+                MessageIcon(iconRes = R.drawable.user_icon, description = "User Icon")
+            }
+        }
+        is ChatMessage.Assistant -> {
+            Row(
+                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                MessageIcon(iconRes = R.drawable.logo, description = "Bot Icon")
+
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 2.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .combinedClickable(
+                            onLongClick = { onLongClick?.invoke() },
+                            onClick = {}
+                        )
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = message.content.removePrefix("```") ,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 22.sp
+                    )
+
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(message.content.removePrefix("```")))
+                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(20.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy message",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+        is ChatMessage.System -> {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .combinedClickable(
+                        onLongClick = { onLongClick?.invoke() },
+                        onClick = {}
+                    ),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = message.content,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(message.content))
+                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy system message",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+        is ChatMessage.Code -> {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .fillMaxWidth()
+            ) {
+                IconButton(
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(message.content.removePrefix("```")))
+                        Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.align(Alignment.TopEnd).size(20.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Copy code",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = message.content.removePrefix("```"),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = FontFamily.Monospace
+                    ),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+        is ChatMessage.Reasoning -> {
+            if (viewModel != null) {
+                ThinkingMessage(
+                    message = message.content,
+                    viewModel = viewModel,
+                    showThinkingTokens = showThinkingTokens,
+                    onLongClick = { onLongClick?.invoke() }
+                )
             }
         }
     }
 }
 
 @Composable
-fun SystemMessageBubble(
-    message: String,
-    onLongClick: (() -> Unit)? = null
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable { onLongClick?.invoke() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-} 
+private fun MessageIcon(iconRes: Int, description: String) {
+    Image(
+        painter = androidx.compose.ui.res.painterResource(id = iconRes),
+        contentDescription = description,
+        modifier = Modifier.size(20.dp)
+    )
+}
+
