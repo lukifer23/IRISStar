@@ -20,6 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -137,6 +140,9 @@ class MainViewModel @Inject constructor(
 
     var userGivenModel by mutableStateOf("")
     var SearchedName by mutableStateOf("")
+
+    private val _searchResults = MutableStateFlow(SearchUiState())
+    val searchResults: StateFlow<SearchUiState> = _searchResults.asStateFlow()
 
     private var textToSpeech:TextToSpeech? = null
 
@@ -968,15 +974,21 @@ class MainViewModel @Inject constructor(
         llamaAndroid.stopTextGeneration()
     }
 
-    // Add missing methods for compilation fixes
-    fun searchModels(query: String): SearchResponse {
-        // This is now a synchronous wrapper for the async search
-        // The actual search should be called from a coroutine scope
-        return SearchResponse(
-            success = false,
-            data = null,
-            error = "Use searchModelsAsync() for proper async search"
-        )
+    fun searchModels(query: String) {
+        viewModelScope.launch {
+            _searchResults.value = SearchUiState(isLoading = true)
+            try {
+                val response = searchModelsAsync(query)
+                if (response.success && response.data != null) {
+                    _searchResults.value = SearchUiState(results = response.data)
+                } else {
+                    _searchResults.value = SearchUiState(errorMessage = response.error ?: "Failed to search models")
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error searching models", e)
+                _searchResults.value = SearchUiState(errorMessage = "Error: ${e.localizedMessage}")
+            }
+        }
     }
 
     suspend fun searchModelsAsync(query: String): SearchResponse {
@@ -1136,6 +1148,12 @@ data class ModelSearchResult(
     val downloads: Int,
     val likes: Int,
     val tags: List<String>
+)
+
+data class SearchUiState(
+    val results: List<ModelSearchResult>? = null,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 data class ModelDetailsResponse(

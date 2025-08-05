@@ -169,7 +169,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                     isSearching = true
                                     searchError = null
                                     try {
-                                        val response = viewModel.searchModels(searchQuery)
+                                        val response = viewModel.searchModelsAsync(searchQuery)
                                         if (response.success && response.data != null) {
                                             val detailedModels = mutableListOf<Map<String, String>>()
                                             for (model in response.data.take(3)) {

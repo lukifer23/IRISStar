@@ -1,7 +1,6 @@
 package com.nervesparks.iris.ui
 
 import android.app.DownloadManager
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,10 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,10 +27,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,27 +45,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
-import com.nervesparks.iris.data.HuggingFaceApiService
-import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.components.InfoModal
 import com.nervesparks.iris.ui.components.LoadingModal
-import com.nervesparks.iris.ui.components.ModelCard
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.SocketTimeoutException
-import java.net.URL
-import java.net.UnknownHostException
 
 @Composable
 fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDir: File) {
-    var modelData by rememberSaveable { mutableStateOf<List<Map<String, String>>?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
+    val searchState by viewModel.searchResults.collectAsState()
     val kc = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
@@ -175,46 +157,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         Button(
             onClick = {
                 kc?.hide()
-                
-                // TODO: Add proper credentials check when API is implemented
-                // if (!preferencesRepository.hasHuggingFaceCredentials()) {
-                //     errorMessage = "Please set your HuggingFace credentials in Settings first"
-                //     return@Button
-                // }
-                
-                coroutineScope.launch {
-                    isLoading = true
-                    errorMessage = null
-
-                    try {
-                        // Use searchModelsAsync for proper async search
-                        val response = viewModel.searchModelsAsync(UserGivenModel.text)
-                        
-                        if (response.success && response.data != null) {
-                            // Convert search results to the expected format
-                            // Note: Search results don't include siblings, so we'll show model info directly
-                            modelData = response.data.map { model ->
-                                mapOf(
-                                    "modelId" to model.id,
-                                    "modelName" to model.name,
-                                    "description" to (model.description ?: ""),
-                                    "downloads" to model.downloads.toString(),
-                                    "likes" to model.likes.toString(),
-                                    "tags" to model.tags.joinToString(", ")
-                                )
-                            }
-                        } else {
-                            errorMessage = response.error ?: "Failed to search models"
-                            modelData = null
-                        }
-                    } catch (e: Exception) {
-                        Log.e("SearchResultScreen", "Error searching models", e)
-                        errorMessage = "Error: ${e.localizedMessage}"
-                        modelData = null
-                    } finally {
-                        isLoading = false
-                    }
-                }
+                viewModel.searchModels(UserGivenModel.text)
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
@@ -226,7 +169,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         }
 
         // Error Message
-        errorMessage?.let {
+        searchState.errorMessage?.let {
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
@@ -235,9 +178,9 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                     .padding(vertical = 8.dp)
             )
         }
-        
+
         // Model Results
-        modelData?.let { models ->
+        searchState.results?.let { models ->
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -260,52 +203,52 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                         ) {
                             // Model header
                             Text(
-                                text = model["modelName"] ?: "Unknown Model",
+                                text = model.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            
-                            if (model["description"]?.isNotEmpty() == true) {
+
+                            if (!model.description.isNullOrEmpty()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = model["description"] ?: "",
+                                    text = model.description,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 2
                                 )
                             }
-                            
+
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             // Stats row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "Downloads: ${model["downloads"] ?: "0"}",
+                                    text = "Downloads: ${model.downloads}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "Likes: ${model["likes"] ?: "0"}",
+                                    text = "Likes: ${model.likes}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            
-                            if (model["tags"]?.isNotEmpty() == true) {
+
+                            if (model.tags.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Tags: ${model["tags"]}",
+                                    text = "Tags: ${model.tags.joinToString(", ")}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1
                                 )
                             }
-                            
+
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             // Note about getting files
                             Text(
                                 text = "Note: To download files, search for the specific model ID",
@@ -313,13 +256,12 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 color = MaterialTheme.colorScheme.tertiary,
                                 fontSize = 10.sp
                             )
-                            
+
                             // Copy model ID button
                             Button(
                                 onClick = {
-                                    val modelId = model["modelId"] ?: ""
-                                    clipboardManager.setText(AnnotatedString(modelId))
-                                    Toast.makeText(context, "Model ID copied: $modelId", Toast.LENGTH_SHORT).show()
+                                    clipboardManager.setText(AnnotatedString(model.id))
+                                    Toast.makeText(context, "Model ID copied: ${model.id}", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
@@ -336,7 +278,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         }
 
         // Loading Indicator (Optional)
-        if (isLoading) {
+        if (searchState.isLoading) {
             Text(
                 text = "Searching for models...",
                 color = MaterialTheme.colorScheme.onBackground,
