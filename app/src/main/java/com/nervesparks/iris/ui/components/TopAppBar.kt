@@ -59,6 +59,22 @@ fun ModernTopAppBar(
             }
         },
         actions = {
+            IconButton(
+                onClick = { viewModel.togglePerformanceMonitor() },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Speed,
+                    contentDescription = "Toggle Performance Monitor",
+                    tint = if (viewModel.showPerformanceMonitor)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             // Model selection button
             if (availableModels.isNotEmpty()) {
                 Card(

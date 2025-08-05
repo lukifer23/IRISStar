@@ -690,7 +690,7 @@ fun MainChatScreen (
                                 }
                                 
                                 // Performance Monitor at bottom
-                                if (viewModel.isGenerating || viewModel.tps > 0.0) {
+                                if (viewModel.showPerformanceMonitor && (viewModel.isGenerating || viewModel.tps > 0.0)) {
                                     item {
                                         PerformanceMonitor(viewModel = viewModel)
                                     }

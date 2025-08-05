@@ -42,7 +42,9 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
         LazyColumn(state = scrollState) {
             // Add performance monitor at the top
             item {
-                PerformanceMonitor(viewModel = viewModel)
+                if (viewModel.showPerformanceMonitor) {
+                    PerformanceMonitor(viewModel = viewModel)
+                }
             }
             
             itemsIndexed(messages.drop(3)) { index, messageMap ->

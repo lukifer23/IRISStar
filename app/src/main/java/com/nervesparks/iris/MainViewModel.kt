@@ -120,6 +120,7 @@ class MainViewModel @Inject constructor(
     var showModal by mutableStateOf(true)
     var showDownloadInfoModal by mutableStateOf(false)
     var showModelSelection by mutableStateOf(false)
+    var showPerformanceMonitor by mutableStateOf(false)
     var selectedModelForSwitch by mutableStateOf("")
     var user_thread by mutableStateOf(0f)
     var topP by mutableStateOf(0.9f)
@@ -174,6 +175,10 @@ class MainViewModel @Inject constructor(
 
     fun onFilesAttachment() {
         lastAttachmentAction = "files"
+    }
+
+    fun togglePerformanceMonitor() {
+        showPerformanceMonitor = !showPerformanceMonitor
     }
 
     // Performance monitoring variables

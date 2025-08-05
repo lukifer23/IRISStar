@@ -3,8 +3,11 @@ package com.nervesparks.iris.ui.components
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +46,7 @@ fun PerformanceMonitor(viewModel: MainViewModel) {
 
 @Composable
 fun PerformanceMonitor(state: PerformanceMonitorState) {
+    var expanded by remember { mutableStateOf(true) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -56,50 +60,65 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            Text(
-                text = "Performance",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Compact metrics layout
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                CompactMetricItem(
-                    label = "TPS",
-                    value = String.format("%.1f", state.tps),
-                    color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                Text(
+                    text = "Performance",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
                 )
-                CompactMetricItem(
-                    label = "TTFT",
-                    value = if (state.ttft > 0) "${state.ttft}ms" else "N/A",
-                    color = if (state.ttft > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                CompactMetricItem(
-                    label = "Memory",
-                    value = "${state.memoryUsage}MB",
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                CompactMetricItem(
-                    label = "Context",
-                    value = "${state.contextLimit}/${state.maxContextLimit}",
-                    color = MaterialTheme.colorScheme.tertiary
-                )
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            // Generation progress
-            if (state.isGenerating) {
-                Spacer(modifier = Modifier.height(6.dp))
-                LinearProgressIndicator(
+            if (expanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Compact metrics layout
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    CompactMetricItem(
+                        label = "TPS",
+                        value = String.format("%.1f", state.tps),
+                        color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    CompactMetricItem(
+                        label = "TTFT",
+                        value = if (state.ttft > 0) "${state.ttft}ms" else "N/A",
+                        color = if (state.ttft > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    CompactMetricItem(
+                        label = "Memory",
+                        value = "${state.memoryUsage}MB",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    CompactMetricItem(
+                        label = "Context",
+                        value = "${state.contextLimit}/${state.maxContextLimit}",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                // Generation progress
+                if (state.isGenerating) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                }
             }
         }
     }
