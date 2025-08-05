@@ -1,20 +1,20 @@
 package com.nervesparks.iris.ui.navigation
 
+import android.app.DownloadManager
+import android.content.ClipboardManager
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.AboutScreen
 import com.nervesparks.iris.ui.BenchMarkScreen
 import com.nervesparks.iris.ui.ChatListScreen
-import com.nervesparks.iris.ui.MainChatScreen
 import com.nervesparks.iris.ui.ModelsScreen
 import com.nervesparks.iris.ui.ParametersScreen
 import com.nervesparks.iris.ui.SettingsScreen
-import android.app.DownloadManager
-import android.content.ClipboardManager
-import com.nervesparks.iris.Downloadable
+import com.nervesparks.iris.ui.screens.MainChatScreen2
 import java.io.File
 
 object AppDestinations {
@@ -36,7 +36,7 @@ fun AppNavigation(
     extFilesDir: File?
 ) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = AppDestinations.CHAT_LIST) {
+    NavHost(navController = navController, startDestination = AppDestinations.CHAT) {
         composable(AppDestinations.CHAT_LIST) {
             ChatListScreen(
                 viewModel = viewModel,
@@ -51,16 +51,12 @@ fun AppNavigation(
         }
         composable("${AppDestinations.CHAT}?chatId={chatId}") { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId")?.toLongOrNull()
-            MainChatScreen(
-                onNextButtonClicked = { /* Not used with NavHost */ },
-                viewModel = viewModel,
-                clipboard = clipboardManager,
-                dm = downloadManager,
-                models = models,
-                extFileDir = extFilesDir,
-                chatId = chatId,
-                onBackPressed = { navController.popBackStack() },
-                onNavigateToModels = { navController.navigate(AppDestinations.MODELS) }
+            if (chatId != null) {
+                viewModel.loadChat(chatId)
+            }
+            MainChatScreen2(
+                navController = navController,
+                viewModel = viewModel
             )
         }
         composable(AppDestinations.SETTINGS) {

@@ -40,7 +40,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
         viewModel.refresh = false
     }
 
-    Box {
+    Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
         if (viewModel.showAlert) {
             // Modal dialog to show download options
             LoadingModal(viewModel)

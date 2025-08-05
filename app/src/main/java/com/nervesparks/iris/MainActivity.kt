@@ -64,10 +64,10 @@ import android.app.Application
 import androidx.compose.foundation.border
 import androidx.activity.viewModels
 import com.nervesparks.iris.data.UserPreferencesRepository
-import com.nervesparks.iris.ui.SettingsBottomSheet
+
 import com.nervesparks.iris.ui.theme.IrisStarTheme
 import com.nervesparks.iris.ui.ChatListScreen
-import com.nervesparks.iris.ui.MainChatScreen
+
 import com.nervesparks.iris.ui.SettingsScreen
 import com.nervesparks.iris.ui.ModelsScreen
 import com.nervesparks.iris.ui.ParametersScreen

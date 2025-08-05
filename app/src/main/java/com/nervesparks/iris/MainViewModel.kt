@@ -647,12 +647,14 @@ class MainViewModel @Inject constructor(
     }
 
     fun send() {
+        Log.d(tag, "Send button clicked")
         val reserveTokens = 256
         val userMessage = removeExtraWhiteSpaces(message)
         message = ""
 
         // Add to messages console.
-        if (userMessage != "" && userMessage != " ") {
+        if (userMessage.isNotBlank()) {
+            Log.d(tag, "User message is not blank: $userMessage")
             if(first){
                 addMessage("system", "This is a conversation between User and Iris, a friendly chatbot. Iris is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision. When responding, Iris should use <think> tags to show its reasoning process before providing the final answer.")
                 addMessage("user", "Hi")
@@ -726,6 +728,8 @@ class MainViewModel @Inject constructor(
             
 
             }
+        } else {
+            Log.d(tag, "User message is blank")
         }
     }
 
@@ -861,8 +865,10 @@ class MainViewModel @Inject constructor(
      * Load a model by name from the external files directory
      */
     fun loadModelByName(modelName: String, directory: File) {
+        Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
         val modelFile = File(directory, modelName)
         if (modelFile.exists()) {
+            Log.d(tag, "Model file exists at: ${modelFile.absolutePath}")
             loadModel(modelFile.absolutePath)
         } else {
             Log.e(tag, "Model file not found: ${modelFile.absolutePath}")

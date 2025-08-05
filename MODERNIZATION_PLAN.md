@@ -74,16 +74,16 @@
   - [x] **4.2.6** Fork chat functionality
   - [x] **4.2.7** Proper message streaming with typing indicators
   - [x] **4.2.8** Message reactions
-- [x] **4.3** Reasoning/thinking model support
+- [ ] **4.3** Reasoning/thinking model support
   - [x] **4.3.1** Collapsible thinking tokens UI
   - [x] **4.3.2** Toggle to show/hide thinking process
   - [x] **4.3.3** Visual distinction between thinking and output
   - [x] **4.3.4** Thinking token formatting
   - [x] **4.3.5** Qwen3 template with thinking support
   - [x] **4.3.6** Enhanced thinking token detection patterns (robust parsing)
-  - [x] **4.3.7** Regex-driven format-aware reasoning detection (edge-case handling)
+  - [ ] **4.3.7** Regex-driven format-aware reasoning detection (edge-case handling)
   - [x] **4.3.8** Context usage HUD
-  - [x] **4.3.9** Template & Thinking validation suite
+  - [ ] **4.3.9** Template & Thinking validation suite
 
 ## 🎨 PHASE 4.5: COMPLETE UI OVERHAUL (NEW PRIORITY) ✅ COMPLETED
 **Goal**: Transform UI to match modern design patterns from reference images (dark theme, top bar + bottom input, user profile, haptic feedback)
@@ -266,7 +266,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 - **Phase 1**: ✅ 100% Complete - All immediate build and network issues resolved
 - **Phase 2**: ✅ 100% Complete - Core infrastructure modernized, Repository pattern implemented
 - **Phase 3**: ✅ 100% Complete - Performance metrics implemented, model configuration system complete
-- **Phase 4**: ✅ 100% Complete - UI/UX fully modernized, thinking UI implemented
+- **Phase 4**: 🔄 90% Complete - UI/UX fully modernized, thinking UI implemented
 - **Phase 4.5**: ✅ 100% Complete - Complete UI overhaul (COMPLETED)
 - **Phase 6**: 🔄 50% Complete - Model management partially implemented
 - **Overall Progress**: 🔄 85% Complete
@@ -411,4 +411,4 @@ Based on the modernization plan and current state, the next logical steps are:
 
 ### **Phase 8: Platform Modernization (Future)**
 - [ ] **8.1** Android platform features
-- [ ] **8.2** Accessibility & Internationalization 
+- [ ] **8.2** Accessibility & Internationalization

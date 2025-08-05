@@ -1,12 +1,10 @@
 package com.nervesparks.iris.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -19,21 +17,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.nervesparks.iris.ui.theme.*
+import com.nervesparks.iris.R
 
-/**
- * Modern bottom input area with attachment options, voice input, and quick actions
- * Matches the design patterns from reference images
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModernChatInput(
@@ -42,9 +31,6 @@ fun ModernChatInput(
     onSend: () -> Unit,
     onAttachmentClick: () -> Unit,
     onVoiceClick: () -> Unit,
-    onLatestNews: () -> Unit = {},
-    onCreateImages: () -> Unit = {},
-    onCartoonStyle: () -> Unit = {},
     onCameraClick: () -> Unit = {},
     onPhotosClick: () -> Unit = {},
     onFilesClick: () -> Unit = {},
@@ -52,273 +38,158 @@ fun ModernChatInput(
     placeholder: String = "Ask anything",
     enabled: Boolean = true
 ) {
-    val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
     var showAttachmentDialog by remember { mutableStateOf(false) }
-    
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface
     ) {
-        // Quick action buttons (horizontal row)
-        QuickActionsRow(
-            onLatestNews = onLatestNews,
-            onCreateImages = onCreateImages,
-            onCartoonStyle = onCartoonStyle
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Main input field
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Attachment button
-            IconButton(
-                onClick = {
-                    showAttachmentDialog = true
-                    onAttachmentClick()
-                },
-                modifier = Modifier.size(32.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Attach",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
+                IconButton(
+                    onClick = {
+                        showAttachmentDialog = true
+                        onAttachmentClick()
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = "Attach",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester),
+                    placeholder = { Text(placeholder) },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor =  MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Send
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSend = { onSend() }
+                    ),
+                    enabled = enabled,
                 )
-            }
-            
-            // Text input field
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                textStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Start
-                ),
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester)
-                    .padding(horizontal = 8.dp),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Send
-                ),
-                keyboardActions = KeyboardActions(
-                    onSend = { onSend() }
-                ),
-                enabled = enabled,
-                decorationBox = { innerTextField ->
-                    if (value.isEmpty()) {
-                        Text(
-                            text = placeholder,
-                            style = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                fontSize = 16.sp
-                            )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                if (value.isNotBlank()) {
+                    IconButton(
+                        onClick = onSend,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = "Send",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                    innerTextField()
+                } else {
+                    IconButton(
+                        onClick = onVoiceClick,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.mic_svgrepo_com),
+                            contentDescription = "Voice Input",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
-            )
-            
-            // Voice input button
-            IconButton(
-                onClick = onVoiceClick,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Voice Input",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
+            }
+
+            if (showAttachmentDialog) {
+                AttachmentBottomSheet(
+                    onDismiss = { showAttachmentDialog = false },
+                    onCameraClick = onCameraClick,
+                    onPhotosClick = onPhotosClick,
+                    onFilesClick = onFilesClick
                 )
             }
         }
-        
-        // Attachment dialog
-        if (showAttachmentDialog) {
-            AttachmentDialog(
-                onDismiss = { showAttachmentDialog = false },
-                onCameraClick = onCameraClick,
-                onPhotosClick = onPhotosClick,
-                onFilesClick = onFilesClick
-            )
-        }
     }
 }
 
-/**
- * Quick action buttons row
- */
-@Composable
-private fun QuickActionsRow(
-    onLatestNews: () -> Unit,
-    onCreateImages: () -> Unit,
-    onCartoonStyle: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        QuickActionButton(
-            icon = Icons.Default.Info,
-            text = "Latest news",
-            onClick = onLatestNews
-        )
-        
-        QuickActionButton(
-            icon = Icons.Default.Add,
-            text = "Create images",
-            onClick = onCreateImages
-        )
-        
-        QuickActionButton(
-            icon = Icons.Default.Edit,
-            text = "Cartoon style",
-            onClick = onCartoonStyle
-        )
-    }
-}
 
-/**
- * Individual quick action button
- */
-@Composable
-private fun QuickActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = text,
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            fontSize = 12.sp
-        )
-    }
-}
 
-/**
- * Attachment dialog with camera, photos, and files options
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AttachmentDialog(
+private fun AttachmentBottomSheet(
     onDismiss: () -> Unit,
     onCameraClick: () -> Unit,
     onPhotosClick: () -> Unit,
     onFilesClick: () -> Unit
 ) {
-    Dialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            shape = RoundedCornerShape(16.dp)
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Choose attachment",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                // Camera option
-                AttachmentOption(
-                    icon = Icons.Default.Add,
-                    text = "Camera",
-                    onClick = {
-                        onCameraClick()
-                        onDismiss()
-                    }
-                )
-                
-                // Photos option
-                AttachmentOption(
-                    icon = Icons.Default.Add,
-                    text = "Photos",
-                    onClick = {
-                        onPhotosClick()
-                        onDismiss()
-                    }
-                )
-                
-                // Files option
-                AttachmentOption(
-                    icon = Icons.Default.Add,
-                    text = "Files",
-                    onClick = {
-                        onFilesClick()
-                        onDismiss()
-                    }
-                )
-            }
+            Text(
+                text = "Choose attachment",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            AttachmentOption(
+                icon = Icons.Default.CameraAlt,
+                text = "Camera",
+                onClick = {
+                    onCameraClick()
+                    onDismiss()
+                }
+            )
+
+            AttachmentOption(
+                icon = Icons.Default.PhotoLibrary,
+                text = "Photos",
+                onClick = {
+                    onPhotosClick()
+                    onDismiss()
+                }
+            )
+
+            AttachmentOption(
+                icon = Icons.Default.AttachFile,
+                text = "Files",
+                onClick = {
+                    onFilesClick()
+                    onDismiss()
+                }
+            )
         }
     }
 }
 
-/**
- * Individual attachment option
- */
 @Composable
 private fun AttachmentOption(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -338,13 +209,13 @@ private fun AttachmentOption(
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(24.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
-} 
+}

@@ -65,10 +65,10 @@ fun ModelCard(
         ) {
             Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()){
                 if (modelName == viewModel.loadedModelName.value) {
-                    Text(color = Color.Green, text = "Active Model", fontSize = 12.sp)
+                    Text(color = MaterialTheme.colorScheme.primary, text = "Active Model", fontSize = 12.sp)
                 }
                 if(modelName == viewModel.defaultModelName.value){
-                    Text(color = Color.LightGray, text = "Default", fontSize = 12.sp)
+                    Text(color = MaterialTheme.colorScheme.onSurfaceVariant, text = "Default", fontSize = 12.sp)
                 }
             }
 
@@ -82,10 +82,10 @@ fun ModelCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Reasoning",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 12.sp,
                         modifier = Modifier
-                            .background(Color.Yellow, RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp))
                             .padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
@@ -97,7 +97,7 @@ fun ModelCard(
             ) {
                 val coroutineScope = rememberCoroutineScope()
                 val context = LocalContext.current
-                val fullUrl = if (downloadLink != "") {
+                val fullUrl = if (downloadLink.isNotEmpty()) {
                     downloadLink
                 } else {
                     "https://huggingface.co/${viewModel.userGivenModel}/resolve/main/${modelName}?download=true"
@@ -122,18 +122,18 @@ fun ModelCard(
                         if (downloadable.exists()) {
                             Button(
                                 onClick = { showDeleteConfirmation = true },
-                                colors = ButtonDefaults.buttonColors(Color(0xFFb91c1c)),
+                                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
                             ) {
-                                Text(text = "Delete", color = Color.White)
+                                Text(text = "Delete", color = MaterialTheme.colorScheme.onError)
                             }
 
                             if (showDeleteConfirmation) {
                                 AlertDialog(
-                                    textContentColor = Color.LightGray,
-                                    containerColor =  Color(0xFF233340),
-                                    modifier = Modifier.background(shape = RoundedCornerShape(8.dp), color = Color(0xFF233340)),
+                                    textContentColor = MaterialTheme.colorScheme.onSurface,
+                                    containerColor =  MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier.background(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surface),
                                     onDismissRequest = { showDeleteConfirmation = false },
-                                    title = { Text("Confirm Deletion", color = Color.White) },
+                                    title = { Text("Confirm Deletion", color = MaterialTheme.colorScheme.onSurface) },
                                     text = { Text("Are you sure you want to delete this model? The app will restart after deletion.") },
                                     confirmButton = {
                                         Button(
@@ -150,14 +150,14 @@ fun ModelCard(
                                                 isDeleted = true
                                                 viewModel.refresh = true
                                             },
-                                            colors = ButtonDefaults.buttonColors(Color(0xFFb91c1c))
+                                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
                                         ) {
                                             Text("Delete")
                                         }
                                     },
                                     dismissButton = {
                                         Button(
-                                            colors = ButtonDefaults.buttonColors(Color.Black),
+                                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.secondary),
                                             onClick = { showDeleteConfirmation = false }
                                         ) {
                                             Text("Cancel")
@@ -174,7 +174,7 @@ fun ModelCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Model Deleted",
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.error,
                     fontSize = 15.sp
                 )
             }
@@ -194,14 +194,14 @@ fun ModelCard(
                             ).show()
                         },
                         colors = RadioButtonDefaults.colors(
-                            selectedColor = Color.Green,
-                            unselectedColor = Color.Gray
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                            unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Set as Default Model",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 12.sp
                     )
                 }
@@ -215,7 +215,7 @@ fun ModelCard(
                     } else {
                         "Not Downloaded"
                     },
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
             }

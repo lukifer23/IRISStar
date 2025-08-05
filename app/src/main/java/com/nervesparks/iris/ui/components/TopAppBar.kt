@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ModernIconButton
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,11 +47,8 @@ fun ModernTopAppBar(
             )
         },
         navigationIcon = {
-            IconButton(
-                onClick = onMenuClick,
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            ModernIconButton(
+                onClick = onMenuClick
             ) {
                 Icon(
                     imageVector = Icons.Default.Menu,
@@ -63,16 +62,20 @@ fun ModernTopAppBar(
             if (availableModels.isNotEmpty()) {
                 Card(
                     modifier = Modifier
-                        .padding(end = 8.dp)
+                        .padding(end = ComponentStyles.smallPadding)
+                        .widthIn(max = 150.dp) // Constrain the width
                         .clickable { onModelClick() },
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = ComponentStyles.smallCardShape,
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(
+                            horizontal = ComponentStyles.smallPadding,
+                            vertical = ComponentStyles.smallPadding
+                        ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -81,12 +84,14 @@ fun ModernTopAppBar(
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                         Text(
                             text = if (currentModel.isNotEmpty()) currentModel else "No Model",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1, // Ensure single line
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // Add ellipsis
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
@@ -113,7 +118,7 @@ fun ModernTopAppBar(
             availableModels = availableModels,
             currentModel = currentModel,
             onModelSelected = { modelName ->
-                extFilesDir?.let { viewModel.loadModelByName(modelName, it) }
+                extFilesDir?.let { viewModel.switchModel(modelName, it) }
                 onModelDropdownDismiss()
             },
             onDismiss = onModelDropdownDismiss

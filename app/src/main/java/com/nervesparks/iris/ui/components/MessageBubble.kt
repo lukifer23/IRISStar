@@ -22,15 +22,15 @@ fun MessageBubble(
     onLongClick: (() -> Unit)? = null
 ) {
     val backgroundColor = if (isUser) {
-        MaterialTheme.colorScheme.tertiary
+        MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.secondary
+        MaterialTheme.colorScheme.surfaceVariant
     }
     
     val textColor = if (isUser) {
-        MaterialTheme.colorScheme.onTertiary
+        MaterialTheme.colorScheme.onPrimary
     } else {
-        MaterialTheme.colorScheme.onSecondary
+        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Box(
@@ -44,19 +44,19 @@ fun MessageBubble(
         ) {
             Card(
                 modifier = Modifier
-                    .widthIn(max = 280.dp)
+                    .widthIn(max = 320.dp)
                     .clickable { onLongClick?.invoke() },
                 colors = CardDefaults.cardColors(containerColor = backgroundColor),
                 shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isUser) 16.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 16.dp
+                    topStart = 20.dp,
+                    topEnd = 20.dp,
+                    bottomStart = if (isUser) 4.dp else 20.dp,
+                    bottomEnd = if (isUser) 20.dp else 4.dp
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = message,
@@ -69,7 +69,7 @@ fun MessageBubble(
                         Text(
                             text = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                                 .format(java.util.Date(timestamp)),
-                            color = textColor.copy(alpha = 0.6f),
+                            color = textColor.copy(alpha = 0.7f),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

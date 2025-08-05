@@ -26,6 +26,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ModernIconButton
+import com.nervesparks.iris.ui.theme.PrimaryButton
+import com.nervesparks.iris.ui.theme.SecondaryButton
 import java.io.File
 
 @Composable
@@ -121,11 +125,8 @@ fun ModelSelectionModal(
                         fontWeight = FontWeight.Bold
                     )
                     
-                    IconButton(
-                        onClick = onDismiss,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                    ModernIconButton(
+                        onClick = onDismiss
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -143,12 +144,9 @@ fun ModelSelectionModal(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Download Models button
-                    OutlinedButton(
+                    SecondaryButton(
                         onClick = onNavigateToModels,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -160,12 +158,9 @@ fun ModelSelectionModal(
                     }
                     
                     // Import Local Model button
-                    OutlinedButton(
+                    SecondaryButton(
                         onClick = { filePickerLauncher.launch("*/*") },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -221,12 +216,9 @@ fun ModelSelectionModal(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    Button(
+                    PrimaryButton(
                         onClick = onNavigateToModels,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Go to Models")
                     }
@@ -348,17 +340,14 @@ fun ModelSelectionModal(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
+                        SecondaryButton(
                             onClick = onDismiss,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            modifier = Modifier.weight(1f)
                         ) {
                             Text("Cancel")
                         }
                         
-                        Button(
+                        PrimaryButton(
                             onClick = {
                                 if (selectedModel.isNotEmpty() && extFilesDir != null) {
                                     viewModel.loadModelByName(selectedModel, extFilesDir)
@@ -366,10 +355,7 @@ fun ModelSelectionModal(
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = selectedModel.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
+                            enabled = selectedModel.isNotEmpty()
                         ) {
                             Text("Load Model")
                         }

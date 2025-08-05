@@ -37,79 +37,70 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
     val messages = viewModel.messages
     val context = LocalContext.current
 
-    Column {
-        
-        LazyColumn(state = scrollState) {
-            // Add performance monitor at the top
-            item {
-                PerformanceMonitor(viewModel = viewModel)
-            }
-            
-            itemsIndexed(messages.drop(3)) { index, messageMap ->
-                val role = messageMap["role"] ?: ""
-                val content = (messageMap["content"] ?: "").trimEnd()
+    LazyColumn(state = scrollState) {
+        itemsIndexed(messages.drop(3)) { index, messageMap ->
+            val role = messageMap["role"] ?: ""
+            val content = (messageMap["content"] ?: "").trimEnd()
+            val isLastMessage = index == messages.size - 4 // Adjust index because of drop(3)
 
-                if (role != "system") {
-                    when (role) {
-                        "codeBlock" -> CodeBlockMessage(content)
-                        "assistant" -> {
-                            val (reasoning, _) = ReasoningParser.parse(content)
-
-                            if (reasoning.isNotEmpty()) {
-                                ThinkingMessage(
-                                    message = content,
-                                    viewModel = viewModel,
-                                    showThinkingTokens = viewModel.showThinkingTokens,
-                                    onLongClick = {
-                                        if (viewModel.getIsSending()) {
-                                            Toast.makeText(
-                                                context,
-                                                "Wait till generation is done!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            viewModel.toggler = true
-                                        }
+            if (role != "system") {
+                when (role) {
+                    "codeBlock" -> CodeBlockMessage(content)
+                    "assistant" -> {
+                        if (isLastMessage && viewModel.isGenerating) {
+                            ThinkingMessage(
+                                message = content,
+                                viewModel = viewModel,
+                                showThinkingTokens = viewModel.showThinkingTokens,
+                                onLongClick = {
+                                    if (viewModel.getIsSending()) {
+                                        Toast.makeText(
+                                            context,
+                                            "Wait till generation is done!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        viewModel.toggler = true
                                     }
-                                )
+                                }
+                            )
+                        } else {
+                            UserOrAssistantMessage(
+                                role = role,
+                                message = content,
+                                onLongClick = {
+                                    if (viewModel.getIsSending()) {
+                                        Toast.makeText(
+                                            context,
+                                            "Wait till generation is done!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        viewModel.toggler = true
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    else -> UserOrAssistantMessage(
+                        role = role,
+                        message = content,
+                        onLongClick = {
+                            if (viewModel.getIsSending()) {
+                                Toast.makeText(
+                                    context,
+                                    "Wait till generation is done!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             } else {
-                                UserOrAssistantMessage(
-                                    role = role,
-                                    message = content,
-                                    onLongClick = {
-                                        if (viewModel.getIsSending()) {
-                                            Toast.makeText(
-                                                context,
-                                                "Wait till generation is done!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            viewModel.toggler = true
-                                        }
-                                    }
-                                )
+                                viewModel.toggler = true
                             }
                         }
-                        else -> UserOrAssistantMessage(
-                            role = role,
-                            message = content,
-                            onLongClick = {
-                                if (viewModel.getIsSending()) {
-                                    Toast.makeText(
-                                        context,
-                                        "Wait till generation is done!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    viewModel.toggler = true
-                                }
-                            }
-                        )
-                    }
+                    )
                 }
             }
-            item { Spacer(modifier = Modifier.height(1.dp).fillMaxWidth()) }
         }
+        item { Spacer(modifier = Modifier.height(1.dp).fillMaxWidth()) }
     }
 }
 
@@ -132,7 +123,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
                 .padding(horizontal = 2.dp)
                 .background(
                     color = if (role == "user") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(20.dp)
                 )
                 .combinedClickable(
                     onLongClick = onLongClick,
@@ -143,7 +134,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
             Text(
                 text = message.removePrefix("```"),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (role == "user") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                color = if (role == "user") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 22.sp
             )
 
@@ -159,7 +150,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Copy message",
-                    tint = Color.White
+                    tint = if (role == "user") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

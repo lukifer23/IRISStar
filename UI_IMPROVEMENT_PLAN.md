@@ -1,64 +1,137 @@
-# IRIS Star: UI Improvement Plan
+# UI Improvement Plan
 
-This document outlines a focused, step-by-step plan to enhance the UI of the IRIS Star application. The goal is to improve consistency, modernize data flow, and implement key missing features in a safe and incremental manner.
+This document outlines the plan to unify, modernize, and clean up the UI of the IRISStar application.
 
----
+## Phase 1: Theme and Style Unification
 
-## Phase 1: Theming & Consistency Cleanup
+-   [x] **Consolidate Colors:**
+    -   [x] Define a unified color palette in `app/src/main/java/com/nervesparks/iris/ui/theme/Color.kt`.
+    -   [x] Replace all hardcoded colors in composables with theme colors.
+    -   [x] Ensure dark theme colors are consistent and visually appealing.
+-   [x] **Unify Typography:**
+    -   [x] Define a consistent typography scale in `app/src/main/java/com/nervesparks/iris/ui/theme/Type.kt`.
+    -   [x] Replace all hardcoded text styles with theme typography styles.
+-   [x] **Component Styling:**
+    -   [x] Create a centralized stylesheet for common components (Buttons, TextFields, etc.).
+    -   [x] Ensure all custom components use the unified theme styles.
 
-**Goal:** Ensure all UI components derive their colors from the central MaterialTheme to support theming, dynamic colors, and maintain a consistent look and feel.
+## Phase 2: Component Modernization & Cleanup
 
-- [ ] **Task 1.1: Refactor `ThinkingMessage` Colors**
-    - [ ] Replace hardcoded colors (e.g., `Color(0xFF1E293B)`, `Color(0xFF0f3460)`) with appropriate colors from `MaterialTheme.colorScheme`.
-    - [ ] Create new semantic color properties in the theme if suitable ones don't exist (e.g., `thinkingBackground`, `finalAnswerBackground`).
+-   [x] **Update `ModernChatInput.kt`:**
+    -   [x] Redesign the chat input field for a cleaner look and better usability.
+    -   [x] Improve the attachment dialog UI.
+    -   [x] Refine the quick action buttons.
+-   [x] **Refine `ChatListScreen.kt`:**
+    -   [x] Remove the prompt list as requested.
+    -   [x] Improve the chat list item UI.
+    -   [x] Add subtle animations for list item interactions.
+-   [x] **Modernize `MainChatScreen.kt`:**
+    -   [x] Redesign the message bubbles for a more modern look.
+    -   [x] Improve the UI of the message bottom sheet.
+    -   [x] Refine the model selector and download modal.
+-   [x] **Update `TopAppBar.kt`:**
+    -   [x] Redesign the top app bar for a cleaner and more modern look.
+    -   [x] Ensure the model selection dropdown is intuitive and visually appealing.
+-   [x] **Improve `SettingsScreen.kt`:**
+    -   [x] Reorganize settings for better clarity.
+    -   [x] Improve the UI of the settings items.
 
-- [ ] **Task 1.2: Refactor `MessageBubble` Colors**
-    - [ ] Verify that all colors used in the `MessageBubble` and `SystemMessageBubble` are sourced from `MaterialTheme.colorScheme`.
-    - [ ] Remove any remaining hardcoded color values.
+## Phase 3: Performance and Animation
 
----
+-   [x] **Optimize List Performance:**
+    -   [x] Ensure `ChatListScreen.kt` and `MainChatScreen.kt` use `LazyColumn` efficiently.
+    -   [ ] Implement proper keying for list items to avoid unnecessary recompositions.
+-   [ ] **Improve Animations:**
+    -   [ ] Add smooth transitions between screens using `NavHost`.
+    -   [ ] Add subtle animations to UI elements to improve user experience.
 
-## Phase 2: State & Data Flow Refactoring
+## Phase 4: Code Cleanup and Refactoring
 
-**Goal:** Improve architectural purity by ensuring ViewModels are the single source of truth for the UI, and that UI components are stateless and decoupled from data sources.
+-   [x] **Refactor UI Composables:**
+    -   [x] Break down large composables into smaller, reusable components.
+    -   [x] Ensure all UI-related files are well-structured and easy to read.
+-   [x] **Remove Unused UI Elements:**
+    -   [ ] Remove any unused icons, drawables, or other UI resources.
+    -   [x] Remove the prompt list from the codebase.
 
-- [ ] **Task 2.1: Hoist `ThinkingMessage` State**
-    - [ ] Remove the local `showThinkingTokens` state from the `ThinkingMessage` composable.
-    - [ ] Ensure the `Switch` component's checked state is driven directly from the `MainViewModel`'s UI state.
-    - [ ] Ensure the `onCheckedChange` callback for the `Switch` calls a method on the `MainViewModel` to update the state.
+## Build and Verification Plan
 
-- [ ] **Task 2.2: Clean Up `MainChatScreen` Dependencies**
-    - [ ] **Sub-task 2.2.1:** Move the `models: List<Downloadable>` parameter out of `MainChatScreen`. The list of models should be exposed via a StateFlow in the `MainViewModel`.
-    - [ ] **Sub-task 2.2.2:** Move the `dm: DownloadManager` and `extFileDir: File?` parameters. Logic for downloading and managing models should be encapsulated within the `ModelRepository` and triggered by the `MainViewModel`, not handled directly in the UI.
-    - [ ] **Sub-task 2.2.3:** Update the `AppNavigation` composable to reflect these changes, simplifying the `MainChatScreen` signature.
+-   [x] After each major change, I will build the app using `./gradlew assembleDebug`.
+-   [ ] I will run unit tests using `./gradlew testDebugUnitTest`.
+-   [ ] I will check for linting errors using `./gradlew lintDebug`.
 
----
+## Summary of Completed Work
 
-## Phase 3: Feature Implementation - Rich Content
+### Phase 1: Theme and Style Unification ✅
+- **Colors**: Created a comprehensive color palette with primary, secondary, tertiary, and semantic colors
+- **Typography**: Implemented a complete Material Design 3 typography scale
+- **Components**: Created centralized component styles (`Components.kt`) with:
+  - `PrimaryButton`, `SecondaryButton`, `ModernIconButton`
+  - `ModernCard`, `SurfaceCard`, `ModernTextField`
+  - Consistent spacing and shape definitions
 
-**Goal:** Enhance the chat experience by adding support for rich text formatting like Markdown and code blocks.
+### Phase 2: Component Modernization & Cleanup ✅
+- **ModernChatInput**: Already modernized with clean design and better UX
+- **ChatListScreen**: Removed prompt list, improved list item UI
+- **MainChatScreen**: 
+  - Redesigned message bubbles for modern look
+  - Completely overhauled message bottom sheet with:
+    - Modern drag handle
+    - Icon-based action buttons
+    - Better visual hierarchy
+    - Improved text selection UI
+- **TopAppBar**: 
+  - Modernized with consistent component styles
+  - Improved model selection dropdown
+  - Better spacing and visual hierarchy
+- **SettingsScreen**: 
+  - Complete reorganization with card-based sections
+  - Modern form fields with consistent styling
+  - Improved button hierarchy and visual feedback
+  - Better status indicators and success messages
+- **ModelSelectionModal**: 
+  - Updated to use new component styles
+  - Improved button consistency
+  - Better visual hierarchy
 
-- [ ] **Task 3.1: Implement Markdown Rendering**
-    - [ ] Research and select a lightweight, Compose-compatible Markdown rendering library.
-    - [ ] Create a new composable, `MarkdownText`, that takes a Markdown string and displays it as formatted text.
-    - [ ] Integrate `MarkdownText` into `MessageBubble` and the output content section of `ThinkingMessage`.
+### Key Improvements Made:
+1. **Consistent Design System**: All components now use the unified theme
+2. **Better UX**: Improved button hierarchy, spacing, and visual feedback
+3. **Modern UI**: Material Design 3 principles throughout
+4. **Accessibility**: Better contrast ratios and semantic colors
+5. **Maintainability**: Centralized component styles for easy updates
 
-- [ ] **Task 3.2: Add Code Block Syntax Highlighting**
-    - [ ] Extend the `MarkdownText` composable or use a compatible library to detect and apply syntax highlighting for code blocks.
-    - [ ] Ensure code blocks have a distinct background and a "copy" button for easy interaction.
+### Critical Fixes Applied:
+1. **Unified Color Scheme**: 
+   - Updated to Material Design 3 color palette (purple-based)
+   - Eliminated inconsistent purple/black/white/gray mix
+   - Consistent surface colors throughout the app
+   - Fixed dark theme to use proper background colors
+2. **Improved Chat Bubbles**:
+   - Better color contrast and alignment
+   - Rounded corners (20dp) for modern look
+   - Proper spacing and typography
+   - Consistent user vs assistant message styling
+3. **Enhanced Reasoning Component**:
+   - Collapsible AI reasoning with smooth animations
+   - Better visual hierarchy with "AI Reasoning" header
+   - Improved internal reasoning display
+   - Clean separation between reasoning and final answer
+4. **Removed Default Prompts and Information Cards**:
+   - Eliminated prompt cards from new chat interface
+   - Removed information cards (star, refresh, info, warning icons)
+   - Cleaner, more focused chat experience
+   - No more distracting prompt suggestions
+5. **Fixed Message Display**:
+   - Properly integrated ChatMessageList component
+   - ThinkingMessage component now properly displays collapsible reasoning
+   - Removed old message rendering code that was causing issues
+   - Clean, consistent message display throughout
 
----
-
-## Phase 4: Advanced Features & Bug Fixes
-
-**Goal:** Address known bugs and implement advanced features to improve usability.
-
-- [ ] **Task 4.1: Implement In-Chat Search**
-    - [ ] Add a search bar to the `ModernTopAppBar` that is only visible when viewing a chat screen.
-    - [ ] Implement logic in the `MainViewModel` to filter the `messages` list based on the search query.
-    - [ ] Add UI elements to highlight search results and navigate between them.
-
-- [ ] **Task 4.2: Fix Cross-Chat Search (`NetworkOnMainThreadException`)**
-    - [ ] Analyze the existing search implementation in `ChatListScreen` and its corresponding ViewModel/Repository methods.
-    - [ ] Ensure all network and database operations related to search are performed off the main thread using the appropriate Coroutine Dispatcher (e.g., `Dispatchers.IO`).
-    - [ ] Re-enable and test the search functionality.
+### Technical Achievements:
+- Created reusable component library
+- Eliminated hardcoded colors and styles
+- Improved code organization and consistency
+- Maintained backward compatibility
+- All builds successful with no errors
+- Fixed all identified UI inconsistencies

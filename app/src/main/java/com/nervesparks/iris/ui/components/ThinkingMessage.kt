@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.components.MarkdownTextComponent
 
 @Composable
 fun ThinkingMessage(
@@ -32,10 +33,15 @@ fun ThinkingMessage(
     showThinkingTokens: Boolean,
     onLongClick: () -> Unit
 ) {
-    var isThinkingExpanded by remember { mutableStateOf(true) } // Start expanded when thinking content is detected
+    var isThinkingExpanded by remember { mutableStateOf(showThinkingTokens) }
     
     // Parse via centralised parser
     val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message)
+    
+    // Update expanded state when showThinkingTokens changes
+    LaunchedEffect(showThinkingTokens) {
+        isThinkingExpanded = showThinkingTokens
+    }
     
     // Debug logging
     LaunchedEffect(message) {
@@ -47,16 +53,18 @@ fun ThinkingMessage(
         android.util.Log.d("ThinkingMessage", "Thinking content length: ${thinkingContent.length}")
         android.util.Log.d("ThinkingMessage", "Contains <think>: ${message.contains("<think>")}")
         android.util.Log.d("ThinkingMessage", "Contains </think>: ${message.contains("</think>")}")
+        android.util.Log.d("ThinkingMessage", "showThinkingTokens: $showThinkingTokens")
+        android.util.Log.d("ThinkingMessage", "isThinkingExpanded: $isThinkingExpanded")
         android.util.Log.d("ThinkingMessage", "=== END THINKING DEBUG ===")
     }
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -76,7 +84,7 @@ fun ThinkingMessage(
                 Spacer(modifier = Modifier.width(8.dp))
                 
                 Text(
-                    text = "Reasoning Process",
+                    text = "AI Reasoning",
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
@@ -84,45 +92,50 @@ fun ThinkingMessage(
                 
                 Spacer(modifier = Modifier.weight(1f))
                 
-                // Toggle button
-                IconButton(
-                    onClick = { isThinkingExpanded = !isThinkingExpanded }
-                ) {
-                    val rotation by animateFloatAsState(
-                        targetValue = if (isThinkingExpanded) 180f else 0f,
-                        animationSpec = tween(durationMillis = 300)
-                    )
-                    Icon(
-                        imageVector = if (isThinkingExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (isThinkingExpanded) "Hide thinking" else "Show thinking",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.graphicsLayer { rotationZ = rotation }
-                    )
+                // Toggle button - only show if there's thinking content
+                if (thinkingContent.isNotEmpty()) {
+                    IconButton(
+                        onClick = { 
+                            isThinkingExpanded = !isThinkingExpanded
+                            viewModel.updateShowThinkingTokens(isThinkingExpanded)
+                        }
+                    ) {
+                        val rotation by animateFloatAsState(
+                            targetValue = if (isThinkingExpanded) 180f else 0f,
+                            animationSpec = tween(durationMillis = 300)
+                        )
+                        Icon(
+                            imageVector = if (isThinkingExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (isThinkingExpanded) "Hide reasoning" else "Show reasoning",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.graphicsLayer { rotationZ = rotation }
+                        )
+                    }
                 }
             }
             
-            // Thinking content (collapsible) - Always show if thinking content exists
+            // Thinking content (collapsible) - Only show if thinking content exists and is expanded
             AnimatedVisibility(
                 visible = isThinkingExpanded && thinkingContent.isNotEmpty(),
                 enter = expandVertically(animationSpec = tween(300)),
                 exit = shrinkVertically(animationSpec = tween(300))
             ) {
-                android.util.Log.d("ThinkingMessage", "Thinking visibility: expanded=$isThinkingExpanded, showTokens=$showThinkingTokens, hasContent=${thinkingContent.isNotEmpty()}")
+                android.util.Log.d("ThinkingMessage", "Rendering thinking content: expanded=$isThinkingExpanded, hasContent=${thinkingContent.isNotEmpty()}")
                 if (thinkingContent.isNotEmpty()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(12.dp)
                         ) {
                             Text(
-                                text = "Thinking Process:",
+                                text = "Internal Reasoning:",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -144,16 +157,16 @@ fun ThinkingMessage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onLongClick() },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    shape = RoundedCornerShape(8.dp)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp)
                     ) {
                         Text(
-                            text = "Final Answer:",
+                            text = "Response:",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -164,31 +177,34 @@ fun ThinkingMessage(
                 }
             }
             
-            // Thinking toggle control
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Show thinking tokens",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = showThinkingTokens,
-                    onCheckedChange = { 
-                        viewModel.updateShowThinkingTokens(it)
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+            // Thinking toggle control - only show if there's thinking content
+            if (thinkingContent.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Show thinking tokens",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = isThinkingExpanded,
+                        onCheckedChange = { 
+                            isThinkingExpanded = it
+                            viewModel.updateShowThinkingTokens(it)
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        )
+                    )
+                }
             }
         }
     }

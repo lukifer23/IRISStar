@@ -25,6 +25,11 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.MemoryManager
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ModernCard
+import com.nervesparks.iris.ui.theme.PrimaryButton
+import com.nervesparks.iris.ui.theme.SecondaryButton
+import com.nervesparks.iris.ui.theme.ModernTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,54 +60,42 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(ComponentStyles.defaultPadding),
+        verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
     ) {
         // HuggingFace Settings Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(12.dp)
+        ModernCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
             ) {
                 Text(
                     text = "HuggingFace Integration",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
                     text = "Add your HuggingFace credentials to search and download models. You can get your token from huggingface.co/settings/tokens",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Username Field
-                OutlinedTextField(
+                ModernTextField(
                     value = huggingFaceUsername,
                     onValueChange = { huggingFaceUsername = it },
                     label = { Text("Username (optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF4CAF50),
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = Color(0xFF4CAF50),
-                        unfocusedLabelColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
                     )
                 )
 
                 // Token Field
-                OutlinedTextField(
+                ModernTextField(
                     value = huggingFaceToken,
                     onValueChange = { huggingFaceToken = it },
                     label = { Text("Access Token") },
@@ -110,20 +103,12 @@ fun SettingsScreen(
                     visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { showToken = !showToken }) {
-                                                            Icon(
-                                    imageVector = if (showToken) Icons.Default.Star else Icons.Default.Check,
-                                    contentDescription = if (showToken) "Hide token" else "Show token"
-                                )
+                            Icon(
+                                imageVector = if (showToken) Icons.Default.Star else Icons.Default.Check,
+                                contentDescription = if (showToken) "Hide token" else "Show token"
+                            )
                         }
                     },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF4CAF50),
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = Color(0xFF4CAF50),
-                        unfocusedLabelColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done
                     ),
@@ -138,17 +123,13 @@ fun SettingsScreen(
                 )
 
                 // Save Button
-                Button(
+                PrimaryButton(
                     onClick = {
                         preferencesRepository.setHuggingFaceToken(huggingFaceToken)
                         preferencesRepository.setHuggingFaceUsername(huggingFaceUsername)
                         showSaveSuccess = true
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Save Credentials")
                 }
@@ -157,7 +138,7 @@ fun SettingsScreen(
                 if (showSaveSuccess) {
                     Text(
                         text = "Credentials saved successfully!",
-                        color = Color(0xFF4CAF50),
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -165,14 +146,14 @@ fun SettingsScreen(
                 // Status Indicator
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                 ) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .background(
                                 color = if (preferencesRepository.hasHuggingFaceCredentials()) 
-                                    Color(0xFF4CAF50) else Color.Red,
+                                    MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 shape = RoundedCornerShape(4.dp)
                             )
                     )
@@ -181,28 +162,24 @@ fun SettingsScreen(
                             "Credentials configured" else "No credentials set",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (preferencesRepository.hasHuggingFaceCredentials()) 
-                            Color(0xFF4CAF50) else Color.Red
+                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
                 }
             }
         }
 
         // App Information Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(12.dp)
+        ModernCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
             ) {
                 Text(
                     text = "App Information",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
@@ -226,113 +203,89 @@ fun SettingsScreen(
         }
 
         // Help Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(12.dp)
+        ModernCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
             ) {
                 Text(
                     text = "Getting Started",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
                     text = "1. Add your HuggingFace token above",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "2. Search for models in the search tab",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "3. Download and use models locally",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "4. Configure model parameters in the settings",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
         
         // Existing Settings Buttons
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(12.dp)
+        ModernCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
             ) {
                 Text(
                     text = "App Settings",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 // Models Button
-                Button(
+                SecondaryButton(
                     onClick = onModelsScreenButtonClicked,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Models", color = Color.White)
+                    Text("Models")
                 }
                 
                 // Parameters Button
-                Button(
+                SecondaryButton(
                     onClick = onParamsScreenButtonClicked,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Change Parameters", color = Color.White)
+                    Text("Change Parameters")
                 }
                 
                 // Benchmark Button
-                Button(
+                SecondaryButton(
                     onClick = onBenchMarkScreenButtonClicked,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Benchmark", color = Color.White)
+                    Text("Benchmark")
                 }
                 
                 // About Button
-                Button(
+                SecondaryButton(
                     onClick = onAboutScreenButtonClicked,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("About", color = Color.White)
+                    Text("About")
                 }
             }
         }
@@ -340,7 +293,7 @@ fun SettingsScreen(
         // Memory Management Section
         MemoryManager(
             viewModel = viewModel,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
         )
     }
 }
