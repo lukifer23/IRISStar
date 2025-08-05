@@ -34,6 +34,7 @@ import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.components.ThinkingMessage
+import com.nervesparks.iris.llm.ReasoningParser
 
 
 @Composable
@@ -57,24 +58,13 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                     when (role) {
                         "codeBlock" -> CodeBlockMessage(content)
                         "assistant" -> {
-                            // Enhanced thinking detection
-                            val hasThinkingTokens = content.contains("<think>") && content.contains("</think>")
-                            
-                            android.util.Log.d("ChatSection", "=== ASSISTANT MESSAGE DEBUG ===")
-                            android.util.Log.d("ChatSection", "Content length: ${content.length}")
-                            android.util.Log.d("ChatSection", "Content preview: ${content.take(200)}...")
-                            android.util.Log.d("ChatSection", "Has thinking tokens: $hasThinkingTokens")
-                            android.util.Log.d("ChatSection", "Contains <think>: ${content.contains("<think>")}")
-                            android.util.Log.d("ChatSection", "Contains </think>: ${content.contains("</think>")}")
-                            android.util.Log.d("ChatSection", "Contains <|im_start|>: ${content.contains("<|im_start|>")}")
-                            android.util.Log.d("ChatSection", "Contains Let me think: ${content.contains("Let me think")}")
-                            android.util.Log.d("ChatSection", "=== END DEBUG ===")
-                            
-                            if (hasThinkingTokens) {
+                            val (reasoning, _) = ReasoningParser.parse(content)
+
+                            if (reasoning.isNotEmpty()) {
                                 ThinkingMessage(
                                     message = content,
                                     viewModel = viewModel,
-                                    showThinkingTokens = true,
+                                    showThinkingTokens = viewModel.showThinkingTokens,
                                     onLongClick = {
                                         if (viewModel.getIsSending()) {
                                             Toast.makeText(
