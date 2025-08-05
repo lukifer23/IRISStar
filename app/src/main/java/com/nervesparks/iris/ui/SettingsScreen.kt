@@ -53,6 +53,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(Color(0xFF0F1419))
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
