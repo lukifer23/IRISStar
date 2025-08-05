@@ -176,6 +176,14 @@ class MainViewModel @Inject constructor(
         lastAttachmentAction = "files"
     }
 
+    fun clearLastQuickAction() {
+        lastQuickAction = null
+    }
+
+    fun clearLastAttachmentAction() {
+        lastAttachmentAction = null
+    }
+
     // Performance monitoring variables
     var tps by mutableStateOf(0.0) // Tokens per second
     var ttft by mutableStateOf(0L) // Time to first token (milliseconds)

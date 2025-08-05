@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.LocalActionHandler
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.ModernChatInput
 import com.nervesparks.iris.ui.components.ModernTopAppBar
@@ -73,8 +75,21 @@ fun MainChatScreen2(
 
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
+    val actionHandler = remember { LocalActionHandler(context) }
 
     var showModelDropdown by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel.lastQuickAction) {
+        viewModel.lastQuickAction?.let {
+            actionHandler.handleQuickAction(it, viewModel)
+        }
+    }
+
+    LaunchedEffect(viewModel.lastAttachmentAction) {
+        viewModel.lastAttachmentAction?.let {
+            actionHandler.handleAttachmentAction(it, viewModel)
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -131,8 +146,11 @@ fun MainChatScreen2(
                         value = viewModel.message,
                         onValueChange = { viewModel.updateMessage(it) },
                         onSend = { viewModel.send() },
-                        onAttachmentClick = { /*TODO*/ },
-                        onVoiceClick = { { /*TODO*/ } }
+                        onAttachmentClick = {},
+                        onVoiceClick = {},
+                        onCameraClick = { viewModel.onCameraAttachment() },
+                        onPhotosClick = { viewModel.onPhotosAttachment() },
+                        onFilesClick = { viewModel.onFilesAttachment() }
                     )
                 }
             }
