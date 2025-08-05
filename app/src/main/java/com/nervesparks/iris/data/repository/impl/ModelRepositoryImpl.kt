@@ -42,18 +42,77 @@ class ModelRepositoryImpl @Inject constructor(
                     )
                 }
             }
-            cachedModels = mapped
+            
+            // Add default models to the list
+            val defaultModels = listOf(
+                mapOf(
+                    "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
+                    "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
+                    "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf"
+                ),
+                mapOf(
+                    "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
+                    "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
+                    "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
+                ),
+                mapOf(
+                    "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
+                    "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
+                    "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf"
+                ),
+                mapOf(
+                    "name" to "NemoTron-1.5B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
+                    "destination" to "NemoTron-1.5B-Q4_K_M.gguf"
+                ),
+                mapOf(
+                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
+                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+                )
+            )
+            
+            val allModels = defaultModels + mapped
+            cachedModels = allModels
 
             // persist cache
             val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
             val adapter = moshi.adapter<List<CachedModel>>(listType)
-            val cacheData = mapped.map { CachedModel(it["name"] ?: "", it["source"] ?: "", it["destination"] ?: "") }
+            val cacheData = allModels.map { CachedModel(it["name"] ?: "", it["source"] ?: "", it["destination"] ?: "") }
             userPreferencesRepository.setCachedModels(adapter.toJson(cacheData))
 
-            mapped
+            allModels
         } catch (e: Exception) {
             Log.e(tag, "Error refreshing model catalogue", e)
-            emptyList()
+            
+            // Return default models even if API fails
+            listOf(
+                mapOf(
+                    "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
+                    "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
+                    "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf"
+                ),
+                mapOf(
+                    "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
+                    "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
+                    "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf"
+                ),
+                mapOf(
+                    "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
+                    "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
+                    "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf"
+                ),
+                mapOf(
+                    "name" to "NemoTron-1.5B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
+                    "destination" to "NemoTron-1.5B-Q4_K_M.gguf"
+                ),
+                mapOf(
+                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
+                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+                )
+            )
         }
     }
 

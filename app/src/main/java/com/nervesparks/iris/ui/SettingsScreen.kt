@@ -22,10 +22,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.components.LoadingModal
+import com.nervesparks.iris.ui.components.MemoryManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    viewModel: MainViewModel,
     onModelsScreenButtonClicked: () -> Unit,
     onParamsScreenButtonClicked: () -> Unit,
     onAboutScreenButtonClicked: () -> Unit,
@@ -332,5 +336,11 @@ fun SettingsScreen(
                 }
             }
         }
+        
+        // Memory Management Section
+        MemoryManager(
+            viewModel = viewModel,
+            modifier = Modifier.padding(top = 16.dp)
+        )
     }
 }

@@ -59,11 +59,13 @@ fun AppNavigation(
                 models = models,
                 extFileDir = extFilesDir,
                 chatId = chatId,
-                onBackPressed = { navController.popBackStack() }
+                onBackPressed = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(AppDestinations.MODELS) }
             )
         }
         composable(AppDestinations.SETTINGS) {
             SettingsScreen(
+                viewModel = viewModel,
                 onModelsScreenButtonClicked = { navController.navigate(AppDestinations.MODELS) },
                 onParamsScreenButtonClicked = { navController.navigate(AppDestinations.PARAMS) },
                 onAboutScreenButtonClicked = { navController.navigate(AppDestinations.ABOUT) },

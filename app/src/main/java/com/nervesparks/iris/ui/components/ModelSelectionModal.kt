@@ -1,5 +1,10 @@
 package com.nervesparks.iris.ui.components
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,9 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,7 +30,8 @@ import java.io.File
 @Composable
 fun ModelSelectionModal(
     viewModel: MainViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNavigateToModels: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
@@ -42,6 +46,33 @@ fun ModelSelectionModal(
     
     // Check if any models are downloaded
     val hasDownloadedModels = availableModels.isNotEmpty()
+    
+    // File picker for local model import
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { selectedUri ->
+            // Handle the selected file
+            val fileName = context.contentResolver.getFileName(selectedUri)
+            if (fileName?.endsWith(".gguf") == true) {
+                // Copy file to app's external files directory
+                extFilesDir?.let { dir ->
+                    val destFile = File(dir, fileName)
+                    try {
+                        context.contentResolver.openInputStream(selectedUri)?.use { input ->
+                            destFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        // Refresh the model list
+                        viewModel.refresh = true
+                    } catch (e: Exception) {
+                        // Handle error
+                    }
+                }
+            }
+        }
+    }
     
     Dialog(
         onDismissRequest = onDismiss,
@@ -96,6 +127,48 @@ fun ModelSelectionModal(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
+                // Action buttons for model management
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Download Models button
+                    OutlinedButton(
+                        onClick = onNavigateToModels,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Download Models")
+                    }
+                    
+                    // Import Local Model button
+                    OutlinedButton(
+                        onClick = { filePickerLauncher.launch("*/*") },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Import Model")
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 // Status indicator
                 if (!hasDownloadedModels) {
                     // No models downloaded
@@ -130,7 +203,7 @@ fun ModelSelectionModal(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = "Download models from the Models screen to get started",
+                        text = "Download models from HuggingFace or import local GGUF files to get started",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -139,7 +212,7 @@ fun ModelSelectionModal(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Button(
-                        onClick = onDismiss,
+                        onClick = onNavigateToModels,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -265,5 +338,24 @@ fun ModelSelectionModal(
                 }
             }
         }
+    }
+}
+
+// Extension function to get file name from URI
+private fun android.content.ContentResolver.getFileName(uri: Uri): String? {
+    return when (uri.scheme) {
+        "content" -> {
+            val cursor = query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val displayNameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (displayNameIndex != -1) {
+                        it.getString(displayNameIndex)
+                    } else null
+                } else null
+            }
+        }
+        "file" -> uri.lastPathSegment
+        else -> null
     }
 } 

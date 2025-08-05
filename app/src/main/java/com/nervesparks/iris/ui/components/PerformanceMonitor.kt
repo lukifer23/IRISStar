@@ -46,80 +46,55 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
             Text(
-                text = "Performance Metrics",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSecondary,
-                fontWeight = FontWeight.Bold
+                text = "Performance",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Real-time metrics
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                MetricItem(
-                    label = "TPS",
-                    value = String.format("%.1f", state.tps),
-                    unit = "tokens/s",
-                    color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                MetricItem(
-                    label = "TTFT",
-                    value = if (state.ttft > 0) state.ttft.toString() else "N/A",
-                    unit = "ms",
-                    color = if (state.ttft > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                MetricItem(
-                    label = "Latency",
-                    value = if (state.latency > 0) state.latency.toString() else "N/A",
-                    unit = "ms",
-                    color = if (state.latency > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Memory and context metrics
+            // Compact metrics layout
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                MetricItem(
+                CompactMetricItem(
+                    label = "TPS",
+                    value = String.format("%.1f", state.tps),
+                    color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                CompactMetricItem(
+                    label = "TTFT",
+                    value = if (state.ttft > 0) "${state.ttft}ms" else "N/A",
+                    color = if (state.ttft > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                CompactMetricItem(
                     label = "Memory",
-                    value = state.memoryUsage.toString(),
-                    unit = "MB",
+                    value = "${state.memoryUsage}MB",
                     color = MaterialTheme.colorScheme.secondary
                 )
-                MetricItem(
+                CompactMetricItem(
                     label = "Context",
                     value = "${state.contextLimit}/${state.maxContextLimit}",
-                    unit = "tokens",
                     color = MaterialTheme.colorScheme.tertiary
-                )
-                MetricItem(
-                    label = "Generated",
-                    value = state.tokensGenerated.toString(),
-                    unit = "tokens",
-                    color = if (state.isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Generation status
+            // Generation progress
             if (state.isGenerating) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,
@@ -131,10 +106,9 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
 }
 
 @Composable
-private fun MetricItem(
+private fun CompactMetricItem(
     label: String,
     value: String,
-    unit: String,
     color: Color
 ) {
     Column(
@@ -143,18 +117,13 @@ private fun MetricItem(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = color,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = unit,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.5f)
+            color = color,
+            fontWeight = FontWeight.Medium
         )
     }
 }

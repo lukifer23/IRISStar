@@ -55,6 +55,10 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -131,9 +135,12 @@ import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.components.ModelSettingsScreen
 import com.nervesparks.iris.ui.components.ModelSelectionModal
+import com.nervesparks.iris.ui.components.MarkdownTextComponent
+import com.nervesparks.iris.ui.components.MemoryManager
 
 import kotlinx.coroutines.launch
 import java.io.File
+import androidx.compose.ui.graphics.vector.ImageVector
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -147,6 +154,7 @@ fun MainChatScreen (
     extFileDir: File?,
     chatId: Long? = null,
     onBackPressed: () -> Unit = {},
+    onNavigateToModels: () -> Unit = {}
 ){
     val kc = LocalSoftwareKeyboardController.current
 
@@ -205,6 +213,7 @@ fun MainChatScreen (
         modifier = Modifier
             .fillMaxSize()
             .imePadding()
+            .statusBarsPadding()
     ) {
         
 
@@ -220,50 +229,65 @@ fun MainChatScreen (
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Top row with back button and model info
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        // Back button
+                        IconButton(
+                            onClick = onBackPressed,
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            // Back button
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back to Chat List",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Current Model",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = viewModel.loadedModelName.value.ifEmpty { "No model loaded" }
+                                    .replace("Qwen_Qwen3-0.6B-Q4_K_M.gguf", "Qwen3-0.6B")
+                                    .replace("Llama-3.2-3B-Instruct-Q4_K_L.gguf", "Llama3.2-3B")
+                                    .replace("Llama-3.2-1B-Instruct-Q6_K_L.gguf", "Llama3.2-1B")
+                                    .replace("stablelm-2-1_6b-chat.Q4_K_M.imx.gguf", "StableLM-2-1.6B")
+                                    .replace("NemoTron-1.5B-Q4_K_M.gguf", "NemoTron-1.5B"),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             IconButton(
-                                onClick = onBackPressed,
+                                onClick = { viewModel.showModelSettings() },
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = "Back to Chat List",
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Model Settings",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Current Model",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = viewModel.loadedModelName.value.ifEmpty { "No model loaded" }
-                                        .replace("Qwen_Qwen3-0.6B-Q4_K_M.gguf", "Qwen3-0.6B")
-                                        .replace("Llama-3.2-3B-Instruct-Q4_K_L.gguf", "Llama3.2-3B")
-                                        .replace("Llama-3.2-1B-Instruct-Q6_K_L.gguf", "Llama3.2-1B")
-                                        .replace("stablelm-2-1_6b-chat.Q4_K_M.imx.gguf", "StableLM-2-1.6B")
-                                        .replace("NemoTron-1.5B-Q4_K_M.gguf", "NemoTron-1.5B"),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Medium
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             
@@ -275,26 +299,6 @@ fun MainChatScreen (
                                     imageVector = Icons.Default.KeyboardArrowDown,
                                     contentDescription = "Change Model",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        
-                        // Compact model settings button
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            IconButton(
-                                onClick = { viewModel.showModelSettings() },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = "Model Settings",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -312,7 +316,8 @@ fun MainChatScreen (
                 if (viewModel.showModelSelection) {
                     ModelSelectionModal(
                         viewModel = viewModel,
-                        onDismiss = { viewModel.hideModelSelectionDialog() }
+                        onDismiss = { viewModel.hideModelSelectionDialog() },
+                        onNavigateToModels = onNavigateToModels
                     )
                 }
 
@@ -351,171 +356,143 @@ fun MainChatScreen (
                         if (viewModel.messages.isEmpty() && !viewModel.showModal && !viewModel.showAlert) {
                             LazyColumn(
                                 modifier = Modifier
-                                    .fillMaxSize() // Take up the whole screen
+                                    .fillMaxSize()
                                     .wrapContentHeight(Alignment.CenterVertically),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 32.dp),
+                                verticalArrangement = Arrangement.spacedBy(24.dp)
                             ) {
-//                                item { Spacer(Modifier.height(55.dp).fillMaxWidth()) }
-                                // Header Text
+                                // Welcome Header
                                 item {
-                                    Text(
-                                        text = "Hello, Ask me " + "Anything",
-                                        style = MaterialTheme.typography.bodySmall.copy(
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Hello, Ask me Anything",
+                                            style = MaterialTheme.typography.headlineMedium,
                                             color = MaterialTheme.colorScheme.onSurface,
-                                            fontWeight = FontWeight.W300,
-                                            letterSpacing = 1.sp,
-                                            fontSize = 50.sp,
-                                            lineHeight = 60.sp
-                                        ),
-                                        fontFamily = FontFamily.SansSerif,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
-                                            .wrapContentHeight()
-                                    )
+                                            fontWeight = FontWeight.Light,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        
+                                        Text(
+                                            text = "Your AI assistant is ready to help",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                                 
-                                // Model Management Buttons
+                                // Model Management
                                 item {
                                     Column(
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        // Show different buttons based on model status
                                         if (viewModel.loadedModelName.value.isEmpty()) {
-                                            // No model loaded - show prominent load button
+                                            // No model loaded
                                             Card(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 colors = CardDefaults.cardColors(
                                                     containerColor = MaterialTheme.colorScheme.primaryContainer
                                                 ),
-                                                shape = RoundedCornerShape(12.dp)
+                                                shape = RoundedCornerShape(16.dp)
                                             ) {
                                                 Column(
-                                                    modifier = Modifier.padding(16.dp),
+                                                    modifier = Modifier.padding(20.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                     Text(
                                                         text = "No Model Loaded",
                                                         style = MaterialTheme.typography.titleMedium,
                                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                        fontWeight = FontWeight.Bold
+                                                        fontWeight = FontWeight.Medium
                                                     )
                                                     Spacer(modifier = Modifier.height(8.dp))
                                                     Text(
                                                         text = "Select a model to start chatting",
                                                         style = MaterialTheme.typography.bodyMedium,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                                                         textAlign = TextAlign.Center
                                                     )
-                                                    Spacer(modifier = Modifier.height(12.dp))
+                                                    Spacer(modifier = Modifier.height(16.dp))
                                                     Button(
-                                                        onClick = { 
-                                                            viewModel.showModelSelectionDialog()
-                                                            android.util.Log.d("MainChatScreen", "Load Model button clicked")
-                                                        },
+                                                        onClick = { viewModel.showModelSelectionDialog() },
                                                         modifier = Modifier.fillMaxWidth(),
                                                         colors = ButtonDefaults.buttonColors(
                                                             containerColor = MaterialTheme.colorScheme.primary
-                                                        )
+                                                        ),
+                                                        shape = RoundedCornerShape(12.dp)
                                                     ) {
                                                         Text("Load Model", color = MaterialTheme.colorScheme.onPrimary)
                                                     }
                                                 }
                                             }
                                         } else {
-                                            // Model is loaded - show switch and download buttons
-                                            Button(
-                                                onClick = { 
-                                                    viewModel.showModelSelectionDialog()
-                                                    android.util.Log.d("MainChatScreen", "Switch Model button clicked")
-                                                },
+                                            // Model is loaded
+                                            Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                                             ) {
-                                                Text("Switch Model", color = MaterialTheme.colorScheme.onPrimary)
-                                            }
-                                            
-                                            Button(
-                                                onClick = { 
-                                                    viewModel.showModal = true
-                                                    viewModel.showModelSelection = false
-                                                    android.util.Log.d("MainChatScreen", "Download Model button clicked")
-                                                },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                                            ) {
-                                                Text("Download New Model", color = MaterialTheme.colorScheme.onSecondary)
+                                                Button(
+                                                    onClick = { viewModel.showModelSelectionDialog() },
+                                                    modifier = Modifier.weight(1f),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = MaterialTheme.colorScheme.primary
+                                                    ),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Text("Switch Model", color = MaterialTheme.colorScheme.onPrimary)
+                                                }
+                                                
+                                                Button(
+                                                    onClick = { 
+                                                        viewModel.showModal = true
+                                                        viewModel.showModelSelection = false
+                                                    },
+                                                    modifier = Modifier.weight(1f),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = MaterialTheme.colorScheme.secondary
+                                                    ),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Text("Download Model", color = MaterialTheme.colorScheme.onSecondary)
+                                                }
                                             }
                                         }
                                     }
                                 }
-
-                                // Items for Prompts_Home
-                                items(Prompts_Home.size) { index ->
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(60.dp)
-                                            .padding(8.dp)
-                                            .background(
-                                                MaterialTheme.colorScheme.surfaceVariant,
-                                                shape = RoundedCornerShape(20.dp)
-                                            )
+                                
+                                // Feature Cards
+                                item {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 8.dp)
-                                        ) {
-                                            // Circle Icon
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(20.dp) // Icon size
-                                                    .background(MaterialTheme.colorScheme.onSurfaceVariant, shape = CircleShape)
-                                                    .padding(4.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.info_svgrepo_com),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.surfaceVariant
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.width(12.dp))
-
-                                            // Text
-                                            Text(
-                                                text = Prompts_Home.getOrNull(index) ?: "",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                                textAlign = TextAlign.Start, // Left align the text
-                                                fontSize = 12.sp,
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .padding(horizontal = 8.dp)
-                                            )
-                                        }
+                                        FeatureCard(
+                                            text = "Explains complex topics simply",
+                                            icon = Icons.Default.Star
+                                        )
+                                        FeatureCard(
+                                            text = "Remembers previous inputs",
+                                            icon = Icons.Default.Refresh
+                                        )
+                                        FeatureCard(
+                                            text = "May sometimes be inaccurate",
+                                            icon = Icons.Default.Info
+                                        )
+                                        FeatureCard(
+                                            text = "Unable to provide current affairs",
+                                            icon = Icons.Default.Warning
+                                        )
                                     }
-                                }
-
-                                item{
-
                                 }
                             }
                         }
                         else {
 
                             LazyColumn(state = scrollState) {
-                                // Add performance monitor at the top
-                                item {
-                                    PerformanceMonitor(viewModel = viewModel)
-                                }
-                                
                                 // Track the first user and assistant messages
 
                                 var length = viewModel.messages.size
@@ -558,10 +535,10 @@ fun MainChatScreen (
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .padding(
-                                                            start = 8.dp,
+                                                            start = 16.dp,
                                                             top = 8.dp,
-                                                            end = 8.dp,
-                                                            bottom = 0.dp
+                                                            end = 16.dp,
+                                                            bottom = 4.dp
                                                         ),
                                                 ) {
                                                     if(role == "assistant") {
@@ -570,13 +547,18 @@ fun MainChatScreen (
                                                                 id = R.drawable.logo
                                                             ),
                                                             contentDescription =  "Bot Icon",
-                                                            modifier = Modifier.size(20.dp)
+                                                            modifier = Modifier.size(24.dp)
                                                         )
                                                     }
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    
                                                     Box(modifier = Modifier
-                                                        .padding(horizontal = 2.dp)
+                                                        .weight(1f)
                                                         .background(
-                                                            color = if (role == "user") MaterialTheme.colorScheme.primaryContainer else Color(0xFF1E293B),
+                                                            color = if (role == "user") 
+                                                                MaterialTheme.colorScheme.primaryContainer 
+                                                            else 
+                                                                MaterialTheme.colorScheme.surfaceVariant,
                                                             shape = RoundedCornerShape(16.dp),
                                                         )
                                                         .combinedClickable(
@@ -600,36 +582,26 @@ fun MainChatScreen (
                                                             }
                                                         )
                                                     ) {
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .padding(12.dp)
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .widthIn(max = 300.dp)
-                                                                    .padding(3.dp)
-                                                            ){
-                                                                Text(
-                                                                    text = if (trimmedMessage.startsWith("```")) {
-                                                                        trimmedMessage.substring(3)
-                                                                    } else {
-                                                                        trimmedMessage
-                                                                    },
-                                                                    style = MaterialTheme.typography.bodyMedium,
-                                                                    color = if (role == "user") MaterialTheme.colorScheme.onPrimaryContainer else Color.White,
-                                                                    modifier = Modifier
-                                                                        .padding(start = 1.dp, end = 1.dp)
-                                                                )
-                                                            }
-                                                        }
+                                                        MarkdownTextComponent(
+                                                            markdown = if (trimmedMessage.startsWith("```")) {
+                                                                trimmedMessage.substring(3)
+                                                            } else {
+                                                                trimmedMessage
+                                                            },
+                                                            modifier = Modifier.padding(16.dp),
+                                                            textAlign = if (role == "user") TextAlign.End else TextAlign.Start
+                                                        )
                                                     }
+                                                    
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    
                                                     if(role == "user") {
                                                         Image(
                                                             painter = painterResource(
                                                                 id = R.drawable.user_icon
                                                             ),
                                                             contentDescription = "Human Icon",
-                                                            modifier = Modifier.size(20.dp)
+                                                            modifier = Modifier.size(24.dp)
                                                         )
                                                     }
                                                 }
@@ -697,16 +669,14 @@ fun MainChatScreen (
                                                     ) {
                                                         // Previous content here
                                                     }
-                                                    Text(
-                                                        text = if (trimmedMessage.startsWith("```")) {
+                                                    MarkdownTextComponent(
+                                                        markdown = if (trimmedMessage.startsWith("```")) {
                                                             trimmedMessage.substring(3)
                                                         } else {
                                                             trimmedMessage
                                                         },
-                                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        ),
-                                                        modifier = Modifier.padding(16.dp)
+                                                        modifier = Modifier.padding(16.dp),
+                                                        textAlign = TextAlign.Start
                                                     )
                                                 }
                                             }
@@ -717,6 +687,13 @@ fun MainChatScreen (
                                     Spacer(modifier = Modifier
                                         .height(1.dp)
                                         .fillMaxWidth())
+                                }
+                                
+                                // Performance Monitor at bottom
+                                if (viewModel.isGenerating || viewModel.tps > 0.0) {
+                                    item {
+                                        PerformanceMonitor(viewModel = viewModel)
+                                    }
                                 }
                             }
 
@@ -1349,4 +1326,39 @@ fun MessageBottomSheet(
         }
     }
 
+}
+
+@Composable
+private fun FeatureCard(
+    text: String,
+    icon: ImageVector
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = text,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }

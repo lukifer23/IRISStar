@@ -250,6 +250,69 @@ class UserPreferencesRepository private constructor(context: Context) {
         sharedPreferences.edit().clear().apply()
     }
 
+    // Export all configuration to JSON
+    fun exportConfiguration(): String {
+        val jsonObject = org.json.JSONObject()
+        
+        // Global settings
+        jsonObject.put("defaultModelName", getDefaultModelName())
+        jsonObject.put("huggingFaceToken", getHuggingFaceToken())
+        jsonObject.put("huggingFaceUsername", getHuggingFaceUsername())
+        jsonObject.put("modelTemperature", getModelTemperature())
+        jsonObject.put("modelTopP", getModelTopP())
+        jsonObject.put("modelTopK", getModelTopK())
+        jsonObject.put("modelMaxTokens", getModelMaxTokens())
+        jsonObject.put("modelContextLength", getModelContextLength())
+        jsonObject.put("modelSystemPrompt", getModelSystemPrompt())
+        jsonObject.put("modelChatFormat", getModelChatFormat())
+        jsonObject.put("modelThreadCount", getModelThreadCount())
+        jsonObject.put("showThinkingTokens", getShowThinkingTokens())
+        jsonObject.put("thinkingTokenStyle", getThinkingTokenStyle())
+        jsonObject.put("uiTheme", getUITheme())
+        jsonObject.put("uiFontSize", getUIFontSize())
+        jsonObject.put("uiEnableAnimations", getUIEnableAnimations())
+        jsonObject.put("uiEnableHapticFeedback", getUIEnableHapticFeedback())
+        jsonObject.put("perfEnableMemoryOptimization", getPerfEnableMemoryOptimization())
+        jsonObject.put("perfEnableBackgroundProcessing", getPerfEnableBackgroundProcessing())
+        
+        return jsonObject.toString()
+    }
+    
+    // Import configuration from JSON
+    fun importConfiguration(jsonString: String): Boolean {
+        return try {
+            val json = org.json.JSONObject(jsonString)
+            val editor = sharedPreferences.edit()
+            
+            // Import global settings
+            if (json.has("defaultModelName")) editor.putString(KEY_DEFAULT_MODEL_NAME, json.getString("defaultModelName"))
+            if (json.has("huggingFaceToken")) editor.putString(KEY_HUGGINGFACE_TOKEN, json.getString("huggingFaceToken"))
+            if (json.has("huggingFaceUsername")) editor.putString(KEY_HUGGINGFACE_USERNAME, json.getString("huggingFaceUsername"))
+            if (json.has("modelTemperature")) editor.putFloat(KEY_MODEL_TEMPERATURE, json.getDouble("modelTemperature").toFloat())
+            if (json.has("modelTopP")) editor.putFloat(KEY_MODEL_TOP_P, json.getDouble("modelTopP").toFloat())
+            if (json.has("modelTopK")) editor.putInt(KEY_MODEL_TOP_K, json.getInt("modelTopK"))
+            if (json.has("modelMaxTokens")) editor.putInt(KEY_MODEL_MAX_TOKENS, json.getInt("modelMaxTokens"))
+            if (json.has("modelContextLength")) editor.putInt(KEY_MODEL_CONTEXT_LENGTH, json.getInt("modelContextLength"))
+            if (json.has("modelSystemPrompt")) editor.putString(KEY_MODEL_SYSTEM_PROMPT, json.getString("modelSystemPrompt"))
+            if (json.has("modelChatFormat")) editor.putString(KEY_MODEL_CHAT_FORMAT, json.getString("modelChatFormat"))
+            if (json.has("modelThreadCount")) editor.putInt(KEY_MODEL_THREAD_COUNT, json.getInt("modelThreadCount"))
+            if (json.has("showThinkingTokens")) editor.putBoolean(KEY_SHOW_THINKING_TOKENS, json.getBoolean("showThinkingTokens"))
+            if (json.has("thinkingTokenStyle")) editor.putString(KEY_THINKING_TOKEN_STYLE, json.getString("thinkingTokenStyle"))
+            if (json.has("uiTheme")) editor.putString(KEY_UI_THEME, json.getString("uiTheme"))
+            if (json.has("uiFontSize")) editor.putFloat(KEY_UI_FONT_SIZE, json.getDouble("uiFontSize").toFloat())
+            if (json.has("uiEnableAnimations")) editor.putBoolean(KEY_UI_ENABLE_ANIMATIONS, json.getBoolean("uiEnableAnimations"))
+            if (json.has("uiEnableHapticFeedback")) editor.putBoolean(KEY_UI_ENABLE_HAPTIC_FEEDBACK, json.getBoolean("uiEnableHapticFeedback"))
+            if (json.has("perfEnableMemoryOptimization")) editor.putBoolean(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, json.getBoolean("perfEnableMemoryOptimization"))
+            if (json.has("perfEnableBackgroundProcessing")) editor.putBoolean(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, json.getBoolean("perfEnableBackgroundProcessing"))
+            
+            editor.apply()
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferencesRepository", "Error importing configuration", e)
+            false
+        }
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: UserPreferencesRepository? = null

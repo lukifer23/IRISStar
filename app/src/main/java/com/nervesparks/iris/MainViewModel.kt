@@ -219,15 +219,32 @@ class MainViewModel @Inject constructor(
     fun updateTokenCount(count: Int) {
         tokensGenerated = count
         if (ttft == 0L && count > 0) {
-            // First token received
+            // Calculate time to first token
             ttft = System.currentTimeMillis() - generationStartTime
         }
         
-        // Update TPS in real-time
-        val currentTime = System.currentTimeMillis()
-        val elapsedTime = currentTime - generationStartTime
+        // Update total generation time
+        totalGenerationTime = System.currentTimeMillis() - generationStartTime
+        
+        // Calculate TPS in real-time
+        val elapsedTime = totalGenerationTime.toDouble()
         if (elapsedTime > 0) {
             tps = (count * 1000.0) / elapsedTime
+        }
+        
+        // Calculate average latency
+        if (count > 0) {
+            latency = totalGenerationTime / count
+        }
+        
+        // Update memory usage periodically
+        viewModelScope.launch {
+            try {
+                val memoryUsage = getMemoryUsage()
+                updateMemoryUsage(memoryUsage / (1024 * 1024)) // Convert to MB
+            } catch (e: Exception) {
+                Log.e(tag, "Error updating memory usage", e)
+            }
         }
     }
 
@@ -952,28 +969,155 @@ class MainViewModel @Inject constructor(
 
     // Add missing methods for compilation fixes
     fun searchModels(query: String): SearchResponse {
-        // For now, return a placeholder response
-        // TODO: Implement proper async search with coroutines
+        // This is now a synchronous wrapper for the async search
+        // The actual search should be called from a coroutine scope
         return SearchResponse(
             success = false,
             data = null,
-            error = "Search functionality not yet implemented"
+            error = "Use searchModelsAsync() for proper async search"
         )
+    }
+
+    suspend fun searchModelsAsync(query: String): SearchResponse {
+        return try {
+            val token = userPreferencesRepository.getHuggingFaceToken()
+            val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
+            
+            val models = huggingFaceApiService.searchModels(query, authHeader)
+            
+            val searchResults = models.map { model ->
+                ModelSearchResult(
+                    id = model.id,
+                    name = model.name,
+                    description = model.tags.joinToString(", "),
+                    downloads = model.downloads,
+                    likes = model.likes,
+                    tags = model.tags
+                )
+            }
+            
+            SearchResponse(
+                success = true,
+                data = searchResults,
+                error = null
+            )
+        } catch (e: Exception) {
+            Log.e(tag, "Error searching models", e)
+            SearchResponse(
+                success = false,
+                data = null,
+                error = "Search failed: ${e.message}"
+            )
+        }
     }
 
     fun getModelDetails(modelId: String): ModelDetailsResponse {
-        // For now, return a placeholder response
-        // TODO: Implement proper async model details with coroutines
+        // This is now a synchronous wrapper for the async search
         return ModelDetailsResponse(
             success = false,
             data = null,
-            error = "Model details functionality not yet implemented"
+            error = "Use getModelDetailsAsync() for proper async search"
         )
     }
 
+    suspend fun getModelDetailsAsync(modelId: String): ModelDetailsResponse {
+        return try {
+            val token = userPreferencesRepository.getHuggingFaceToken()
+            val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
+            
+            val model = huggingFaceApiService.getModelDetails(modelId, authHeader)
+            
+            val detailResult = ModelDetailResult(
+                id = model.id,
+                name = model.name,
+                description = model.tags.joinToString(", "),
+                downloads = model.downloads,
+                likes = model.likes,
+                tags = model.tags,
+                siblings = model.siblings.map { file ->
+                    ModelFile(
+                        filename = file.filename,
+                        size = file.size,
+                        quantType = null // Not available in current API response
+                    )
+                }
+            )
+            
+            ModelDetailsResponse(
+                success = true,
+                data = listOf(detailResult),
+                error = null
+            )
+        } catch (e: Exception) {
+            Log.e(tag, "Error getting model details", e)
+            ModelDetailsResponse(
+                success = false,
+                data = null,
+                error = "Failed to get model details: ${e.message}"
+            )
+        }
+    }
+
     fun setTestHuggingFaceToken() {
-        // TODO: Implement test token setting
-        Log.d(tag, "setTestHuggingFaceToken called - not yet implemented")
+        // Set a test token for development purposes
+        // In production, this should be obtained from secure storage
+        val testToken = "hf_test_token_for_development"
+        userPreferencesRepository.setHuggingFaceToken(testToken)
+        Log.d(tag, "Test HuggingFace token set for development")
+    }
+
+    // Memory management functions
+    fun unloadCurrentModel() {
+        viewModelScope.launch {
+            try {
+                llamaAndroid.unload()
+                loadedModelName.value = ""
+                selectedModel = ""
+                Log.d(tag, "Current model unloaded successfully")
+            } catch (e: Exception) {
+                Log.e(tag, "Error unloading model", e)
+            }
+        }
+    }
+    
+    suspend fun getMemoryUsage(): Long {
+        return try {
+            llamaAndroid.getMemoryUsage()
+        } catch (e: Exception) {
+            Log.e(tag, "Error getting memory usage", e)
+            0L
+        }
+    }
+    
+    fun isModelLoaded(): Boolean {
+        return loadedModelName.value.isNotEmpty()
+    }
+    
+    fun getLoadedModelName(): String {
+        return loadedModelName.value
+    }
+    
+    // Memory optimization
+    fun optimizeMemory() {
+        viewModelScope.launch {
+            try {
+                // Clear message history if it's too large
+                if (messages.size > 100) {
+                    val keepCount = 50
+                    messages = messages.takeLast(keepCount)
+                    Log.d(tag, "Cleared message history, kept last $keepCount messages")
+                }
+                
+                // Force garbage collection if memory usage is high
+                val memoryUsage = getMemoryUsage()
+                if (memoryUsage > 500 * 1024 * 1024) { // 500MB threshold
+                    System.gc()
+                    Log.d(tag, "Forced garbage collection due to high memory usage: ${memoryUsage / (1024 * 1024)}MB")
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error optimizing memory", e)
+            }
+        }
     }
 }
 

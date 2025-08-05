@@ -187,8 +187,8 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                     errorMessage = null
 
                     try {
-                        // Use searchModels instead of getModelDetails for search functionality
-                        val response = viewModel.searchModels(UserGivenModel.text)
+                        // Use searchModelsAsync for proper async search
+                        val response = viewModel.searchModelsAsync(UserGivenModel.text)
                         
                         if (response.success && response.data != null) {
                             // Convert search results to the expected format
