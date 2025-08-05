@@ -9,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
@@ -46,213 +45,75 @@ fun ModelSettingsScreen(
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Temperature Control
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Temperature: ${String.format("%.2f", temperature)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = "Controls randomness (0.0 = deterministic, 1.0 = very random)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                )
-                Slider(
-                    value = temperature,
-                    onValueChange = { temperature = it },
-                    valueRange = 0.0f..2.0f,
-                    steps = 19,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.tertiary,
-                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                    )
-                )
-            }
-        }
+        SettingSlider(
+            label = "Temperature",
+            value = temperature,
+            onValueChange = { temperature = it },
+            valueRange = 0.0f..2.0f,
+            steps = 19,
+            infoText = "Controls randomness (0.0 = deterministic, 1.0 = very random)",
+            valueFormatter = { String.format("%.2f", it) }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Top-p Control
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Top-p: ${String.format("%.2f", topP)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = "Controls diversity via nucleus sampling",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                )
-                Slider(
-                    value = topP,
-                    onValueChange = { topP = it },
-                    valueRange = 0.0f..1.0f,
-                    steps = 19,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.tertiary,
-                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                    )
-                )
-            }
-        }
+        SettingSlider(
+            label = "Top-p",
+            value = topP,
+            onValueChange = { topP = it },
+            valueRange = 0.0f..1.0f,
+            steps = 19,
+            infoText = "Controls diversity via nucleus sampling",
+            valueFormatter = { String.format("%.2f", it) }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Top-k Control
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Top-k: $topK",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = "Limits vocabulary to top k tokens",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                )
-                Slider(
-                    value = topK.toFloat(),
-                    onValueChange = { topK = it.toInt() },
-                    valueRange = 1f..100f,
-                    steps = 98,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.tertiary,
-                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                    )
-                )
-            }
-        }
+        SettingSlider(
+            label = "Top-k",
+            value = topK.toFloat(),
+            onValueChange = { topK = it.toInt() },
+            valueRange = 1f..100f,
+            steps = 98,
+            infoText = "Limits vocabulary to top k tokens",
+            valueFormatter = { it.toInt().toString() }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Max Tokens Control
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Max Tokens: $maxTokens",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = "Maximum tokens to generate",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                )
-                Slider(
-                    value = maxTokens.toFloat(),
-                    onValueChange = { maxTokens = it.toInt() },
-                    valueRange = 1f..8192f,
-                    steps = 8190,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.tertiary,
-                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                    )
-                )
-            }
-        }
+        SettingSlider(
+            label = "Max Tokens",
+            value = maxTokens.toFloat(),
+            onValueChange = { maxTokens = it.toInt() },
+            valueRange = 1f..8192f,
+            steps = 8190,
+            infoText = "Maximum tokens to generate",
+            valueFormatter = { it.toInt().toString() }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Context Length Control
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Context Length: $contextLength",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = "Maximum context window size",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                )
-                Slider(
-                    value = contextLength.toFloat(),
-                    onValueChange = { contextLength = it.toInt() },
-                    valueRange = 512f..32768f,
-                    steps = 32255,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.tertiary,
-                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                    )
-                )
-            }
-        }
+        SettingSlider(
+            label = "Context Length",
+            value = contextLength.toFloat(),
+            onValueChange = { contextLength = it.toInt() },
+            valueRange = 512f..32768f,
+            steps = 32255,
+            infoText = "Maximum context window size",
+            valueFormatter = { it.toInt().toString() }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Thread Count Control
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Thread Count: $threadCount",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = "Number of CPU threads to use",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                )
-                Slider(
-                    value = threadCount.toFloat(),
-                    onValueChange = { threadCount = it.toInt() },
-                    valueRange = 1f..16f,
-                    steps = 14,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.tertiary,
-                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                    )
-                )
-            }
-        }
+        SettingSlider(
+            label = "Thread Count",
+            value = threadCount.toFloat(),
+            onValueChange = { threadCount = it.toInt() },
+            valueRange = 1f..16f,
+            steps = 14,
+            infoText = "Number of CPU threads to use",
+            valueFormatter = { it.toInt().toString() }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
