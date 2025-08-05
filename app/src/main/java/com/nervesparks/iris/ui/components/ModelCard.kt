@@ -23,6 +23,7 @@ import java.io.File
 @Composable
 fun ModelCard(
     modelName: String,
+    supportsReasoning: Boolean = false,
     viewModel: MainViewModel,
     dm: DownloadManager,
     extFilesDir: File,
@@ -72,10 +73,23 @@ fun ModelCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = modelName,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = modelName,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (supportsReasoning) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Reasoning",
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .background(Color.Yellow, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
