@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -44,7 +45,7 @@ fun MemoryManager(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -65,7 +66,7 @@ fun MemoryManager(
                 }
                 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s)
                 ) {
                     Button(
                         onClick = {

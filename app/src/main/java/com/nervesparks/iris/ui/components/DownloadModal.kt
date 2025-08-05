@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.app.DownloadManager
 import android.content.ClipData
@@ -47,10 +48,10 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
 
     Dialog(onDismissRequest = {}) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(Spacing.m),
             color = Color(0xFF1a1a2e),
             modifier = Modifier
-                .padding(16.dp)
+                .padding(Spacing.m)
                 .height(if (showSearch) 650.dp else 400.dp)
                 .fillMaxWidth()
         ) {
@@ -68,14 +69,14 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 Text(
                     text = "Don't close or minimize the app!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 Text(
                     text = "Download at least 1 model",
                     style = MaterialTheme.typography.bodyMedium,
@@ -83,19 +84,19 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Spacing.m))
 
                 // Mode selection
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(Spacing.s),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Button(
@@ -104,8 +105,8 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                 containerColor = if (!showSearch) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
                                 contentColor = MaterialTheme.colorScheme.onTertiary
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f).padding(end = 4.dp)
+                            shape = RoundedCornerShape(Spacing.s),
+                            modifier = Modifier.weight(1f).padding(end = Spacing.xs)
                         ) {
                             Text("Default Models", style = MaterialTheme.typography.bodyMedium)
                         }
@@ -115,20 +116,20 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                 containerColor = if (showSearch) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
                                 contentColor = MaterialTheme.colorScheme.onTertiary
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f).padding(start = 4.dp)
+                            shape = RoundedCornerShape(Spacing.s),
+                            modifier = Modifier.weight(1f).padding(start = Spacing.xs)
                         ) {
                             Text("Search Models", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Spacing.m))
 
                 if (!showSearch) {
                     // Default models list
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(Spacing.s)
                     ) {
                         val filteredModels = models.filter { !it.destination.exists() }
                         Log.d("DownloadModal", "Total models: ${models.size}")
@@ -159,7 +160,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White
                             ),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(Spacing.s),
                             singleLine = true
                         )
 
@@ -230,7 +231,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                 containerColor = Color(0xFF0f3460),
                                 contentColor = Color.White
                             ),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(Spacing.s),
                             enabled = !isSearching && searchQuery.isNotEmpty()
                         ) {
                             Text(if (isSearching) "Searching..." else "Search Models")
@@ -240,8 +241,8 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFFB71C1C)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                                shape = RoundedCornerShape(8.dp)
+                                elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs),
+                                shape = RoundedCornerShape(Spacing.s)
                             ) {
                                 Text(
                                     text = error,
@@ -261,7 +262,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             )
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(Spacing.s)
                             ) {
                                 items(results) { model ->
                                     SearchResultCard(model, dm, context)
@@ -280,11 +281,11 @@ private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, mode
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(Spacing.m),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -305,9 +306,9 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
     var showFileSelection by remember { mutableStateOf(false) }
     
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
         colors = CardDefaults.cardColors(containerColor = Color(0xff0f172a)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -323,7 +324,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
             )
             
             model["description"]?.takeIf { it.isNotEmpty() }?.let { description ->
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Spacing.xs))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
@@ -350,7 +351,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
             }
             
             model["tags"]?.takeIf { it.isNotEmpty() }?.let { tags ->
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Spacing.xs))
                 Text(
                     text = "Tags: $tags",
                     style = MaterialTheme.typography.bodySmall,
@@ -361,7 +362,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
             }
             
             model["files"]?.takeIf { it != "File details not available" }?.let { files ->
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Spacing.xs))
                 Text(
                     text = "Available Files:",
                     style = MaterialTheme.typography.bodySmall,
@@ -377,11 +378,11 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
                 Button(
                     onClick = {
@@ -396,7 +397,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                         containerColor = Color(0xFF0f3460),
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text("Copy Model ID")
                 }
@@ -408,7 +409,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                         containerColor = if (showFileSelection) Color(0xFF16213e) else Color(0xFF0f3460),
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text(if (showFileSelection) "Hide Files" else "Select File")
                 }
@@ -416,23 +417,23 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
             
             // File selection dropdown
             if (showFileSelection) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 model["files"]?.takeIf { it != "File details not available" }?.let { files ->
                     val fileList = files.split("\n").filter { it.contains(".gguf") }
                     LazyColumn(
                         modifier = Modifier.height(120.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xs)
                     ) {
                         items(fileList) { file ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(Spacing.s)
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(8.dp),
+                                        .padding(Spacing.s),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(
@@ -471,7 +472,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                                             containerColor = Color(0xFF0f3460),
                                             contentColor = Color.White
                                         ),
-                                        shape = RoundedCornerShape(4.dp)
+                                        shape = RoundedCornerShape(Spacing.xs)
                                     ) {
                                         Text("Download")
                                     }

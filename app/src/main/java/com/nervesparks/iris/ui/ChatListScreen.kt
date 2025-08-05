@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -52,7 +53,7 @@ fun ChatListScreen(
             onValueChange = { searchQuery = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.m),
             placeholder = { Text("Search chats...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             colors = OutlinedTextFieldDefaults.colors(
@@ -86,7 +87,7 @@ fun ChatListScreen(
             onClick = onNewChat,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.m),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("New Chat", color = MaterialTheme.colorScheme.onPrimary)
@@ -108,12 +109,12 @@ private fun ChatRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = Spacing.m, vertical = Spacing.s)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(chat.title, color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Medium)
                 Text(SimpleDateFormat("MMM dd, HH:mm").format(Date(chat.updated)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)

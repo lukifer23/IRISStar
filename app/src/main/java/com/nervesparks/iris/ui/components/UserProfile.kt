@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,7 +41,7 @@ fun UserProfile(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
+            .padding(Spacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Avatar
@@ -62,7 +63,7 @@ fun UserProfile(
                 imageVector = Icons.Default.Person,
                 contentDescription = "User Avatar",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(Spacing.l)
             )
         }
         
@@ -95,7 +96,7 @@ fun UserProfile(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(Spacing.l)
             )
         }
     }
@@ -114,7 +115,7 @@ fun CompactUserProfile(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Spacing.m, vertical = Spacing.s),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Small avatar
@@ -135,11 +136,11 @@ fun CompactUserProfile(
                 imageVector = Icons.Default.Person,
                 contentDescription = "User Avatar",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(Spacing.m)
             )
         }
         
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Spacing.s))
         
         // User name only
         Text(
@@ -166,14 +167,14 @@ fun UserProfileCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(Spacing.m),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(Spacing.m)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(Spacing.l),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Large avatar
@@ -198,7 +199,7 @@ fun UserProfileCard(
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Spacing.m))
             
             // User name
             Text(
@@ -208,7 +209,7 @@ fun UserProfileCard(
                 fontWeight = FontWeight.SemiBold
             )
             
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Spacing.xs))
             
             // User status
             Text(
@@ -217,7 +218,7 @@ fun UserProfileCard(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
             
             // User email
             Text(

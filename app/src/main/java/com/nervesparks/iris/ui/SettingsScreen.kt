@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -55,8 +56,8 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m)
     ) {
         // HuggingFace Settings Section
         Card(
@@ -67,7 +68,7 @@ fun SettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
@@ -148,7 +149,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF4CAF50)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text("Save Credentials")
                 }
@@ -165,15 +166,15 @@ fun SettingsScreen(
                 // Status Indicator
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(Spacing.s)
                             .background(
                                 color = if (preferencesRepository.hasHuggingFaceCredentials()) 
                                     Color(0xFF4CAF50) else Color.Red,
-                                shape = RoundedCornerShape(4.dp)
+                                shape = RoundedCornerShape(Spacing.xs)
                             )
                     )
                     Text(
@@ -196,8 +197,8 @@ fun SettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
                 Text(
                     text = "App Information",
@@ -234,8 +235,8 @@ fun SettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
                 Text(
                     text = "Getting Started",
@@ -278,8 +279,8 @@ fun SettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
                 Text(
                     text = "App Settings",
@@ -294,7 +295,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF2D3748)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text("Models", color = Color.White)
                 }
@@ -306,7 +307,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF2D3748)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text("Change Parameters", color = Color.White)
                 }
@@ -318,7 +319,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF2D3748)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text("Benchmark", color = Color.White)
                 }
@@ -330,7 +331,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF2D3748)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Text("About", color = Color.White)
                 }
@@ -340,7 +341,7 @@ fun SettingsScreen(
         // Memory Management Section
         MemoryManager(
             viewModel = viewModel,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = Spacing.m)
         )
     }
 }

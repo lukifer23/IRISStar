@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -60,7 +61,7 @@ fun ModernChatInput(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = Spacing.m, vertical = Spacing.s)
     ) {
         // Quick action buttons (horizontal row)
         QuickActionsRow(
@@ -69,7 +70,7 @@ fun ModernChatInput(
             onCartoonStyle = onCartoonStyle
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Main input field
         Row(
@@ -84,7 +85,7 @@ fun ModernChatInput(
                     color = MaterialTheme.colorScheme.outline,
                     shape = RoundedCornerShape(20.dp)
                 )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = Spacing.m, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Attachment button
@@ -115,7 +116,7 @@ fun ModernChatInput(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester)
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = Spacing.s),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Send
@@ -210,19 +211,19 @@ private fun QuickActionButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = Spacing.s)
     ) {
         Box(
             modifier = Modifier
                 .size(56.dp)
                 .background(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(Spacing.m)
                 )
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(Spacing.m)
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -234,7 +235,7 @@ private fun QuickActionButton(
             )
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Spacing.s))
         
         Text(
             text = text,
@@ -266,20 +267,20 @@ private fun AttachmentDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.m),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(Spacing.m)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Choose attachment",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = Spacing.m)
                 )
                 
                 // Camera option
@@ -329,17 +330,17 @@ private fun AttachmentOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+            .padding(vertical = 12.dp, horizontal = Spacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = text,
             tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(Spacing.l)
         )
         
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(Spacing.m))
         
         Text(
             text = text,

@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.screens
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -48,7 +49,7 @@ fun ModernTestScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.m),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -60,7 +61,7 @@ fun ModernTestScreen(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Spacing.m))
                 
                 Text(
                     text = "Testing our new design system",

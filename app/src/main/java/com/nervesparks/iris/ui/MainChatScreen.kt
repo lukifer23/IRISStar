@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.app.Activity
 import android.app.DownloadManager
@@ -229,7 +230,7 @@ fun MainChatScreen (
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = Spacing.m, vertical = Spacing.s),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
@@ -239,7 +240,7 @@ fun MainChatScreen (
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(Spacing.m),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -277,7 +278,7 @@ fun MainChatScreen (
                         
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.s)
                         ) {
                             IconButton(
                                 onClick = { viewModel.showModelSettings() },
@@ -358,8 +359,8 @@ fun MainChatScreen (
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .wrapContentHeight(Alignment.CenterVertically),
-                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 32.dp),
-                                verticalArrangement = Arrangement.spacedBy(24.dp)
+                                contentPadding = PaddingValues(horizontal = Spacing.l, vertical = 32.dp),
+                                verticalArrangement = Arrangement.spacedBy(Spacing.l)
                             ) {
                                 // Welcome Header
                                 item {
@@ -374,7 +375,7 @@ fun MainChatScreen (
                                             textAlign = TextAlign.Center
                                         )
                                         
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Spacer(modifier = Modifier.height(Spacing.s))
                                         
                                         Text(
                                             text = "Your AI assistant is ready to help",
@@ -398,7 +399,7 @@ fun MainChatScreen (
                                                 colors = CardDefaults.cardColors(
                                                     containerColor = MaterialTheme.colorScheme.primaryContainer
                                                 ),
-                                                shape = RoundedCornerShape(16.dp)
+                                                shape = RoundedCornerShape(Spacing.m)
                                             ) {
                                                 Column(
                                                     modifier = Modifier.padding(20.dp),
@@ -410,14 +411,14 @@ fun MainChatScreen (
                                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                         fontWeight = FontWeight.Medium
                                                     )
-                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Spacer(modifier = Modifier.height(Spacing.s))
                                                     Text(
                                                         text = "Select a model to start chatting",
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                                                         textAlign = TextAlign.Center
                                                     )
-                                                    Spacer(modifier = Modifier.height(16.dp))
+                                                    Spacer(modifier = Modifier.height(Spacing.m))
                                                     Button(
                                                         onClick = { viewModel.showModelSelectionDialog() },
                                                         modifier = Modifier.fillMaxWidth(),
@@ -468,7 +469,7 @@ fun MainChatScreen (
                                 // Feature Cards
                                 item {
                                     Column(
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        verticalArrangement = Arrangement.spacedBy(Spacing.s)
                                     ) {
                                         FeatureCard(
                                             text = "Explains complex topics simply",
@@ -535,10 +536,10 @@ fun MainChatScreen (
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .padding(
-                                                            start = 16.dp,
-                                                            top = 8.dp,
-                                                            end = 16.dp,
-                                                            bottom = 4.dp
+                                                            start = Spacing.m,
+                                                            top = Spacing.s,
+                                                            end = Spacing.m,
+                                                            bottom = Spacing.xs
                                                         ),
                                                 ) {
                                                     if(role == "assistant") {
@@ -547,10 +548,10 @@ fun MainChatScreen (
                                                                 id = R.drawable.logo
                                                             ),
                                                             contentDescription =  "Bot Icon",
-                                                            modifier = Modifier.size(24.dp)
+                                                            modifier = Modifier.size(Spacing.l)
                                                         )
                                                     }
-                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Spacer(modifier = Modifier.width(Spacing.s))
                                                     
                                                     Box(modifier = Modifier
                                                         .weight(1f)
@@ -559,7 +560,7 @@ fun MainChatScreen (
                                                                 MaterialTheme.colorScheme.primaryContainer 
                                                             else 
                                                                 MaterialTheme.colorScheme.surfaceVariant,
-                                                            shape = RoundedCornerShape(16.dp),
+                                                            shape = RoundedCornerShape(Spacing.m),
                                                         )
                                                         .combinedClickable(
                                                             interactionSource = interactionSource,
@@ -588,12 +589,12 @@ fun MainChatScreen (
                                                             } else {
                                                                 trimmedMessage
                                                             },
-                                                            modifier = Modifier.padding(16.dp),
+                                                            modifier = Modifier.padding(Spacing.m),
                                                             textAlign = if (role == "user") TextAlign.End else TextAlign.Start
                                                         )
                                                     }
                                                     
-                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Spacer(modifier = Modifier.width(Spacing.s))
                                                     
                                                     if(role == "user") {
                                                         Image(
@@ -601,7 +602,7 @@ fun MainChatScreen (
                                                                 id = R.drawable.user_icon
                                                             ),
                                                             contentDescription = "Human Icon",
-                                                            modifier = Modifier.size(24.dp)
+                                                            modifier = Modifier.size(Spacing.l)
                                                         )
                                                     }
                                                 }
@@ -616,10 +617,10 @@ fun MainChatScreen (
                                             // Code block rendering remains the same
                                             Box(
                                                 modifier = Modifier
-                                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                                    .padding(horizontal = 10.dp, vertical = Spacing.xs)
                                                     .background(
                                                         MaterialTheme.colorScheme.surfaceVariant,
-                                                        shape = RoundedCornerShape(8.dp)
+                                                        shape = RoundedCornerShape(Spacing.s)
                                                     )
                                                     .fillMaxWidth()
                                             ) {
@@ -661,8 +662,8 @@ fun MainChatScreen (
                                                         modifier = Modifier
                                                             .fillMaxWidth()
                                                             .padding(
-                                                                top = 8.dp,
-                                                                bottom = 8.dp,
+                                                                top = Spacing.s,
+                                                                bottom = Spacing.s,
                                                                 start = 6.dp,
                                                                 end = 6.dp
                                                             )
@@ -675,7 +676,7 @@ fun MainChatScreen (
                                                         } else {
                                                             trimmedMessage
                                                         },
-                                                        modifier = Modifier.padding(16.dp),
+                                                        modifier = Modifier.padding(Spacing.m),
                                                         textAlign = TextAlign.Start
                                                     )
                                                 }
@@ -708,8 +709,8 @@ fun MainChatScreen (
                         //chat section ends here
                     }
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp), // Reduced space between cards
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs), // Reduced space between cards
+                        contentPadding = PaddingValues(vertical = Spacing.s)
                     ) {
                         items(Prompts.size) { index ->
                             if(viewModel.messages.size <= 1){
@@ -720,7 +721,7 @@ fun MainChatScreen (
                                             viewModel.updateMessage(Prompts[index])
                                             focusRequester.requestFocus()
                                         }
-                                        .padding(horizontal = 8.dp),
+                                        .padding(horizontal = Spacing.s),
                                     shape = MaterialTheme.shapes.medium,
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
@@ -754,7 +755,7 @@ fun MainChatScreen (
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 5.dp, top = 8.dp, bottom = 12.dp, end = 5.dp)
+                                .padding(start = 5.dp, top = Spacing.s, bottom = 12.dp, end = 5.dp)
                                 .imePadding(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
@@ -935,16 +936,16 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(8.dp),
+                                shape = RoundedCornerShape(Spacing.s),
                             )
                             .border(
                                 border = BorderStroke(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.outline
                                 ),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(Spacing.s)
                             )
-                            .padding(16.dp)
+                            .padding(Spacing.m)
                     ) {
                         Column {
                             Text(
@@ -985,7 +986,7 @@ fun SettingsBottomSheet(
                                     containerColor = MaterialTheme.colorScheme.primary,
                                     contentColor = MaterialTheme.colorScheme.onPrimary,
                                 ),
-                                shape = RoundedCornerShape(8.dp), // Slightly more rounded corners
+                                shape = RoundedCornerShape(Spacing.s), // Slightly more rounded corners
                                 elevation = ButtonDefaults.buttonElevation(
                                     defaultElevation = 6.dp,
                                     pressedElevation = 3.dp
@@ -1072,7 +1073,7 @@ fun ScrollToBottomButton(
                     }
                 },
                 modifier = Modifier
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = Spacing.m)
                     .size(56.dp),
                 // Ensures a circular shape
                 shape = RoundedCornerShape(percent = 50),
@@ -1254,7 +1255,7 @@ fun MessageBottomSheet(
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Spacing.s),
                     onClick = {
                         clipboard.setText(AnnotatedString(message))
                         Toast.makeText(context, "Text copied!", Toast.LENGTH_SHORT).show()
@@ -1269,7 +1270,7 @@ fun MessageBottomSheet(
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Spacing.s),
                     enabled = !viewModel.getIsSending(),
                     onClick = {
                         viewModel.toggler = !viewModel.toggler
@@ -1283,7 +1284,7 @@ fun MessageBottomSheet(
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Spacing.s),
                     enabled = !viewModel.getIsSending(),
                     onClick = {
                         if (viewModel.stateForTextToSpeech) {
@@ -1353,7 +1354,7 @@ private fun FeatureCard(
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Spacing.s))
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,

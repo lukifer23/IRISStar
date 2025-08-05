@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -42,7 +43,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(Spacing.m)
     ) {
 
 
@@ -57,16 +58,16 @@ fun ParametersScreen(viewModel: MainViewModel) {
             modifier = Modifier
                 .weight(1f) // This makes the card fill available space while allowing buttons to stay at bottom
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = Spacing.xs)
                 .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(8.dp)
+                    elevation = Spacing.s,
+                    shape = RoundedCornerShape(Spacing.s)
                 ),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs)
         ) {
             if (viewModel.showAlert) {
                 LoadingModal(viewModel)
@@ -178,7 +179,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
 
         // Buttons row outside the card, will stay at bottom
         Row(
@@ -192,7 +193,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(Spacing.s),
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 6.dp,
                     pressedElevation = 3.dp
@@ -216,7 +217,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                 Text("Reset Default")
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Spacing.s))
 
             Button(
                 modifier = Modifier.weight(1f),
@@ -224,7 +225,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(Spacing.s),
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 6.dp,
                     pressedElevation = 3.dp
@@ -257,15 +258,15 @@ private fun SettingSection(
                                 style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(Spacing.xs))
     Text(
         text = description,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(Spacing.s))
     content()
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(Spacing.m))
 }
 
 @Composable
@@ -273,7 +274,7 @@ private fun SectionDivider() {
     HorizontalDivider(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Spacing.m, vertical = Spacing.s),
         color = MaterialTheme.colorScheme.outline,
         thickness = 1.dp
     )

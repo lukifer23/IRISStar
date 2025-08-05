@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -35,7 +36,7 @@ fun AboutScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(Spacing.m)
     ) {
         item {
             SectionHeader(text = "Welcome to Iris")
@@ -47,7 +48,7 @@ fun AboutScreen() {
                 color = MaterialTheme.colorScheme.onBackground,
                 lineHeight = 24.sp
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Spacing.l))
         }
 
         item {
@@ -59,7 +60,7 @@ fun AboutScreen() {
         }
 
         item {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Spacing.l))
             SectionHeader(text = "FAQs")
         }
 
@@ -89,7 +90,7 @@ private fun FeatureItem(feature: String) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = Spacing.s)
     ) {
         Box(
             modifier = Modifier
@@ -122,7 +123,7 @@ private fun FaqItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = Spacing.s)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -149,7 +150,7 @@ private fun FaqItem(
                 lineHeight = 24.sp
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(Spacing.xs))
         Text(
             text = answer,
             fontSize = 14.sp,

@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,7 +34,7 @@ fun ModelSettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(Spacing.m)
             .verticalScroll(rememberScrollState())
     ) {
         // Header
@@ -44,7 +45,7 @@ fun ModelSettingsScreen(
             fontWeight = FontWeight.Bold
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Spacing.l))
         
         // Temperature Control
         Card(
@@ -53,7 +54,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Temperature: ${String.format("%.2f", temperature)}",
@@ -79,7 +80,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Top-p Control
         Card(
@@ -88,7 +89,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Top-p: ${String.format("%.2f", topP)}",
@@ -114,7 +115,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Top-k Control
         Card(
@@ -123,7 +124,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Top-k: $topK",
@@ -149,7 +150,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Max Tokens Control
         Card(
@@ -158,7 +159,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Max Tokens: $maxTokens",
@@ -184,7 +185,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Context Length Control
         Card(
@@ -193,7 +194,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Context Length: $contextLength",
@@ -219,7 +220,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Thread Count Control
         Card(
@@ -228,7 +229,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Thread Count: $threadCount",
@@ -254,7 +255,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // System Prompt Control
         Card(
@@ -263,7 +264,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "System Prompt",
@@ -275,7 +276,7 @@ fun ModelSettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 OutlinedTextField(
                     value = systemPrompt,
                     onValueChange = { systemPrompt = it },
@@ -290,7 +291,7 @@ fun ModelSettingsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Spacing.m))
         
         // Chat Format Selection
         Card(
@@ -299,7 +300,7 @@ fun ModelSettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Chat Format",
@@ -311,14 +312,14 @@ fun ModelSettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 
                 val chatFormats = listOf("QWEN3", "CHATML", "ALPACA", "VICUNA", "LLAMA2", "ZEPHYR")
                 chatFormats.forEach { format ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = Spacing.xs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
@@ -332,14 +333,14 @@ fun ModelSettingsScreen(
                         Text(
                             text = format,
                             color = MaterialTheme.colorScheme.onSecondary,
-                            modifier = Modifier.padding(start = 8.dp)
+                            modifier = Modifier.padding(start = Spacing.s)
                         )
                     }
                 }
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Spacing.l))
         
         // Apply Button
         Button(

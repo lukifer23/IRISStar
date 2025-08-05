@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.app.DownloadManager
 import androidx.compose.foundation.clickable
@@ -63,7 +64,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         Icon(
                             modifier = Modifier.size(20.dp), // Icon size
                             painter = painterResource(id = R.drawable.search_svgrepo_com__3_),
-                            contentDescription = "Parameters",
+                            contentDescription = "Search models",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(Modifier.width(10.dp))
@@ -155,7 +156,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                     Text(
                         text = "No models to show",
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 8.dp, start = 2.dp)
+                        modifier = Modifier.padding(top = Spacing.s, start = 2.dp)
                     )
                 }
             }

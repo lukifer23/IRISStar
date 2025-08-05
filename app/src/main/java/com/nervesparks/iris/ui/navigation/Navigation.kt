@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.navigation
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -46,7 +47,7 @@ private fun SettingsSection(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = Spacing.m)
         )
         
         items.forEach { item ->
@@ -65,17 +66,17 @@ private fun SettingsItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = Spacing.s),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = item.icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(Spacing.l)
         )
         
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(Spacing.m))
         
         Text(
             text = item.title,

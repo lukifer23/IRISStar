@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +37,7 @@ fun MessageBubble(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = Spacing.m, vertical = Spacing.xs)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -48,10 +49,10 @@ fun MessageBubble(
                     .clickable { onLongClick?.invoke() },
                 colors = CardDefaults.cardColors(containerColor = backgroundColor),
                 shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isUser) 16.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 16.dp
+                    topStart = Spacing.m,
+                    topEnd = Spacing.m,
+                    bottomStart = if (isUser) Spacing.m else Spacing.xs,
+                    bottomEnd = if (isUser) Spacing.xs else Spacing.m
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
@@ -65,7 +66,7 @@ fun MessageBubble(
                     )
                     
                     if (timestamp != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(Spacing.xs))
                         Text(
                             text = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                                 .format(java.util.Date(timestamp)),
@@ -87,7 +88,7 @@ fun SystemMessageBubble(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = Spacing.m, vertical = Spacing.xs)
             .clickable { onLongClick?.invoke() },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.os.Build
 import android.widget.Toast
@@ -37,7 +38,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(Spacing.m)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -46,18 +47,18 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             "Benchmark Information",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = Spacing.m)
         )
 
         // Device Info Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(bottom = Spacing.m),
+            elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 deviceInfo.lines().forEach { line ->
                     Text(line, modifier = Modifier.padding(vertical = 2.dp))
@@ -68,12 +69,12 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
         // Benchmark Button
 
         androidx.compose.material3.Button(
-            modifier =Modifier.padding(vertical = 8.dp),
+            modifier =Modifier.padding(vertical = Spacing.s),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(Spacing.s),
             elevation = ButtonDefaults.buttonElevation(
                 defaultElevation = 6.dp,
                 pressedElevation = 3.dp
@@ -95,12 +96,12 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
         if (state.isRunning) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 CircularProgressIndicator()
                 Text(
                     "Benchmarking in progress...",
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = Spacing.s)
                 )
             }
         }
@@ -110,19 +111,19 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .padding(vertical = Spacing.m),
+                elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Spacing.m)) {
                     Text(
                         "Benchmark Results",
                         style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = Spacing.s)
                     )
                     state.results.forEach { result ->
                         Text(
                             result,
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = Spacing.xs)
                         )
                     }
                 }
@@ -138,7 +139,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(Spacing.m)
         )
 
         // Error Display
@@ -146,7 +147,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             Text(
                 error,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             )
         }
     }

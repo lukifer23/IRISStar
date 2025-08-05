@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,8 +24,8 @@ fun InfoModal(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(8.dp),
+                    .padding(Spacing.m),
+                shape = RoundedCornerShape(Spacing.s),
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFF233340),
                     contentColor = Color.LightGray
@@ -32,7 +33,7 @@ fun InfoModal(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .padding(Spacing.m)
                         .fillMaxWidth()
                 ) {
                     // Title
@@ -41,11 +42,11 @@ fun InfoModal(
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = Spacing.m)
                     )
 
                     Divider(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = Spacing.s),
                         color = Color.LightGray.copy(alpha = 0.2f)
                     )
 
@@ -55,13 +56,13 @@ fun InfoModal(
 //                        style = MaterialTheme.typography.titleMedium,
 //                        fontWeight = FontWeight.SemiBold,
 //                        color = Color.LightGray,
-//                        modifier = Modifier.padding(bottom = 8.dp)
+//                        modifier = Modifier.padding(bottom = Spacing.s)
 //                    )
                     Text(
                         text = "The performance of Iris is directly influenced by the size, speed, and compute requirements of the models you use. Consider your hardware capabilities when selecting models for optimal performance.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.LightGray,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = Spacing.m)
                     )
                 }
             }
@@ -76,7 +77,7 @@ fun InfoScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(Spacing.m)
     ) {
         Button(
             onClick = { showModal = true }

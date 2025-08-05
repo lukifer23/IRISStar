@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -123,7 +124,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
         horizontalArrangement = if (role == "user") Arrangement.End else Arrangement.Start,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(Spacing.s)
     ) {
         if (role == "assistant") MessageIcon(iconRes = R.drawable.logo, description = "Bot Icon")
 
@@ -132,13 +133,13 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
                 .padding(horizontal = 2.dp)
                 .background(
                     color = if (role == "user") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(Spacing.m)
                 )
                 .combinedClickable(
                     onLongClick = onLongClick,
                     onClick = {}
                 )
-                .padding(16.dp)
+                .padding(Spacing.m)
         ) {
             Text(
                 text = message.removePrefix("```"),
@@ -175,8 +176,8 @@ private fun CodeBlockMessage(content: String) {
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = Spacing.xs)
+            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(Spacing.s))
             .fillMaxWidth()
     ) {
         IconButton(
@@ -198,7 +199,7 @@ private fun CodeBlockMessage(content: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = FontFamily.Monospace
             ),
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(Spacing.m)
         )
     }
 }

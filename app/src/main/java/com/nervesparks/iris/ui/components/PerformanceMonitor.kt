@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
@@ -46,10 +47,10 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = Spacing.m, vertical = Spacing.s),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(Spacing.s)
     ) {
         Column(
             modifier = Modifier
@@ -63,7 +64,7 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
                 fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
 
             // Compact metrics layout
             Row(

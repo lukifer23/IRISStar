@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +33,13 @@ fun LoadingModal(viewModel: MainViewModel){
         ) {
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(Spacing.m)
                     .wrapContentSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ){
                 Box(
                     modifier = Modifier
-                        .padding(8.dp)
+                        .padding(Spacing.s)
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 )

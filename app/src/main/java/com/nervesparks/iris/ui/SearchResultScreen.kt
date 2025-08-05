@@ -1,4 +1,6 @@
 package com.nervesparks.iris.ui
+import com.nervesparks.iris.ui.theme.Spacing
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.app.DownloadManager
 import android.util.Log
@@ -91,7 +93,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
+            .padding(Spacing.m),
     ) {
         InfoModal(
             showDialog = viewModel.showDownloadInfoModal,
@@ -110,7 +112,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             ) {
                 Text(
                     text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
-                    modifier = Modifier.padding(4.dp),
+                    modifier = Modifier.padding(Spacing.xs),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 10.sp
                 )
@@ -120,7 +122,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                         clipboardManager.setText(AnnotatedString("bartowski/Llama-3.2-1B-Instruct-GGUF"))
                         Toast.makeText(context, "Text copied", Toast.LENGTH_SHORT).show()
                     },
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(Spacing.m)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.copy1),
@@ -169,7 +171,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             )
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spacing.m))
 
 
         Button(
@@ -232,31 +234,31 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = Spacing.s)
             )
         }
         
         // Model Results
         modelData?.let { models ->
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
                 items(models) { model ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = Spacing.xs),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.onSurface
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(Spacing.m)
                         ) {
                             // Model header
                             Text(
@@ -266,7 +268,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             )
                             
                             if (model["description"]?.isNotEmpty() == true) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(Spacing.xs))
                                 Text(
                                     text = model["description"] ?: "",
                                     style = MaterialTheme.typography.bodySmall,
@@ -275,7 +277,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 )
                             }
                             
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(Spacing.s))
                             
                             // Stats row
                             Row(
@@ -295,7 +297,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             }
                             
                             if (model["tags"]?.isNotEmpty() == true) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(Spacing.xs))
                                 Text(
                                     text = "Tags: ${model["tags"]}",
                                     style = MaterialTheme.typography.bodySmall,
@@ -304,7 +306,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                 )
                             }
                             
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(Spacing.s))
                             
                             // Note about getting files
                             Text(
@@ -342,7 +344,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = Spacing.s)
             )
         }
     }

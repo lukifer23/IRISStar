@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import android.app.DownloadManager
 import android.net.Uri
@@ -47,21 +48,21 @@ fun ModelCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = Spacing.xs)
             .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(8.dp)
+                elevation = Spacing.s,
+                shape = RoundedCornerShape(Spacing.s)
             ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(Spacing.m)
         ) {
             Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()){
                 if (modelName == viewModel.loadedModelName.value) {
@@ -72,25 +73,25 @@ fun ModelCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = modelName,
                     style = MaterialTheme.typography.titleMedium
                 )
                 if (supportsReasoning) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.s))
                     Text(
                         text = "Reasoning",
                         color = Color.Black,
                         fontSize = 12.sp,
                         modifier = Modifier
-                            .background(Color.Yellow, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .background(Color.Yellow, RoundedCornerShape(Spacing.xs))
+                            .padding(horizontal = Spacing.xs, vertical = 2.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -131,7 +132,7 @@ fun ModelCard(
                                 AlertDialog(
                                     textContentColor = Color.LightGray,
                                     containerColor =  Color(0xFF233340),
-                                    modifier = Modifier.background(shape = RoundedCornerShape(8.dp), color = Color(0xFF233340)),
+                                    modifier = Modifier.background(shape = RoundedCornerShape(Spacing.s), color = Color(0xFF233340)),
                                     onDismissRequest = { showDeleteConfirmation = false },
                                     title = { Text("Confirm Deletion", color = Color.White) },
                                     text = { Text("Are you sure you want to delete this model? The app will restart after deletion.") },
@@ -171,7 +172,7 @@ fun ModelCard(
             }
 
             if (showDeletedMessage) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 Text(
                     text = "Model Deleted",
                     color = Color.Red,
@@ -179,7 +180,7 @@ fun ModelCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.s))
             if (modelName == viewModel.loadedModelName.value){
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val context = LocalContext.current
@@ -198,7 +199,7 @@ fun ModelCard(
                             unselectedColor = Color.Gray
                         )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.s))
                     Text(
                         text = "Set as Default Model",
                         color = Color.White,
@@ -208,7 +209,7 @@ fun ModelCard(
             }
 
             File(extFilesDir, modelName).let {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 Text(
                     text = if (formatFileSize(File(extFilesDir, modelName).length()) != "0 Bytes") {
                         "Size: ${formatFileSize(File(extFilesDir, modelName).length())}"

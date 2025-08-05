@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,23 +64,23 @@ fun ModernTopAppBar(
             if (availableModels.isNotEmpty()) {
                 Card(
                     modifier = Modifier
-                        .padding(end = 8.dp)
+                        .padding(end = Spacing.s)
                         .clickable { onModelClick() },
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(Spacing.s),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.s),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(Spacing.m)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -88,12 +89,12 @@ fun ModernTopAppBar(
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             fontWeight = FontWeight.Medium
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(Spacing.xs))
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Select Model",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(Spacing.m)
                         )
                     }
                 }
@@ -138,26 +139,26 @@ private fun ModelSelectionDropdown(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.m),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            shape = RoundedCornerShape(Spacing.m),
+            elevation = CardDefaults.cardElevation(defaultElevation = Spacing.s)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(Spacing.m)
             ) {
                 Text(
                     text = "Select Model",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = Spacing.m)
                 )
                 
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs)
                 ) {
                     items(availableModels) { model ->
                         val isCurrentModel = model == currentModel
@@ -172,7 +173,7 @@ private fun ModelSelectionDropdown(
                                 else 
                                     MaterialTheme.colorScheme.surfaceVariant
                             ),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(Spacing.s)
                         ) {
                             Row(
                                 modifier = Modifier

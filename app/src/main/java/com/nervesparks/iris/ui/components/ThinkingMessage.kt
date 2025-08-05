@@ -1,4 +1,5 @@
 package com.nervesparks.iris.ui.components
+import com.nervesparks.iris.ui.theme.Spacing
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -53,13 +54,13 @@ fun ThinkingMessage(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(Spacing.s),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(Spacing.m),
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.xs)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(Spacing.m)
         ) {
             // Header with thinking indicator
             Row(
@@ -73,7 +74,7 @@ fun ThinkingMessage(
                     modifier = Modifier.size(20.dp)
                 )
                 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(Spacing.s))
                 
                 Text(
                     text = "Reasoning Process",
@@ -112,9 +113,9 @@ fun ThinkingMessage(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
+                            .padding(top = Spacing.s),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(Spacing.s)
                     ) {
                         Column(
                             modifier = Modifier.padding(12.dp)
@@ -125,7 +126,7 @@ fun ThinkingMessage(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(Spacing.xs))
                             Text(
                                 text = thinkingContent,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -139,13 +140,13 @@ fun ThinkingMessage(
             
             // Output content
             if (outputContent.isNotEmpty() || thinkingContent.isEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.s))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onLongClick() },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(Spacing.s)
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp)
@@ -156,7 +157,7 @@ fun ThinkingMessage(
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(Spacing.xs))
                         MarkdownTextComponent(
                             markdown = if (outputContent.isNotEmpty()) outputContent else message
                         )
@@ -168,7 +169,7 @@ fun ThinkingMessage(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = Spacing.s),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
