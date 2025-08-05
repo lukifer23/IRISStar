@@ -1,16 +1,5 @@
 package com.nervesparks.iris.ui.components
 
-import android.content.ClipboardManager
-import android.content.Context
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Button
-import androidx.compose.ui.text.AnnotatedString
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -20,14 +9,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
@@ -131,6 +126,9 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserOrAssistantMessage(role: String, message: String, onLongClick: () -> Unit) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
     Row(
         horizontalArrangement = if (role == "user") Arrangement.End else Arrangement.Start,
         modifier = Modifier
@@ -158,6 +156,22 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
                 color = Color.White,
                 lineHeight = 22.sp
             )
+
+            IconButton(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(message.removePrefix("```")))
+                    Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(20.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy message",
+                    tint = Color.White
+                )
+            }
         }
 
         if (role == "user") MessageIcon(iconRes = R.drawable.user_icon, description = "User Icon")
@@ -166,15 +180,34 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
 
 @Composable
 private fun CodeBlockMessage(content: String) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .padding(horizontal = 10.dp, vertical = 4.dp)
-            .background(Color.Black, shape = RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
             .fillMaxWidth()
     ) {
+        IconButton(
+            onClick = {
+                clipboardManager.setText(AnnotatedString(content.removePrefix("```")))
+                Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.align(Alignment.TopEnd).size(20.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ContentCopy,
+                contentDescription = "Copy code",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Text(
             text = content.removePrefix("```"),
-            style = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFFA0A0A5)),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = FontFamily.Monospace
+            ),
             modifier = Modifier.padding(16.dp)
         )
     }

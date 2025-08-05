@@ -157,10 +157,8 @@ fun ThinkingMessage(
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (outputContent.isNotEmpty()) outputContent else message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        MarkdownTextComponent(
+                            markdown = if (outputContent.isNotEmpty()) outputContent else message
                         )
                     }
                 }
