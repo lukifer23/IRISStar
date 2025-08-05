@@ -53,8 +53,8 @@ fun ModelCard(
                 shape = RoundedCornerShape(8.dp)
             ),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xff0f172a),
-            contentColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
