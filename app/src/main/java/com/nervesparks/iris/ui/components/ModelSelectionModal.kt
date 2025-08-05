@@ -35,17 +35,26 @@ fun ModelSelectionModal(
 ) {
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
-    
+
     // Get available models and check which ones exist
-    val availableModels = remember(extFilesDir) { 
-        extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList() 
+    val availableModels = remember(extFilesDir) {
+        extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
+    }
+
+    var showReasoningOnly by remember { mutableStateOf(false) }
+    val filteredModels = remember(availableModels, showReasoningOnly) {
+        if (showReasoningOnly) {
+            availableModels.filter { it["supportsReasoning"] == "true" }
+        } else {
+            availableModels
+        }
     }
     
     // Track selected model
     var selectedModel by remember { mutableStateOf("") }
     
     // Check if any models are downloaded
-    val hasDownloadedModels = availableModels.isNotEmpty()
+    val hasDownloadedModels = filteredModels.isNotEmpty()
     
     // File picker for local model import
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -228,15 +237,31 @@ fun ModelSelectionModal(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
-                    
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Reasoning only",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(checked = showReasoningOnly, onCheckedChange = { showReasoningOnly = it })
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // Model list
                     LazyColumn(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(availableModels) { model ->
+                        items(filteredModels) { model ->
                             val modelName = model["name"] ?: ""
                             val isSelected = modelName == selectedModel
                             val isCurrentModel = modelName == viewModel.loadedModelName.value
@@ -268,17 +293,30 @@ fun ModelSelectionModal(
                                     Column(
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text(
-                                            text = modelName,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = when {
-                                                isCurrentModel -> MaterialTheme.colorScheme.onPrimaryContainer
-                                                isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
-                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                            },
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = modelName,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = when {
+                                                    isCurrentModel -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                    isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
+                                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            if (model["supportsReasoning"] == "true") {
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Reasoning",
+                                                    color = Color.Black,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier
+                                                        .background(Color.Yellow, RoundedCornerShape(4.dp))
+                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+
                                         if (isCurrentModel) {
                                             Text(
                                                 text = "Currently loaded",

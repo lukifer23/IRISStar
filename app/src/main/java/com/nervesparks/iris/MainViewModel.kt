@@ -454,7 +454,8 @@ class MainViewModel @Inject constructor(
                 allModels += mapOf(
                     "name" to modelName,
                     "source" to "local",
-                    "destination" to file.name
+                    "destination" to file.name,
+                    "supportsReasoning" to "false"
                 )
             }
         }

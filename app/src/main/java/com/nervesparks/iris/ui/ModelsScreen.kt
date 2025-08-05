@@ -46,6 +46,8 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
             LoadingModal(viewModel)
         }
 
+        val suggestedModels = viewModel.allModels.filter { it["supportsReasoning"] == "true" }.take(3)
+
         LazyColumn(modifier = Modifier.padding(horizontal = 15.dp)) {
             item {
                 Column {
@@ -97,12 +99,13 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 }
             }
 
-            // Show first three suggested models
-            items(viewModel.allModels.take(3)) { model ->
+            // Show first three suggested models that support reasoning
+            items(suggestedModels) { model ->
                 extFileDir?.let {
                     model["source"]?.let { source ->
                         ModelCard(
                             model["name"].toString(),
+                            supportsReasoning = model["supportsReasoning"] == "true",
                             viewModel = viewModel,
                             dm = dm,
                             extFilesDir = extFileDir,
@@ -132,11 +135,12 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
             }
 
             // Display all models not in Suggested Models
-            items(viewModel.allModels.drop(3)) { model ->
+            items(viewModel.allModels.filterNot { suggestedModels.contains(it) }) { model ->
                 extFileDir?.let {
                     model["source"]?.let { source ->
                         ModelCard(
                             model["name"].toString(),
+                            supportsReasoning = model["supportsReasoning"] == "true",
                             viewModel = viewModel,
                             dm = dm,
                             extFilesDir = extFileDir,
