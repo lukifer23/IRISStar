@@ -115,6 +115,10 @@ dependencies {
 
     // Timber
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // ML Kit OCR
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 }
 
 kapt {

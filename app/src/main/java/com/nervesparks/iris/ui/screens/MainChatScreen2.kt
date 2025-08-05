@@ -24,6 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import com.nervesparks.iris.ocr.OcrProcessor
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.ModernChatInput
@@ -75,6 +79,33 @@ fun MainChatScreen2(
     val extFilesDir = context.getExternalFilesDir(null)
 
     var showModelDropdown by remember { mutableStateOf(false) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        bitmap?.let {
+            scope.launch {
+                val text = OcrProcessor.processImage(it)
+                viewModel.summarizeDocument(text)
+            }
+        }
+    }
+
+    val photosLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            scope.launch {
+                val text = OcrProcessor.process(context, it)
+                viewModel.summarizeDocument(text)
+            }
+        }
+    }
+
+    val filesLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        uri?.let {
+            scope.launch {
+                val text = OcrProcessor.process(context, it)
+                viewModel.summarizeDocument(text)
+            }
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -131,8 +162,20 @@ fun MainChatScreen2(
                         value = viewModel.message,
                         onValueChange = { viewModel.updateMessage(it) },
                         onSend = { viewModel.send() },
-                        onAttachmentClick = { /*TODO*/ },
-                        onVoiceClick = { { /*TODO*/ } }
+                        onAttachmentClick = { },
+                        onVoiceClick = { },
+                        onCameraClick = {
+                            viewModel.onCameraAttachment()
+                            cameraLauncher.launch(null)
+                        },
+                        onPhotosClick = {
+                            viewModel.onPhotosAttachment()
+                            photosLauncher.launch("image/*")
+                        },
+                        onFilesClick = {
+                            viewModel.onFilesAttachment()
+                            filesLauncher.launch(arrayOf("application/pdf"))
+                        }
                     )
                 }
             }

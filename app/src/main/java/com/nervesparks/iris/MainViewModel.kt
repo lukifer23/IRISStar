@@ -176,6 +176,23 @@ class MainViewModel @Inject constructor(
         lastAttachmentAction = "files"
     }
 
+    fun summarizeDocument(text: String) {
+        addMessage("user", "Summarize the attached document.")
+        val prompt = "Summarize: $text"
+        viewModelScope.launch {
+            startGeneration()
+            try {
+                llamaAndroid.send(prompt)
+                    .catch { addMessage("error", it.message ?: "") }
+                    .collect { response ->
+                        addMessage("assistant", response)
+                    }
+            } finally {
+                endGeneration()
+            }
+        }
+    }
+
     // Performance monitoring variables
     var tps by mutableStateOf(0.0) // Tokens per second
     var ttft by mutableStateOf(0L) // Time to first token (milliseconds)
