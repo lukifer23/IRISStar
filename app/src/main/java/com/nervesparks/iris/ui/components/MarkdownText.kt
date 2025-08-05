@@ -6,15 +6,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import dev.jeziellago.compose.markdowntext.MarkdownText
+import dev.jeziellago.compose.markdowntext.MarkdownText as CoreMarkdownText
 
 @Composable
-fun MarkdownTextComponent(
+fun MarkdownText(
     markdown: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign = TextAlign.Start
 ) {
-    MarkdownText(
+    CoreMarkdownText(
         markdown = markdown,
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.onSurface,
@@ -22,4 +22,4 @@ fun MarkdownTextComponent(
         textAlign = textAlign,
         style = MaterialTheme.typography.bodyMedium
     )
-} 
+}

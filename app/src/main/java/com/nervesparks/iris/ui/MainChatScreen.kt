@@ -135,7 +135,7 @@ import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.components.ModelSettingsScreen
 import com.nervesparks.iris.ui.components.ModelSelectionModal
-import com.nervesparks.iris.ui.components.MarkdownTextComponent
+import com.nervesparks.iris.ui.components.MarkdownText
 import com.nervesparks.iris.ui.components.MemoryManager
 
 import kotlinx.coroutines.launch
@@ -582,7 +582,7 @@ fun MainChatScreen (
                                                             }
                                                         )
                                                     ) {
-                                                        MarkdownTextComponent(
+                                                        MarkdownText(
                                                             markdown = if (trimmedMessage.startsWith("```")) {
                                                                 trimmedMessage.substring(3)
                                                             } else {
@@ -669,7 +669,7 @@ fun MainChatScreen (
                                                     ) {
                                                         // Previous content here
                                                     }
-                                                    MarkdownTextComponent(
+                                                    MarkdownText(
                                                         markdown = if (trimmedMessage.startsWith("```")) {
                                                             trimmedMessage.substring(3)
                                                         } else {

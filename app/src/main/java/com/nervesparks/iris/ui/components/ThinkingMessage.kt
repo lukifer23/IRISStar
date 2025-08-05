@@ -157,7 +157,7 @@ fun ThinkingMessage(
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        MarkdownTextComponent(
+                        MarkdownText(
                             markdown = if (outputContent.isNotEmpty()) outputContent else message
                         )
                     }
