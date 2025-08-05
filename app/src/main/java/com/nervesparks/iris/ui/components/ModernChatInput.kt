@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.res.stringResource
+import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.theme.*
 
 /**
@@ -49,7 +51,7 @@ fun ModernChatInput(
     onPhotosClick: () -> Unit = {},
     onFilesClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    placeholder: String = "Ask anything",
+    placeholder: String? = null,
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
@@ -97,7 +99,7 @@ fun ModernChatInput(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Attach",
+                    contentDescription = stringResource(R.string.attach),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
@@ -127,7 +129,7 @@ fun ModernChatInput(
                 decorationBox = { innerTextField ->
                     if (value.isEmpty()) {
                         Text(
-                            text = placeholder,
+                            text = placeholder ?: stringResource(R.string.prompt_placeholder),
                             style = TextStyle(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 fontSize = 16.sp
@@ -145,7 +147,7 @@ fun ModernChatInput(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Voice Input",
+                    contentDescription = stringResource(R.string.voice_input),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
@@ -179,19 +181,19 @@ private fun QuickActionsRow(
     ) {
         QuickActionButton(
             icon = Icons.Default.Info,
-            text = "Latest news",
+            text = stringResource(R.string.quick_action_latest_news),
             onClick = onLatestNews
         )
-        
+
         QuickActionButton(
             icon = Icons.Default.Add,
-            text = "Create images",
+            text = stringResource(R.string.quick_action_create_images),
             onClick = onCreateImages
         )
-        
+
         QuickActionButton(
             icon = Icons.Default.Edit,
-            text = "Cartoon style",
+            text = stringResource(R.string.quick_action_cartoon_style),
             onClick = onCartoonStyle
         )
     }
@@ -276,36 +278,36 @@ private fun AttachmentDialog(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Choose attachment",
+                    text = stringResource(R.string.choose_attachment),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 // Camera option
                 AttachmentOption(
                     icon = Icons.Default.Add,
-                    text = "Camera",
+                    text = stringResource(R.string.camera),
                     onClick = {
                         onCameraClick()
                         onDismiss()
                     }
                 )
-                
+
                 // Photos option
                 AttachmentOption(
                     icon = Icons.Default.Add,
-                    text = "Photos",
+                    text = stringResource(R.string.photos),
                     onClick = {
                         onPhotosClick()
                         onDismiss()
                     }
                 )
-                
+
                 // Files option
                 AttachmentOption(
                     icon = Icons.Default.Add,
-                    text = "Files",
+                    text = stringResource(R.string.files),
                     onClick = {
                         onFilesClick()
                         onDismiss()

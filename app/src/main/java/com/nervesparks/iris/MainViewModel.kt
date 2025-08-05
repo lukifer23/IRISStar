@@ -32,6 +32,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 import kotlinx.coroutines.flow.first
+import com.nervesparks.iris.R
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -91,6 +92,8 @@ class MainViewModel @Inject constructor(
         loadDefaultModelName()
         loadModelSettings()
         loadThinkingTokenSettings()
+        promptSuggestions = application.resources.getStringArray(R.array.prompt_suggestions).toList()
+        homePrompts = application.resources.getStringArray(R.array.home_prompts).toList()
         viewModelScope.launch {
             allModels = modelRepository.refreshAvailableModels()
         }
@@ -145,6 +148,11 @@ class MainViewModel @Inject constructor(
         private set
 
     var eot_str = ""
+
+    var promptSuggestions by mutableStateOf<List<String>>(emptyList())
+        private set
+    var homePrompts by mutableStateOf<List<String>>(emptyList())
+        private set
 
     // Quick action and attachment handlers
     var lastQuickAction by mutableStateOf<String?>(null)

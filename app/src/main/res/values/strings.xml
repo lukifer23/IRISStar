@@ -9,4 +9,34 @@
     <string name="about_screen_title">About</string>
     <string name="benchmark_screen_title">BenchMark</string>
     <string name="refresh_button">Refresh</string>
+    <string name="prompt_placeholder">Ask anything</string>
+    <string name="quick_action_latest_news">Latest news</string>
+    <string name="quick_action_create_images">Create images</string>
+    <string name="quick_action_cartoon_style">Cartoon style</string>
+    <string name="attach">Attach</string>
+    <string name="voice_input">Voice Input</string>
+    <string name="choose_attachment">Choose attachment</string>
+    <string name="camera">Camera</string>
+    <string name="photos">Photos</string>
+    <string name="files">Files</string>
+
+    <string-array name="prompt_suggestions">
+        <item>Explain how to develop a consistent reading habit.</item>
+        <item>Write an email to your manager requesting leave for a day.</item>
+        <item>Suggest time management strategies for handling multiple deadlines effectively.</item>
+        <item>Draft a professional LinkedIn message to connect with a recruiter.</item>
+        <item>Suggest ways to practice mindfulness in a busy daily schedule.</item>
+        <item>Recommend a 15-minute daily workout routine to stay fit with a busy schedule.</item>
+        <item>Provide a simple and polite Spanish translation of 'Excuse me, can you help me?' with explanation.</item>
+        <item>List the top 5 science fiction novels that have most influenced modern technological thinking</item>
+        <item>List security tips to protect personal information online.</item>
+        <item>Recommend three books that can improve communication skills.</item>
+    </string-array>
+
+    <string-array name="home_prompts">
+        <item>Explains complex topics simply.</item>
+        <item>Remembers previous inputs.</item>
+        <item>May sometimes be inaccurate.</item>
+        <item>Unable to provide current affairs due to no internet connectivity.</item>
+    </string-array>
 </resources>

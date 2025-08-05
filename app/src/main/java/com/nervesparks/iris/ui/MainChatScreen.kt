@@ -169,26 +169,8 @@ fun MainChatScreen (
     val windowInsets = WindowInsets.ime
     val focusManager = LocalFocusManager.current
     println("Thread started: ${Thread.currentThread().name}")
-    val Prompts = listOf(
-        "Explain how to develop a consistent reading habit.",
-        "Write an email to your manager requesting leave for a day.",
-        "Suggest time management strategies for handling multiple deadlines effectively.",
-        "Draft a professional LinkedIn message to connect with a recruiter.",
-        "Suggest ways to practice mindfulness in a busy daily schedule.",
-        "Recommend a 15-minute daily workout routine to stay fit with a busy schedule.",
-        "Provide a simple and polite Spanish translation of 'Excuse me, can you help me?' with explanation.",
-        "List the top 5 science fiction novels that have most influenced modern technological thinking",
-        "List security tips to protect personal information online.",
-        "Recommend three books that can improve communication skills."
-    )
-
+    val prompts = viewModel.promptSuggestions
     val allModelsExist = models.all { model -> model.destination.exists() }
-    val Prompts_Home = listOf(
-        "Explains complex topics simply.",
-        "Remembers previous inputs.",
-        "May sometimes be inaccurate.",
-        "Unable to provide current affairs due to no internet connectivity."
-    )
     var recognizedText by remember { mutableStateOf("") }
     val speechRecognizerLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
             result ->
@@ -711,13 +693,13 @@ fun MainChatScreen (
                         horizontalArrangement = Arrangement.spacedBy(4.dp), // Reduced space between cards
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
-                        items(Prompts.size) { index ->
+                        items(prompts.size) { index ->
                             if(viewModel.messages.size <= 1){
                                 Card(
                                     modifier = Modifier
                                         .height(100.dp)
                                         .clickable {
-                                            viewModel.updateMessage(Prompts[index])
+                                            viewModel.updateMessage(prompts[index])
                                             focusRequester.requestFocus()
                                         }
                                         .padding(horizontal = 8.dp),
@@ -726,7 +708,7 @@ fun MainChatScreen (
                                 ) {
 
                                     Text(
-                                        text = Prompts[index],
+                                        text = prompts[index],
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 12.sp,
