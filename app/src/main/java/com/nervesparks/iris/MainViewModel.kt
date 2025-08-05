@@ -1,6 +1,8 @@
 package com.nervesparks.iris
 
+import android.app.SearchManager
 import android.content.Context
+import android.content.Intent
 import android.llama.cpp.LLamaAndroid
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
@@ -146,6 +148,18 @@ class MainViewModel @Inject constructor(
 
     var eot_str = ""
 
+    fun performWebSearch(query: String) {
+        val context = getApplication<Application>()
+        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+            putExtra(SearchManager.QUERY, query)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+
+        // TODO: Optionally capture results via WebView and
+        // forward content to the summarization pipeline.
+    }
+
     // Quick action and attachment handlers
     var lastQuickAction by mutableStateOf<String?>(null)
         private set
@@ -154,14 +168,17 @@ class MainViewModel @Inject constructor(
 
     fun onLatestNews() {
         lastQuickAction = "latest_news"
+        performWebSearch("latest news")
     }
 
     fun onCreateImages() {
         lastQuickAction = "create_images"
+        performWebSearch("create images")
     }
 
     fun onCartoonStyle() {
         lastQuickAction = "cartoon_style"
+        performWebSearch("cartoon style art")
     }
 
     fun onCameraAttachment() {
