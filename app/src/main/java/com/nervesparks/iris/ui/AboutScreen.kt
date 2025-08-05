@@ -1,20 +1,12 @@
 package com.nervesparks.iris.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -27,44 +19,55 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.nervesparks.iris.ui.components.IrisTopAppBar
 
 @Composable
-fun AboutScreen() {
-    LazyColumn(
+fun AboutScreen(onBackClick: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
     ) {
-        item {
-            SectionHeader(text = "Welcome to Iris")
-        }
-        item {
-            Text(
-                text = "Iris is an offline Android chat application powered by the llama.cpp framework. Designed to operate entirely offline, it ensures privacy and independence from external servers. Whether you're a developer exploring AI applications or a privacy-conscious user, this app provides a seamless and secure way to experience conversational AI. Please note that the app may occasionally generate inaccurate results.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 24.sp
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+        IrisTopAppBar(
+            title = "About",
+            navigationIcon = Icons.Default.ArrowBack,
+            onNavigationClick = onBackClick
+        )
 
-        item {
-            SectionHeader(text = "Features")
-        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            item {
+                SectionHeader(text = "Welcome to Iris")
+            }
+            item {
+                Text(
+                    text = "Iris is an offline Android chat application powered by the llama.cpp framework. Designed to operate entirely offline, it ensures privacy and independence from external servers. Whether you're a developer exploring AI applications or a privacy-conscious user, this app provides a seamless and secure way to experience conversational AI. Please note that the app may occasionally generate inaccurate results.",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    lineHeight = 24.sp
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
-        items(features) { feature ->
-            FeatureItem(feature = feature)
-        }
+            item {
+                SectionHeader(text = "Features")
+            }
 
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader(text = "FAQs")
-        }
+            items(features) { feature ->
+                FeatureItem(feature = feature)
+            }
 
-        items(faqs) { faq ->
-            FaqItem(question = faq.first, answer = faq.second)
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionHeader(text = "FAQs")
+            }
+
+            items(faqs) { faq ->
+                FaqItem(question = faq.first, answer = faq.second)
+            }
         }
     }
 }
@@ -155,7 +158,7 @@ private fun FaqItem(
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 20.sp,
-            modifier = Modifier.padding(start = 32.dp)  // Aligned with question text
+            modifier = Modifier.padding(start = 32.dp)
         )
     }
 }
@@ -172,17 +175,8 @@ private val faqs = listOf(
     "Do I need an internet connection to use this app?" to "Yes, but only to download models to your device. After that, the app operates entirely offline. All operations are performed locally on your device.",
     "Which AI models are supported?" to "The app supports GGUF models. You can download and integrate them as needed.",
     "Is my data safe while using this app?" to "Yes, since the app works offline, no data is transmitted to external servers, ensuring complete privacy.",
-    "How do I change parameters?" to "You can adjust thread parameters to modify the text generation speed by navigating to:\n" +
-            "Settings > Change Parameters > Modify the parameters > Save changes.",
-    "How do I download models online?" to "You can download models from Hugging Face by providing the gguf model names:\n" +
-            "\n" +
-            "Go to Settings > Models.\n" +
-            "Click on Search Hugging Face Models.\n" +
-            "Enter the model name and click the search button.\n" +
-            "A list of matching models will appear. Select the model you want to download.",
-    "How do I delete a model?" to "To free up device storage, you can delete downloaded models:\n" +
-            "\n" +
-            "Go to Settings > Models.\n" +
-            "Select the model you want to delete.\n" +
-            "Click the Delete button."
+    "How do I change parameters?" to "You can adjust thread parameters to modify the text generation speed by navigating to:\nSettings > Change Parameters > Modify the parameters > Save changes.",
+    "How do I download models online?" to "You can download models from Hugging Face by providing the gguf model names:\n\nGo to Settings > Models.\nClick on Search Hugging Face Models.\nEnter the model name and click the search button.\nA list of matching models will appear. Select the model you want to download.",
+    "How do I delete a model?" to "To free up device storage, you can delete downloaded models:\n\nGo to Settings > Models.\nSelect the model you want to delete.\nClick the Delete button."
 )
+

@@ -11,6 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +28,7 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.MemoryManager
+import com.nervesparks.iris.ui.components.IrisTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +38,7 @@ fun SettingsScreen(
     onParamsScreenButtonClicked: () -> Unit,
     onAboutScreenButtonClicked: () -> Unit,
     onBenchMarkScreenButtonClicked: () -> Unit,
+    onBackClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val preferencesRepository = remember { UserPreferencesRepository.getInstance(context) }
@@ -54,10 +59,25 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        IrisTopAppBar(
+            title = "Settings",
+            navigationIcon = Icons.Default.ArrowBack,
+            onNavigationClick = onBackClick,
+            actions = {
+                IconButton(onClick = onModelsScreenButtonClicked) { Icon(Icons.Default.Star, contentDescription = "Models") }
+                IconButton(onClick = onParamsScreenButtonClicked) { Icon(Icons.Default.Tune, contentDescription = "Parameters") }
+                IconButton(onClick = onBenchMarkScreenButtonClicked) { Icon(Icons.Default.Speed, contentDescription = "Benchmark") }
+                IconButton(onClick = onAboutScreenButtonClicked) { Icon(Icons.Default.Info, contentDescription = "About") }
+            }
+        )
+
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // HuggingFace Settings Section
         Card(
             modifier = Modifier.fillMaxWidth(),

@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,6 +57,7 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.components.InfoModal
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.ModelCard
+import com.nervesparks.iris.ui.components.IrisTopAppBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -65,7 +69,13 @@ import java.net.URL
 import java.net.UnknownHostException
 
 @Composable
-fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDir: File) {
+fun SearchResultScreen(
+    viewModel: MainViewModel,
+    dm: DownloadManager,
+    extFilesDir: File,
+    onBackClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
     var modelData by rememberSaveable { mutableStateOf<List<Map<String, String>>?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -91,63 +101,63 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
     ) {
-        InfoModal(
-            showDialog = viewModel.showDownloadInfoModal,
-            onDismiss = { viewModel.showDownloadInfoModal = false }
+        IrisTopAppBar(
+            title = "Search",
+            navigationIcon = Icons.Default.ArrowBack,
+            onNavigationClick = onBackClick,
+            actions = {
+                IconButton(onClick = onSettingsClick) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                }
+            }
         )
-        // Search Input and Button Row
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
+            InfoModal(
+                showDialog = viewModel.showDownloadInfoModal,
+                onDismiss = { viewModel.showDownloadInfoModal = false }
+            )
+            // Search Input and Button Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
-                modifier = Modifier.weight(1f)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
-                    modifier = Modifier.padding(4.dp),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 10.sp
-                )
-
-                IconButton(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString("bartowski/Llama-3.2-1B-Instruct-GGUF"))
-                        Toast.makeText(context, "Text copied", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.size(16.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.copy1),
-                        contentDescription = "Copy text",
-                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                        modifier = Modifier.size(14.dp)
+                    Text(
+                        text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
+                        modifier = Modifier.padding(4.dp),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 10.sp
                     )
+
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString("bartowski/Llama-3.2-1B-Instruct-GGUF"))
+                            Toast.makeText(context, "Text copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.copy1),
+                            contentDescription = "Copy text",
+                            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
-            
-            // Settings button
-            IconButton(
-                onClick = {
-                    // Show a message to guide users to settings
-                    Toast.makeText(context, "Go to Settings > HuggingFace Integration to add credentials", Toast.LENGTH_LONG).show()
-                }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.setting_4_svgrepo_com),
-                    contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(2.dp))
-        OutlinedTextField(
+            Spacer(Modifier.height(2.dp))
+            OutlinedTextField(
             value = UserGivenModel,
             onValueChange = { newValue ->
                 UserGivenModel = newValue

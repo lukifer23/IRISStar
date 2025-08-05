@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import kotlinx.coroutines.launch
+import com.nervesparks.iris.ui.components.IrisTopAppBar
 
 data class BenchmarkState(
     val isRunning: Boolean = false,
@@ -25,7 +28,7 @@ data class BenchmarkState(
 )
 
 @Composable
-fun BenchMarkScreen(viewModel: MainViewModel) {
+fun BenchMarkScreen(viewModel: MainViewModel, onBackClick: () -> Unit) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
@@ -37,33 +40,43 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
-        Text(
-            "Benchmark Information",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+        IrisTopAppBar(
+            title = "Benchmark",
+            navigationIcon = Icons.Default.ArrowBack,
+            onNavigationClick = onBackClick
         )
 
-        // Device Info Card
-        Card(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            // Header
+            Text(
+                "Benchmark Information",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Device Info Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                deviceInfo.lines().forEach { line ->
-                    Text(line, modifier = Modifier.padding(vertical = 2.dp))
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    deviceInfo.lines().forEach { line ->
+                        Text(line, modifier = Modifier.padding(vertical = 2.dp))
+                    }
                 }
             }
-        }
         val context = LocalContext.current
         // Benchmark Button
 

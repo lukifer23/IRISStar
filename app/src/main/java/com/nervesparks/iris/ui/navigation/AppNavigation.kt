@@ -46,7 +46,8 @@ fun AppNavigation(
                 onNewChat = {
                     viewModel.clear()
                     navController.navigate(AppDestinations.CHAT)
-                }
+                },
+                onMenuClick = { navController.navigate(AppDestinations.SETTINGS) }
             )
         }
         composable("${AppDestinations.CHAT}?chatId={chatId}") { backStackEntry ->
@@ -69,7 +70,8 @@ fun AppNavigation(
                 onModelsScreenButtonClicked = { navController.navigate(AppDestinations.MODELS) },
                 onParamsScreenButtonClicked = { navController.navigate(AppDestinations.PARAMS) },
                 onAboutScreenButtonClicked = { navController.navigate(AppDestinations.ABOUT) },
-                onBenchMarkScreenButtonClicked = { navController.navigate(AppDestinations.BENCHMARK) }
+                onBenchMarkScreenButtonClicked = { navController.navigate(AppDestinations.BENCHMARK) },
+                onBackClick = { navController.popBackStack() }
             )
         }
         composable(AppDestinations.MODELS) {
@@ -77,17 +79,18 @@ fun AppNavigation(
                 extFileDir = extFilesDir,
                 viewModel = viewModel,
                 onSearchResultButtonClick = { navController.popBackStack() },
-                dm = downloadManager
+                dm = downloadManager,
+                onBackClick = { navController.popBackStack() }
             )
         }
         composable(AppDestinations.PARAMS) {
-            ParametersScreen(viewModel = viewModel)
+            ParametersScreen(viewModel = viewModel, onBackClick = { navController.popBackStack() })
         }
         composable(AppDestinations.ABOUT) {
-            AboutScreen()
+            AboutScreen(onBackClick = { navController.popBackStack() })
         }
         composable(AppDestinations.BENCHMARK) {
-            BenchMarkScreen(viewModel = viewModel)
+            BenchMarkScreen(viewModel = viewModel, onBackClick = { navController.popBackStack() })
         }
     }
 }

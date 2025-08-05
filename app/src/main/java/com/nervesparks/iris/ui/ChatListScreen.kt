@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +23,7 @@ import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.ui.theme.IrisStarTheme
+import com.nervesparks.iris.ui.components.IrisTopAppBar
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -30,6 +33,7 @@ fun ChatListScreen(
     viewModel: MainViewModel,
     onChatSelected: (Long) -> Unit,
     onNewChat: () -> Unit,
+    onMenuClick: () -> Unit,
 ) {
     val chats by viewModel.chats.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -46,6 +50,17 @@ fun ChatListScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
+        IrisTopAppBar(
+            title = "Chats",
+            navigationIcon = Icons.Default.Menu,
+            onNavigationClick = onMenuClick,
+            actions = {
+                IconButton(onClick = onNewChat) {
+                    Icon(Icons.Default.Add, contentDescription = "New Chat")
+                }
+            }
+        )
+
         // Search bar
         OutlinedTextField(
             value = searchQuery,

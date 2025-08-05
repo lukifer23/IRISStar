@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -31,10 +33,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.LoadingModal
+import com.nervesparks.iris.ui.components.IrisTopAppBar
 
 
 @Composable
-fun ParametersScreen(viewModel: MainViewModel) {
+fun ParametersScreen(viewModel: MainViewModel, onBackClick: () -> Unit) {
     val context = LocalContext.current
 
     // Main container with fillMaxSize
@@ -42,8 +45,18 @@ fun ParametersScreen(viewModel: MainViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
     ) {
+        IrisTopAppBar(
+            title = "Parameters",
+            navigationIcon = Icons.Default.ArrowBack,
+            onNavigationClick = onBackClick
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
 
 
             Text(
