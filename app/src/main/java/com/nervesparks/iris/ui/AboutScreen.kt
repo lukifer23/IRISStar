@@ -23,10 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 
 @Composable
@@ -43,9 +41,8 @@ fun AboutScreen() {
         item {
             Text(
                 text = "Iris is an offline Android chat application powered by the llama.cpp framework. Designed to operate entirely offline, it ensures privacy and independence from external servers. Whether you're a developer exploring AI applications or a privacy-conscious user, this app provides a seamless and secure way to experience conversational AI. Please note that the app may occasionally generate inaccurate results.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 24.sp
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -76,8 +73,7 @@ private fun SectionHeader(
 ) {
     Text(
         text = text,
-        fontSize = 20.sp,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
         color = MaterialTheme.colorScheme.onBackground,
         modifier = modifier.padding(bottom = 12.dp)
     )
@@ -107,9 +103,8 @@ private fun FeatureItem(feature: String) {
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = feature,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 24.sp
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -143,18 +138,15 @@ private fun FaqItem(
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = question,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 24.sp
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = answer,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 20.sp,
             modifier = Modifier.padding(start = 32.dp)  // Aligned with question text
         )
     }

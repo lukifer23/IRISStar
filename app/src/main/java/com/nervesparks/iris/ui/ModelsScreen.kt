@@ -20,10 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.LoadingModal
@@ -70,7 +68,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         Text(
                             text = "Search Hugging-Face Models",
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier
                                 .padding(vertical = 12.dp, horizontal = 7.dp)
                         )
@@ -94,7 +92,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         text = "Suggested Models",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(5.dp),
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.titleMedium
                     )
                 }
             }
@@ -130,7 +128,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                     text = "My Models",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(5.dp),
-                    fontSize = 18.sp
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
 

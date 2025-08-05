@@ -73,13 +73,13 @@ fun SettingsScreen(
                 Text(
                     text = "HuggingFace Integration",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Text(
                     text = "Add your HuggingFace credentials to search and download models. You can get your token from huggingface.co/settings/tokens",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Username Field
@@ -90,11 +90,11 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF4CAF50),
-                        unfocusedBorderColor = Color.Gray,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         focusedLabelColor = Color(0xFF4CAF50),
-                        unfocusedLabelColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                     ),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
@@ -118,11 +118,11 @@ fun SettingsScreen(
                     },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF4CAF50),
-                        unfocusedBorderColor = Color.Gray,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         focusedLabelColor = Color(0xFF4CAF50),
-                        unfocusedLabelColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                     ),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done
@@ -202,25 +202,25 @@ fun SettingsScreen(
                 Text(
                     text = "App Information",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
                     text = "IRIS - On-Device LLM App",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
                     text = "Version: 1.0.0",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "Built with llama.cpp",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -240,31 +240,31 @@ fun SettingsScreen(
                 Text(
                     text = "Getting Started",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
                     text = "1. Add your HuggingFace token above",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "2. Search for models in the search tab",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "3. Download and use models locally",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "4. Configure model parameters in the settings",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -284,7 +284,7 @@ fun SettingsScreen(
                 Text(
                     text = "App Settings",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 // Models Button
@@ -292,11 +292,12 @@ fun SettingsScreen(
                     onClick = onModelsScreenButtonClicked,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
+                        containerColor = Color(0xFF2D3748),
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Models", color = Color.White)
+                    Text("Models")
                 }
                 
                 // Parameters Button
@@ -304,11 +305,12 @@ fun SettingsScreen(
                     onClick = onParamsScreenButtonClicked,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
+                        containerColor = Color(0xFF2D3748),
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Change Parameters", color = Color.White)
+                    Text("Change Parameters")
                 }
                 
                 // Benchmark Button
@@ -316,11 +318,12 @@ fun SettingsScreen(
                     onClick = onBenchMarkScreenButtonClicked,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
+                        containerColor = Color(0xFF2D3748),
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Benchmark", color = Color.White)
+                    Text("Benchmark")
                 }
                 
                 // About Button
@@ -328,11 +331,12 @@ fun SettingsScreen(
                     onClick = onAboutScreenButtonClicked,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2D3748)
+                        containerColor = Color(0xFF2D3748),
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("About", color = Color.White)
+                    Text("About")
                 }
             }
         }

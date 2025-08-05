@@ -46,7 +46,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.data.HuggingFaceApiService
@@ -112,7 +111,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                     text = "Example: bartowski/Llama-3.2-1B-Instruct-GGUF",
                     modifier = Modifier.padding(4.dp),
                     color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 10.sp
+                    style = MaterialTheme.typography.labelSmall
                 )
 
                 IconButton(
@@ -309,9 +308,8 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             // Note about getting files
                             Text(
                                 text = "Note: To download files, search for the specific model ID",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 10.sp
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary
                             )
                             
                             // Copy model ID button
