@@ -143,7 +143,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
             modifier = Modifier
                 .padding(horizontal = 2.dp)
                 .background(
-                    color = if (role == "user") Color(0xFF171E2C) else Color(0xFF1E293B),
+                    color = if (role == "user") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .combinedClickable(
@@ -155,7 +155,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
             Text(
                 text = message.removePrefix("```"),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
+                color = if (role == "user") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                 lineHeight = 22.sp
             )
         }
