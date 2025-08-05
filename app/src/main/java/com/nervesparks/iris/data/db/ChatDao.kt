@@ -47,4 +47,17 @@ interface ChatDao {
 
     @Query("DELETE FROM messages WHERE chatId = :chatId")
     suspend fun deleteMessages(chatId: Long)
+
+    // Memory operations
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMemory(memory: Memory)
+
+    @Query("SELECT * FROM memories WHERE chatId = :chatId LIMIT 1")
+    suspend fun getMemory(chatId: Long): Memory?
+
+    @Query("SELECT * FROM memories")
+    suspend fun getAllMemories(): List<Memory>
+
+    @Query("DELETE FROM memories")
+    suspend fun clearMemories()
 }

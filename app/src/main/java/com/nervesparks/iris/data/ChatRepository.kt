@@ -6,6 +6,7 @@ import com.nervesparks.iris.data.db.AppDatabase
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.ChatDao
 import com.nervesparks.iris.data.db.Message
+import com.nervesparks.iris.data.db.Memory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -42,5 +43,21 @@ class ChatRepository @Inject constructor(private val dao: ChatDao) {
         }
     }
 
-    
+    suspend fun saveMemory(memory: Memory) = withContext(Dispatchers.IO) {
+        dao.insertMemory(memory)
+    }
+
+    suspend fun getMemory(chatId: Long): Memory? = withContext(Dispatchers.IO) {
+        dao.getMemory(chatId)
+    }
+
+    suspend fun getAllMemories(): List<Memory> = withContext(Dispatchers.IO) {
+        dao.getAllMemories()
+    }
+
+    suspend fun clearMemories() = withContext(Dispatchers.IO) {
+        dao.clearMemories()
+    }
+
+
 }

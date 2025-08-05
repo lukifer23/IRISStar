@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -28,6 +29,7 @@ import android.app.Application
 import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.Message
+import com.nervesparks.iris.data.db.Memory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -74,6 +76,13 @@ class MainViewModel @Inject constructor(
             }
             currentChat = chat
             first = false
+            val memory = chatRepository.getMemory(chatId)
+            val basePrompt = userPreferencesRepository.getModelSystemPrompt()
+            modelSystemPrompt = if (memory != null) {
+                "$basePrompt\nPrevious summary: ${memory.summary}"
+            } else {
+                basePrompt
+            }
         }
     }
 
@@ -117,6 +126,10 @@ class MainViewModel @Inject constructor(
             listOf<Map<String, String>>(),
         )
         private set
+
+    var memories by mutableStateOf(listOf<Memory>())
+        private set
+
     var showModal by mutableStateOf(true)
     var showDownloadInfoModal by mutableStateOf(false)
     var showModelSelection by mutableStateOf(false)
@@ -928,6 +941,21 @@ class MainViewModel @Inject constructor(
             if (currentChat == null || currentChat?.id != id) {
                 currentChat = baseChat.copy(id = id)
             }
+            generateSummary(id)
+        }
+    }
+
+    private suspend fun generateSummary(chatId: Long) {
+        try {
+            val conversation = parseTemplateJson(messages)
+            val prompt = "Summarize the following conversation in one sentence:\n$conversation"
+            var summary = ""
+            llamaAndroid.send(prompt).collect { token ->
+                summary += token
+            }
+            chatRepository.saveMemory(Memory(chatId = chatId, summary = summary.trim()))
+        } catch (e: Exception) {
+            Log.e(tag, "Error generating summary", e)
         }
     }
 
@@ -952,6 +980,19 @@ class MainViewModel @Inject constructor(
 
         )
         first = true
+    }
+
+    fun loadMemories() {
+        viewModelScope.launch {
+            memories = chatRepository.getAllMemories()
+        }
+    }
+
+    fun clearMemories() {
+        viewModelScope.launch {
+            chatRepository.clearMemories()
+            memories = emptyList()
+        }
     }
 
     fun log(message: String) {

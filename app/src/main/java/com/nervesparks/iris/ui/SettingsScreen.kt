@@ -25,6 +25,7 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.MemoryManager
+import com.nervesparks.iris.ui.components.ChatMemoryManager
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.ModernCard
 import com.nervesparks.iris.ui.theme.PrimaryButton
@@ -292,6 +293,11 @@ fun SettingsScreen(
         
         // Memory Management Section
         MemoryManager(
+            viewModel = viewModel,
+            modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
+        )
+
+        ChatMemoryManager(
             viewModel = viewModel,
             modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
         )
