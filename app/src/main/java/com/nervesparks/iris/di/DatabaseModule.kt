@@ -2,9 +2,9 @@ package com.nervesparks.iris.di
 
 import android.content.Context
 import androidx.room.Room
-import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.db.AppDatabase
 import com.nervesparks.iris.data.db.ChatDao
+import com.nervesparks.iris.data.db.DocumentDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,5 +29,10 @@ object DatabaseModule {
     @Provides
     fun provideChatDao(appDatabase: AppDatabase): ChatDao {
         return appDatabase.chatDao()
+    }
+
+    @Provides
+    fun provideDocumentDao(appDatabase: AppDatabase): DocumentDao {
+        return appDatabase.documentDao()
     }
 }

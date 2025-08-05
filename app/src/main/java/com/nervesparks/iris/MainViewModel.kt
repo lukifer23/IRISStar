@@ -26,12 +26,14 @@ import java.util.UUID
 
 import android.app.Application
 import com.nervesparks.iris.data.ChatRepository
+import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.Message
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -40,6 +42,7 @@ class MainViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
+    private val documentRepository: DocumentRepository,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -56,7 +59,19 @@ class MainViewModel @Inject constructor(
             chatRepository.deleteChat(chat)
         }
     }
-    
+
+    fun indexDocument(text: String) {
+        viewModelScope.launch {
+            val embedding = embedText(text)
+            documentRepository.addDocument(text, embedding)
+        }
+    }
+
+    suspend fun embedText(text: String): List<Float> =
+        withContext(Dispatchers.Default) {
+            listOf(llamaAndroid.countTokens(text).toFloat())
+        }
+
     private var currentChat: com.nervesparks.iris.data.db.Chat? = null
     companion object {
 //        @JvmStatic
@@ -671,6 +686,13 @@ class MainViewModel @Inject constructor(
             viewModelScope.launch {
                 try {
                     var workingMessages = messages.toMutableList()
+                    val userEmbedding = embedText(userMessage)
+                    val docs = documentRepository.topKSimilar(userEmbedding, 3)
+                    val docMsgs = docs.map { mapOf("role" to "system", "content" to it.text) }
+                    val docCount = docMsgs.size
+                    if (docCount > 0) {
+                        workingMessages = (docMsgs + workingMessages).toMutableList()
+                    }
                     var prompt: String
                     var promptTokens: Int
                     val reserve = reserveTokens
@@ -695,8 +717,9 @@ class MainViewModel @Inject constructor(
                         }
                     }
 
-                    if (workingMessages.size != messages.size) {
-                        messages = workingMessages
+                    val finalMessages = if (docMsgs.isNotEmpty()) workingMessages.drop(docCount) else workingMessages
+                    if (finalMessages.size != messages.size) {
+                        messages = finalMessages
                     }
 
                     contextLimit = promptTokens
