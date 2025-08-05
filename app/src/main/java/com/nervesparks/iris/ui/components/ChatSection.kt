@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -157,7 +157,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
                     .size(20.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ContentCopy,
+                    imageVector = Icons.Default.Check,
                     contentDescription = "Copy message",
                     tint = Color.White
                 )
@@ -187,7 +187,7 @@ private fun CodeBlockMessage(content: String) {
             modifier = Modifier.align(Alignment.TopEnd).size(20.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.ContentCopy,
+                imageVector = Icons.Default.Check,
                 contentDescription = "Copy code",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
