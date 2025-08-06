@@ -39,7 +39,8 @@ import androidx.compose.foundation.layout.PaddingValues
 @Composable
 private fun SettingsSection(
     title: String,
-    items: List<SettingsItem>
+    items: List<SettingsItem>,
+    onToggle: (SettingsItem, Boolean) -> Unit
 ) {
     Column {
         Text(
@@ -50,7 +51,10 @@ private fun SettingsSection(
         )
         
         items.forEach { item ->
-            SettingsItemRow(item = item)
+            SettingsItemRow(
+                item = item,
+                onToggle = { isEnabled -> onToggle(item, isEnabled) }
+            )
         }
     }
 }
@@ -60,7 +64,8 @@ private fun SettingsSection(
  */
 @Composable
 private fun SettingsItemRow(
-    item: SettingsItem
+    item: SettingsItem,
+    onToggle: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -87,7 +92,7 @@ private fun SettingsItemRow(
         if (item.isToggle) {
             Switch(
                 checked = item.isEnabled,
-                onCheckedChange = { /* TODO: Implement toggle */ },
+                onCheckedChange = { onToggle(it) },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
