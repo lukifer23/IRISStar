@@ -198,43 +198,122 @@ class MainViewModel @Inject constructor(
     var eot_str = ""
 
     fun performWebSearch(query: String, summarize: Boolean = true) {
-        val context = getApplication<Application>()
-        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-            putExtra(SearchManager.QUERY, query)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // Add the search query as a user message
+        addMessage("user", "Search the web for: $query")
+        
+        viewModelScope.launch {
+            try {
+                // Create a prompt that asks the model to search and provide information
+                val searchPrompt = """
+                    Please search the web for information about: "$query"
+                    
+                    Provide a comprehensive answer based on current information. Include:
+                    - Key facts and details
+                    - Recent developments if applicable
+                    - Reliable sources and references
+                    
+                    Format your response clearly and be helpful.
+                """.trimIndent()
+                
+                // Add the search prompt to messages
+                addMessage("assistant", searchPrompt)
+                
+                // Process the search request through the model
+                processWebSearch(searchPrompt)
+                
+            } catch (e: Exception) {
+                Log.e(tag, "Error performing web search", e)
+                addMessage("error", "Failed to perform web search: ${e.message}")
+            }
         }
-        context.startActivity(intent)
+    }
+    
+    private fun processWebSearch(prompt: String) {
+        viewModelScope.launch {
+            try {
+                startGeneration()
+                
+                var workingMessages = messages.toMutableList()
+                val reserve = 256
 
-        if (!summarize) return
-
-        val webView = WebView(context).apply {
-            settings.javaScriptEnabled = true
-            visibility = View.GONE
-        }
-
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
-                view.evaluateJavascript(
-                    "(function() { return document.body.innerText; })();"
-                ) { text ->
-                    val content = text?.removePrefix("\"")?.removeSuffix("\"") ?: ""
-                    summarizeDocument(content)
-                    view.destroy()
+                // Trim history until it fits within the context window
+                var finalPrompt = ""
+                while (true) {
+                    finalPrompt = if (template.isNotBlank()) {
+                        val jinjava = com.hubspot.jinjava.Jinjava()
+                        val context = mapOf("messages" to workingMessages)
+                        jinjava.render(template, context)
+                    } else {
+                        com.nervesparks.iris.llm.TemplateRegistry.render(
+                            modelChatFormat,
+                            workingMessages,
+                            modelSystemPrompt,
+                            includeThinkingTags = true
+                        )
+                    }
+                    val promptTokens = llamaAndroid.countTokens(finalPrompt)
+                    if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
+                        break
+                    }
+                    val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
+                    if (removeIdx >= 0) {
+                        workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
+                    } else {
+                        break
+                    }
                 }
-            }
 
-            override fun onReceivedError(
-                view: WebView,
-                errorCode: Int,
-                description: String?,
-                failingUrl: String?
-            ) {
-                view.destroy()
+                if (workingMessages.size != messages.size) {
+                    messages = workingMessages
+                }
+
+                contextLimit = llamaAndroid.countTokens(finalPrompt)
+                maxContextLimit = modelContextLength
+
+                var generatedTokens = 0
+                llamaAndroid.send(finalPrompt)
+                    .catch {
+                        Log.e(tag, "processWebSearch() failed", it)
+                        addMessage("error", it.message ?: "")
+                    }
+                    .collect {
+                        generatedTokens++
+                        updateTokenCount(generatedTokens)
+                        contextLimit = llamaAndroid.countTokens(finalPrompt) + generatedTokens
+
+                        if (getIsMarked()) {
+                            addMessage("codeBlock", it)
+                        } else {
+                            try {
+                                val json = org.json.JSONObject(it)
+                                if (json.has("tool")) {
+                                    val tool = json.getString("tool")
+                                    val args = json.getJSONObject("args")
+                                    val argsMap = mutableMapOf<String, Any>()
+                                    args.keys().forEach { key ->
+                                        argsMap[key] = args.get(key)
+                                    }
+                                    handleToolCall(com.nervesparks.iris.data.ToolCall(tool, argsMap))
+                                } else {
+                                    val cleanedResponse = cleanThinkingResponse(it)
+                                    addMessage("assistant", cleanedResponse)
+                                }
+                            } catch (e: org.json.JSONException) {
+                                val cleanedResponse = cleanThinkingResponse(it)
+                                addMessage("assistant", cleanedResponse)
+                            }
+                        }
+                    }
+                    .also {
+                        endGeneration()
+                        persistChat()
+                    }
+            } catch (e: Exception) {
+                Log.e(tag, "Error in processWebSearch", e)
+                addMessage("error", "Failed to process web search: ${e.message}")
+                endGeneration()
             }
         }
-
-        val encodedQuery = Uri.encode(query)
-        webView.loadUrl("https://www.google.com/search?q=$encodedQuery")
     }
 
     fun startVoiceRecognition() {
@@ -425,6 +504,38 @@ class MainViewModel @Inject constructor(
         val prompt = "Translate the following text to $targetLanguage:\n\n$text"
         addMessage("user", prompt)
         processTranslation(prompt)
+    }
+
+    /**
+     * Cleans the model response by removing raw thinking tags and formatting
+     */
+    private fun cleanThinkingResponse(response: String): String {
+        // Remove raw <think> and </think> tags
+        var cleaned = response.replace("<think>", "").replace("</think>", "")
+        
+        // If the response starts with thinking content, try to extract just the answer
+        if (cleaned.contains("Let me think") || cleaned.contains("Okay, let's see")) {
+            // Try to find the actual answer after thinking
+            val answerPatterns = listOf(
+                "So the answer is:",
+                "Therefore,",
+                "Answer:",
+                "The answer is:",
+                "Result:"
+            )
+            
+            for (pattern in answerPatterns) {
+                if (cleaned.contains(pattern)) {
+                    val parts = cleaned.split(pattern)
+                    if (parts.size > 1) {
+                        cleaned = parts[1].trim()
+                        break
+                    }
+                }
+            }
+        }
+        
+        return cleaned.trim()
     }
 
     private fun processTranslation(prompt: String) {
@@ -1145,7 +1256,9 @@ class MainViewModel @Inject constructor(
                                         addMessage("assistant", it)
                                     }
                                 } catch (e: org.json.JSONException) {
-                                    addMessage("assistant", it)
+                                    // Clean the response by removing raw thinking tags
+                                    val cleanedResponse = cleanThinkingResponse(it)
+                                    addMessage("assistant", cleanedResponse)
                                 }
                             }
                         }
