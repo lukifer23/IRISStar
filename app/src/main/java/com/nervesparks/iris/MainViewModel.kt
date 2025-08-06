@@ -692,12 +692,13 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun quantizeModel(model: String, quantizeType: String) {
-        viewModelScope.launch {
-            val inputFile = File(getApplication<Application>().getExternalFilesDir(null), model)
-            val outputFile = File(getApplication<Application>().getExternalFilesDir(null), "${model.substringBeforeLast(".")}-$quantizeType.gguf")
-            llamaAndroid.quantize(inputFile.absolutePath, outputFile.absolutePath, quantizeType)
-        }
+    suspend fun quantizeModel(model: String, quantizeType: String): Int {
+        val inputFile = File(getApplication<Application>().getExternalFilesDir(null), model)
+        val outputFile = File(
+            getApplication<Application>().getExternalFilesDir(null),
+            "${model.substringBeforeLast(".")}-$quantizeType.gguf"
+        )
+        return llamaAndroid.quantize(inputFile.absolutePath, outputFile.absolutePath, quantizeType)
     }
 
     private var template by mutableStateOf("")
