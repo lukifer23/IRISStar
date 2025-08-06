@@ -2,7 +2,6 @@ package com.nervesparks.iris
 
 import android.Manifest
 import android.app.SearchManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.llama.cpp.LLamaAndroid
@@ -21,7 +20,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.view.View
 import com.nervesparks.iris.data.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -192,7 +193,7 @@ class MainViewModel @Inject constructor(
 
     var eot_str = ""
 
-    fun performWebSearch(query: String) {
+    fun performWebSearch(query: String, summarize: Boolean = true) {
         val context = getApplication<Application>()
         val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
             putExtra(SearchManager.QUERY, query)
@@ -200,8 +201,36 @@ class MainViewModel @Inject constructor(
         }
         context.startActivity(intent)
 
-        // TODO: Optionally capture results via WebView and
-        // forward content to the summarization pipeline.
+        if (!summarize) return
+
+        val webView = WebView(context).apply {
+            settings.javaScriptEnabled = true
+            visibility = View.GONE
+        }
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                view.evaluateJavascript(
+                    "(function() { return document.body.innerText; })();"
+                ) { text ->
+                    val content = text?.removePrefix("\"")?.removeSuffix("\"") ?: ""
+                    summarizeDocument(content)
+                    view.destroy()
+                }
+            }
+
+            override fun onReceivedError(
+                view: WebView,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                view.destroy()
+            }
+        }
+
+        val encodedQuery = Uri.encode(query)
+        webView.loadUrl("https://www.google.com/search?q=$encodedQuery")
     }
 
     fun startVoiceRecognition() {
