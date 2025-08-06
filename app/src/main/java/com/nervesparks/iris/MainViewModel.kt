@@ -14,6 +14,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -274,6 +275,25 @@ class MainViewModel @Inject constructor(
 
     fun updateTemplate(template: String) {
         this.template = template
+    }
+
+    // User-defined prompt templates
+    var templates = mutableStateListOf<Template>()
+        private set
+
+    fun addTemplate(template: Template) {
+        templates.add(template)
+    }
+
+    fun editTemplate(updated: Template) {
+        val index = templates.indexOfFirst { it.id == updated.id }
+        if (index != -1) {
+            templates[index] = updated
+        }
+    }
+
+    fun deleteTemplate(template: Template) {
+        templates.removeAll { it.id == template.id }
     }
 
     fun clearLastQuickAction() {
@@ -1342,6 +1362,12 @@ data class ModelFile(
     val filename: String,
     val size: Long?,
     val quantType: String?
+)
+
+data class Template(
+    val id: Long = System.currentTimeMillis(),
+    val name: String,
+    val content: String
 )
 
 fun sentThreadsValue(){
