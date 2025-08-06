@@ -141,6 +141,7 @@ class MainViewModel @Inject constructor(
                 )
             }
         }
+        templates.addAll(userPreferencesRepository.getTemplates())
     }
     private fun loadDefaultModelName(){
         try {
@@ -710,19 +711,43 @@ class MainViewModel @Inject constructor(
     var templates = mutableStateListOf<Template>()
         private set
 
-    fun addTemplate(template: Template) {
-        templates.add(template)
-    }
-
-    fun editTemplate(updated: Template) {
-        val index = templates.indexOfFirst { it.id == updated.id }
-        if (index != -1) {
-            templates[index] = updated
+    fun addTemplate(template: Template): Boolean {
+        return try {
+            templates.add(template)
+            userPreferencesRepository.saveTemplates(templates)
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 
-    fun deleteTemplate(template: Template) {
-        templates.removeAll { it.id == template.id }
+    fun editTemplate(updated: Template): Boolean {
+        val index = templates.indexOfFirst { it.id == updated.id }
+        return if (index != -1) {
+            try {
+                templates[index] = updated
+                userPreferencesRepository.saveTemplates(templates)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fun deleteTemplate(template: Template): Boolean {
+        val removed = templates.removeAll { it.id == template.id }
+        return if (removed) {
+            try {
+                userPreferencesRepository.saveTemplates(templates)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
     }
 
     fun clearLastQuickAction() {
@@ -1802,12 +1827,6 @@ data class ModelFile(
     val filename: String,
     val size: Long?,
     val quantType: String?
-)
-
-data class Template(
-    val id: Long = System.currentTimeMillis(),
-    val name: String,
-    val content: String
 )
 
 fun sentThreadsValue(){
