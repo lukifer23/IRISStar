@@ -1,12 +1,16 @@
 package com.nervesparks.iris
 
+import android.Manifest
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.llama.cpp.LLamaAndroid
 import android.net.Uri
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -15,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.data.UserPreferencesRepository
@@ -180,6 +185,11 @@ class MainViewModel @Inject constructor(
     var stateForTextToSpeech by mutableStateOf(true)
         private set
 
+    private var speechRecognizer: SpeechRecognizer? = null
+    var isListening by mutableStateOf(false)
+        private set
+    var voiceError by mutableStateOf<String?>(null)
+
     var eot_str = ""
 
     fun performWebSearch(query: String) {
@@ -192,6 +202,55 @@ class MainViewModel @Inject constructor(
 
         // TODO: Optionally capture results via WebView and
         // forward content to the summarization pipeline.
+    }
+
+    fun startVoiceRecognition() {
+        val context = getApplication<Application>()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            voiceError = "Microphone permission not granted"
+            return
+        }
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            voiceError = "Speech recognition not available"
+            return
+        }
+        if (speechRecognizer == null) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
+                setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: Bundle?) {
+                        isListening = true
+                        voiceError = null
+                    }
+
+                    override fun onResults(results: Bundle?) {
+                        isListening = false
+                        val data = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        val text = data?.firstOrNull() ?: ""
+                        updateMessage(text)
+                    }
+
+                    override fun onError(error: Int) {
+                        isListening = false
+                        voiceError = "Error: $error"
+                    }
+
+                    override fun onEndOfSpeech() {
+                        isListening = false
+                    }
+
+                    override fun onBeginningOfSpeech() {}
+                    override fun onRmsChanged(rmsdB: Float) {}
+                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onPartialResults(partialResults: Bundle?) {}
+                    override fun onEvent(eventType: Int, params: Bundle?) {}
+                })
+            }
+        }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        }
+        speechRecognizer?.startListening(intent)
     }
 
     // Quick action and attachment handlers
@@ -773,6 +832,7 @@ class MainViewModel @Inject constructor(
 
     override fun onCleared() {
         textToSpeech?.shutdown()
+        speechRecognizer?.destroy()
         super.onCleared()
 
         viewModelScope.launch {
