@@ -312,7 +312,6 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             }
         )
     }
-    }
     
     // Model Selection Modal for Benchmark
     BenchmarkModelSelectionModal(viewModel)
