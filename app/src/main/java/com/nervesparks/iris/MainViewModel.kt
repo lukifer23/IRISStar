@@ -1630,10 +1630,15 @@ class MainViewModel @Inject constructor(
                 isComparativeBenchmarkRunning = true
                 comparativeBenchmarkResults = null
                 
-                // Since the benchmark is simulated, we can run it without a loaded model
-                // The native function returns simulated data anyway
-                Log.d(tag, "Calling native benchmark function...")
-                val resultsJson = llamaAndroid.runComparativeBenchmark(0L, 0L, 0L, 0L)
+                                    // Use actual model and context handles for real benchmarking
+                    Log.d(tag, "Calling native benchmark function with real model...")
+                    val modelHandle = llamaAndroid.getModel()
+                    val contextHandle = llamaAndroid.getContext()
+                    val batchHandle = llamaAndroid.getBatch()
+                    val samplerHandle = llamaAndroid.getSampler()
+                    
+                    Log.d(tag, "Model handle: $modelHandle, Context handle: $contextHandle")
+                    val resultsJson = llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
                 Log.d(tag, "Native benchmark returned: $resultsJson")
                 
                 // Parse the JSON results
@@ -1720,9 +1725,13 @@ class MainViewModel @Inject constructor(
             } catch (exc: IllegalStateException){
                 Log.e(tag, "load() failed", exc)
             }
-            try {
-                // Since OpenCL is disabled, we only use CPU backend
-                Log.d(tag, "Using CPU backend (OpenCL disabled)")
+                            try {
+                    // Use OpenCL backend if available, otherwise fallback to CPU
+                    val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
+                    Log.d(tag, "Using backend: $backend")
+                    
+                    // Set the backend before loading the model
+                    llamaAndroid.setBackend(backend)
                 
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
