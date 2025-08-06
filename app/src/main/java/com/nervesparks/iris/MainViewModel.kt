@@ -1638,7 +1638,11 @@ class MainViewModel @Inject constructor(
                     val samplerHandle = llamaAndroid.getSampler()
                     
                     Log.d(tag, "Model handle: $modelHandle, Context handle: $contextHandle")
-                    val resultsJson = llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
+                    
+                    // Ensure we're on the correct thread where the library is loaded
+                    val resultsJson = withContext(Dispatchers.IO) {
+                        llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
+                    }
                 Log.d(tag, "Native benchmark returned: $resultsJson")
                 
                 // Parse the JSON results
@@ -1726,12 +1730,8 @@ class MainViewModel @Inject constructor(
                 Log.e(tag, "load() failed", exc)
             }
                             try {
-                    // Use OpenCL backend if available, otherwise fallback to CPU
-                    val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
-                    Log.d(tag, "Using backend: $backend")
-                    
-                    // Set the backend before loading the model
-                    llamaAndroid.setBackend(backend)
+                    // Use CPU backend since OpenCL is disabled
+                    Log.d(tag, "Using CPU backend (OpenCL disabled)")
                 
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
