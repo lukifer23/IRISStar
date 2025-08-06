@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -334,20 +335,51 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                // Current Backend
-                Row(
+                // Backend Selection
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                 ) {
                     Text(
-                        text = "Current Backend:",
+                        text = "Backend Selection:",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.weight(1f))
+                    
+                    // Backend Buttons
+                    val backends = viewModel.availableBackends.split(",").map { it.trim() }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
+                    ) {
+                        backends.forEach { backend ->
+                            val isSelected = viewModel.currentBackend == backend
+                            Button(
+                                onClick = { viewModel.selectBackend(backend) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else 
+                                        MaterialTheme.colorScheme.surface
+                                )
+                            ) {
+                                Text(
+                                    text = backend,
+                                    color = if (isSelected) 
+                                        MaterialTheme.colorScheme.onPrimary 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Backend Info
                     Text(
-                        text = viewModel.currentBackend,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Current: ${viewModel.currentBackend}",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                     )

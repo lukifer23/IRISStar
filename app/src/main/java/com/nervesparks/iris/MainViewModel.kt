@@ -1626,12 +1626,15 @@ class MainViewModel @Inject constructor(
     fun runComparativeBenchmark() {
         viewModelScope.launch {
             try {
+                Log.d(tag, "Starting comparative benchmark...")
                 isComparativeBenchmarkRunning = true
                 comparativeBenchmarkResults = null
                 
                 // Since the benchmark is simulated, we can run it without a loaded model
                 // The native function returns simulated data anyway
+                Log.d(tag, "Calling native benchmark function...")
                 val resultsJson = llamaAndroid.runComparativeBenchmark(0L, 0L, 0L, 0L)
+                Log.d(tag, "Native benchmark returned: $resultsJson")
                 
                 // Parse the JSON results
                 try {
@@ -1663,6 +1666,7 @@ class MainViewModel @Inject constructor(
                     
                     comparativeBenchmarkResults = results
                     Log.d(tag, "Comparative benchmark completed: $results")
+                    Log.d(tag, "Setting comparativeBenchmarkResults to: $comparativeBenchmarkResults")
                     
                 } catch (e: Exception) {
                     Log.e(tag, "Error parsing benchmark results", e)
@@ -1903,6 +1907,18 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // Set the current backend (CPU or GPU)
+    fun selectBackend(backend: String) {
+        currentBackend = backend
+        Log.d(tag, "Backend changed to: $backend")
+        
+        // If switching to GPU and OpenCL is available, try to enable it
+        if (backend == "OpenCL" && availableBackends.contains("OpenCL")) {
+            Log.d(tag, "Attempting to enable OpenCL backend")
+            // TODO: Implement actual OpenCL backend switching
+        }
+    }
+    
     // Hardware acceleration detection - Called manually from settings
     fun detectHardwareCapabilities() {
         viewModelScope.launch {
