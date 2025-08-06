@@ -174,7 +174,9 @@ fun ThinkingMessage(
                         )
                         Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                         MarkdownTextComponent(
-                            markdown = if (outputContent.isNotEmpty()) outputContent else message
+                            markdown = formatThinkingContent(
+                                if (outputContent.isNotEmpty()) outputContent else message
+                            )
                         )
                     }
                 }
@@ -223,6 +225,6 @@ private fun formatThinkingContent(content: String): String {
         .replace(Regex("([a-z])([A-Z])"), "$1 $2") // Add spaces between camelCase
         .replace(Regex("([a-z])([0-9])"), "$1 $2") // Add spaces between letters and numbers
         .replace(Regex("([0-9])([a-zA-Z])"), "$1 $2") // Add spaces between numbers and letters
-        .replace(Regex("\\s+"), " ") // Normalize multiple spaces
+        .replace(Regex(" +"), " ") // Normalize multiple spaces while preserving newlines
         .trim()
 }
