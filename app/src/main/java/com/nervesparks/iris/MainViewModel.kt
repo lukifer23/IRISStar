@@ -975,6 +975,7 @@ class MainViewModel @Inject constructor(
                 Log.e("MainViewModel", "Error loading contextLength, using default", e)
                 modelContextLength = 32768  // Increased for Qwen3 support
             }
+            maxContextLimit = modelContextLength
             
             try {
                 modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
