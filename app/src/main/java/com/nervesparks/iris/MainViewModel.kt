@@ -1722,17 +1722,25 @@ class MainViewModel @Inject constructor(
 
     var loadedModelName = mutableStateOf("");
 
-    fun load(pathToModel: String, userThreads: Int, backend: String = "cpu")  {
+    fun load(pathToModel: String, userThreads: Int, backend: String = currentBackend)  {
         viewModelScope.launch {
             try{
                 llamaAndroid.unload()
             } catch (exc: IllegalStateException){
                 Log.e(tag, "load() failed", exc)
             }
-                            try {
-                    // Use CPU backend since OpenCL is disabled
-                    Log.d(tag, "Using CPU backend (OpenCL disabled)")
-                
+            try {
+                val available = availableBackends.split(",").map { it.trim().lowercase() }
+                val requested = backend.lowercase()
+                val resolvedBackend = if (available.contains(requested)) {
+                    if (requested == "opencl") "OpenCL" else "CPU"
+                } else {
+                    addMessage("system", "Backend '$backend' not available. Falling back to CPU.")
+                    "CPU"
+                }
+                currentBackend = resolvedBackend
+                Log.d(tag, "Using $resolvedBackend backend")
+
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
                 
@@ -1775,14 +1783,14 @@ class MainViewModel @Inject constructor(
                 showModal = false
                 showAlert = true
                 
-                Log.d(tag, "Loading model with settings: threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
-                
+                Log.d(tag, "Loading model with settings: threads=$userThreads, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
+
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
-                    pathToModel, 
-                    userThreads = modelThreadCount, 
-                    topK = modelTopK, 
-                    topP = modelTopP, 
+                    pathToModel,
+                    userThreads = userThreads,
+                    topK = modelTopK,
+                    topP = modelTopP,
                     temp = modelTemperature
                 )
                 
@@ -1845,10 +1853,9 @@ class MainViewModel @Inject constructor(
         }
         
         Log.d(tag, "=== END REASONING DEBUG ===")
-        
-        // Use OpenCL backend if available, otherwise fallback to CPU
-        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
-        load(modelPath, modelThreadCount, backend = backend)
+
+        // Use current backend setting when loading the model
+        load(modelPath, modelThreadCount)
     }
     
     /**
@@ -1905,8 +1912,8 @@ class MainViewModel @Inject constructor(
                 if (model != null) {
                     val destinationPath = File(directory, model["destination"].toString())
                     if (destinationPath.exists()) {
-                        // Use OpenCL backend if available, otherwise fallback to CPU
-                        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
+                        // Use the current backend preference when loading by name
+                        val backend = if (currentBackend.equals("OpenCL", ignoreCase = true)) "opencl" else "cpu"
                         load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
                     }
                 }
