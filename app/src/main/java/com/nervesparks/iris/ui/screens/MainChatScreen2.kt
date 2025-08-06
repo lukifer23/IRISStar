@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -97,6 +98,12 @@ fun MainChatScreen2(
         }
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.persistChat()
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -133,7 +140,11 @@ fun MainChatScreen2(
                     showModelDropdown = showModelDropdown,
                     onModelDropdownDismiss = { showModelDropdown = false },
                     viewModel = viewModel,
-                    extFilesDir = extFilesDir
+                    extFilesDir = extFilesDir,
+                    onChatListClick = {
+                        viewModel.persistChat()
+                        navController.navigate(AppDestinations.CHAT_LIST)
+                    }
                 )
             },
             content = {

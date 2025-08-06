@@ -48,6 +48,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -110,6 +113,9 @@ class MainViewModel @Inject constructor(
     var showThinkingTokens by mutableStateOf(true)
     var thinkingTokenStyle by mutableStateOf("COLLAPSIBLE") // COLLAPSIBLE, ALWAYS_VISIBLE, HIDDEN
 
+    // Flag indicating if the currently loaded model supports reasoning tokens
+    var supportsReasoning by mutableStateOf(false)
+
     var downloadableModels by mutableStateOf<List<Downloadable>>(emptyList())
         private set
 
@@ -142,6 +148,7 @@ class MainViewModel @Inject constructor(
                 )
             }
         }
+        templates.addAll(userPreferencesRepository.getTemplates())
     }
     private fun loadDefaultModelName(){
         try {
@@ -213,42 +220,54 @@ class MainViewModel @Inject constructor(
                 isSearching = true
                 currentSearchQuery = query
                 searchProgress = "🔍 Initializing web search..."
-                
+
                 // Show search in progress
                 addMessage("assistant", "🔍 Searching the web for \"$query\"...")
-                
+
                 searchProgress = "🌐 Querying search engine..."
-                
+
                 // Try API-based search first
                 val searchResponse = webSearchService.searchWeb(query)
-                
+
                 searchProgress = "📊 Processing search results..."
-                
+
                 if (searchResponse.success && searchResponse.results != null && searchResponse.results.isNotEmpty()) {
                     searchProgress = "📝 Formatting results for display..."
-                    
+
                     // Format and display search results
                     val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
                     addMessage("assistant", formattedResults)
-                    
+
                     // If summarize is true, ask the model to summarize the results
                     if (summarize && searchResponse.results.isNotEmpty()) {
                         searchProgress = "🤖 Generating AI summary..."
-                        
+
                         val summaryPrompt = """
                             Based on the search results above, provide a concise summary of the key information about "$query".
                             Focus on the most important facts and recent developments.
                         """.trimIndent()
-                        
-                        addMessage("user", summaryPrompt)
-                        processWebSearch(summaryPrompt)
+
+                        try {
+                            addMessage("user", summaryPrompt)
+                            processWebSearch(summaryPrompt)
+                            searchProgress = "Search complete"
+                        } catch (e: Exception) {
+                            Log.e(tag, "Error generating summary", e)
+                            addMessage(
+                                "assistant",
+                                "❌ Summary failed: ${e.message}\n\nPlease try again later."
+                            )
+                            searchProgress = "Summary failed"
+                        }
+                    } else {
+                        searchProgress = "Search complete"
                     }
                 } else {
                     // If API search fails, try Android browser search
                     searchProgress = "📱 Launching browser search..."
-                    
+
                     val androidSearchResponse = androidSearchService.launchBrowserSearch(query)
-                    
+
                     if (androidSearchResponse.success) {
                         val formattedResults = androidSearchService.formatSearchResults(androidSearchResponse.results ?: emptyList(), query)
                         addMessage("assistant", formattedResults)
@@ -258,15 +277,15 @@ class MainViewModel @Inject constructor(
                         addMessage("assistant", "❌ Search failed: $errorMessage\n\nI've tried API search and browser search. Please try rephrasing your search query.")
                     }
                 }
-                
+
             } catch (e: Exception) {
                 Log.e(tag, "Error performing web search", e)
                 addMessage("assistant", "❌ Search error: ${e.message}\n\nPlease try again later.")
+                searchProgress = "Search error"
             } finally {
                 // Reset search state
                 isSearching = false
                 currentSearchQuery = ""
-                searchProgress = ""
             }
         }
     }
@@ -506,7 +525,33 @@ class MainViewModel @Inject constructor(
     }
 
     fun sendImage(uri: Uri) {
-        Log.d(tag, "Sending image: $uri")
+        viewModelScope.launch {
+            try {
+                val context = getApplication<Application>()
+                val image = InputImage.fromFilePath(context, uri)
+                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+                recognizer
+                    .process(image)
+                    .addOnSuccessListener { visionText ->
+                        val extractedText = visionText.text
+                        if (extractedText.isNotBlank()) {
+                            // Index the document for retrieval and summarize for the chat
+                            indexDocument(extractedText)
+                            summarizeDocument(extractedText)
+                        } else {
+                            addMessage("assistant", "❌ No text found in image")
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(tag, "OCR failed", e)
+                        addMessage("assistant", "❌ OCR failed: ${e.message}")
+                    }
+            } catch (e: Exception) {
+                Log.e(tag, "Error processing image", e)
+                addMessage("assistant", "❌ Unable to process image: ${e.message}")
+            }
+        }
     }
 
     var isCodeMode by mutableStateOf(false)
@@ -704,12 +749,13 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun quantizeModel(model: String, quantizeType: String) {
-        viewModelScope.launch {
-            val inputFile = File(getApplication<Application>().getExternalFilesDir(null), model)
-            val outputFile = File(getApplication<Application>().getExternalFilesDir(null), "${model.substringBeforeLast(".")}-$quantizeType.gguf")
-            llamaAndroid.quantize(inputFile.absolutePath, outputFile.absolutePath, quantizeType)
-        }
+    suspend fun quantizeModel(model: String, quantizeType: String): Int {
+        val inputFile = File(getApplication<Application>().getExternalFilesDir(null), model)
+        val outputFile = File(
+            getApplication<Application>().getExternalFilesDir(null),
+            "${model.substringBeforeLast(".")}-$quantizeType.gguf"
+        )
+        return llamaAndroid.quantize(inputFile.absolutePath, outputFile.absolutePath, quantizeType)
     }
 
     private var template by mutableStateOf("")
@@ -722,19 +768,43 @@ class MainViewModel @Inject constructor(
     var templates = mutableStateListOf<Template>()
         private set
 
-    fun addTemplate(template: Template) {
-        templates.add(template)
-    }
-
-    fun editTemplate(updated: Template) {
-        val index = templates.indexOfFirst { it.id == updated.id }
-        if (index != -1) {
-            templates[index] = updated
+    fun addTemplate(template: Template): Boolean {
+        return try {
+            templates.add(template)
+            userPreferencesRepository.saveTemplates(templates)
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 
-    fun deleteTemplate(template: Template) {
-        templates.removeAll { it.id == template.id }
+    fun editTemplate(updated: Template): Boolean {
+        val index = templates.indexOfFirst { it.id == updated.id }
+        return if (index != -1) {
+            try {
+                templates[index] = updated
+                userPreferencesRepository.saveTemplates(templates)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fun deleteTemplate(template: Template): Boolean {
+        val removed = templates.removeAll { it.id == template.id }
+        return if (removed) {
+            try {
+                userPreferencesRepository.saveTemplates(templates)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
     }
 
     fun clearLastQuickAction() {
@@ -967,6 +1037,7 @@ class MainViewModel @Inject constructor(
                 Log.e("MainViewModel", "Error loading contextLength, using default", e)
                 modelContextLength = 32768  // Increased for Qwen3 support
             }
+            maxContextLimit = modelContextLength
             
             try {
                 modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
@@ -1500,6 +1571,8 @@ class MainViewModel @Inject constructor(
      * Load a model by file path - wrapper for the load method
      */
     fun loadModel(modelPath: String) {
+        val modelName = modelPath.substringAfterLast("/")
+        supportsReasoning = allModels.find { it["name"] == modelName }?.get("supportsReasoning") == "true"
         load(modelPath, modelThreadCount)
     }
     
@@ -1508,6 +1581,7 @@ class MainViewModel @Inject constructor(
      */
     fun loadModelByName(modelName: String, directory: File) {
         Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
+        supportsReasoning = allModels.find { it["name"] == modelName }?.get("supportsReasoning") == "true"
         val modelFile = File(directory, modelName)
         if (modelFile.exists()) {
             Log.d(tag, "Model file exists at: ${modelFile.absolutePath}")
@@ -1550,7 +1624,7 @@ class MainViewModel @Inject constructor(
         return input.replace("\\s+".toRegex(), " ")
     }
 
-    private fun persistChat() {
+    fun persistChat() {
         val title = messages.firstOrNull { it["role"] == "user" }?.get("content")?.take(64) ?: "Chat"
         val baseChat = currentChat?.copy(title = title, updated = System.currentTimeMillis())
             ?: Chat(title = title)
@@ -1814,12 +1888,6 @@ data class ModelFile(
     val filename: String,
     val size: Long?,
     val quantType: String?
-)
-
-data class Template(
-    val id: Long = System.currentTimeMillis(),
-    val name: String,
-    val content: String
 )
 
 fun sentThreadsValue(){

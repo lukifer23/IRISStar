@@ -177,6 +177,31 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     }
                 }
 
+                item { SectionDivider() }
+
+                item {
+                    SettingSection(
+                        title = "Context Length",
+                        description = "Maximum context window size (512 - 32768)"
+                    ) {
+                        Text(
+                            text = "${viewModel.modelContextLength}",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Slider(
+                            value = viewModel.modelContextLength.toFloat(),
+                            onValueChange = { viewModel.modelContextLength = it.toInt() },
+                            valueRange = 512f..32768f,
+                            steps = 63,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    }
+                }
+
 
             }
         }
@@ -236,6 +261,7 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     if(viewModel.loadedModelName.value == "") {
                         Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
                     } else {
+                        viewModel.updateModelSettings(contextLength = viewModel.modelContextLength)
                         viewModel.currentDownloadable?.destination?.path?.let {
                             viewModel.load(it, viewModel.user_thread.toInt())
                             Toast.makeText(context, "Changes have been saved", Toast.LENGTH_SHORT).show()
