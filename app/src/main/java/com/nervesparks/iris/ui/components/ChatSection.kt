@@ -47,7 +47,7 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                     "codeBlock" -> CodeBlockMessage(content)
                     "assistant" -> {
                         val (reasoningContent, _) = ReasoningParser.parse(content)
-                        if (reasoningContent.isNotEmpty() || viewModel.showThinkingTokens) {
+                        if (viewModel.supportsReasoning && reasoningContent.isNotEmpty()) {
                             ThinkingMessage(
                                 message = content,
                                 viewModel = viewModel,

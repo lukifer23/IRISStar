@@ -109,6 +109,9 @@ class MainViewModel @Inject constructor(
     var showThinkingTokens by mutableStateOf(true)
     var thinkingTokenStyle by mutableStateOf("COLLAPSIBLE") // COLLAPSIBLE, ALWAYS_VISIBLE, HIDDEN
 
+    // Flag indicating if the currently loaded model supports reasoning tokens
+    var supportsReasoning by mutableStateOf(false)
+
     var downloadableModels by mutableStateOf<List<Downloadable>>(emptyList())
         private set
 
@@ -1488,6 +1491,8 @@ class MainViewModel @Inject constructor(
      * Load a model by file path - wrapper for the load method
      */
     fun loadModel(modelPath: String) {
+        val modelName = modelPath.substringAfterLast("/")
+        supportsReasoning = allModels.find { it["name"] == modelName }?.get("supportsReasoning") == "true"
         load(modelPath, modelThreadCount)
     }
     
@@ -1496,6 +1501,7 @@ class MainViewModel @Inject constructor(
      */
     fun loadModelByName(modelName: String, directory: File) {
         Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
+        supportsReasoning = allModels.find { it["name"] == modelName }?.get("supportsReasoning") == "true"
         val modelFile = File(directory, modelName)
         if (modelFile.exists()) {
             Log.d(tag, "Model file exists at: ${modelFile.absolutePath}")
