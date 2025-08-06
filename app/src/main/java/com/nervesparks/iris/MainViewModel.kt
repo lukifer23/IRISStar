@@ -1636,12 +1636,29 @@ class MainViewModel @Inject constructor(
                     val contextHandle = llamaAndroid.getContext()
                     val batchHandle = llamaAndroid.getBatch()
                     val samplerHandle = llamaAndroid.getSampler()
-                    
+
                     Log.d(tag, "Model handle: $modelHandle, Context handle: $contextHandle")
-                    
+
+                    // Verify that all handles are valid before proceeding
+                    if (modelHandle == 0L || contextHandle == 0L || batchHandle == 0L || samplerHandle == 0L) {
+                        Log.e(tag, "Model not loaded. Skipping comparative benchmark.")
+                        comparativeBenchmarkResults = mapOf("error" to "Model not loaded.")
+                        return@launch
+                    }
+
                     // Ensure we're on the correct thread where the library is loaded
-                    val resultsJson = withContext(Dispatchers.IO) {
-                        llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
+                    val resultsJson = try {
+                        withContext(Dispatchers.IO) {
+                            llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
+                        }
+                    } catch (e: IllegalStateException) {
+                        Log.e(tag, "Comparative benchmark failed", e)
+                        comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
+                        return@launch
+                    } catch (e: Exception) {
+                        Log.e(tag, "Comparative benchmark failed", e)
+                        comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
+                        return@launch
                     }
                 Log.d(tag, "Native benchmark returned: $resultsJson")
                 
