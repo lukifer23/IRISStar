@@ -1253,12 +1253,12 @@ class MainViewModel @Inject constructor(
                                         }
                                         handleToolCall(com.nervesparks.iris.data.ToolCall(tool, argsMap))
                                     } else {
+                                        // Store the full response (including thinking) in conversation history
                                         addMessage("assistant", it)
                                     }
                                 } catch (e: org.json.JSONException) {
-                                    // Clean the response by removing raw thinking tags
-                                    val cleanedResponse = cleanThinkingResponse(it)
-                                    addMessage("assistant", cleanedResponse)
+                                    // Store the full response (including thinking) in conversation history
+                                    addMessage("assistant", it)
                                 }
                             }
                         }

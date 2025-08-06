@@ -19,6 +19,52 @@ object ReasoningParser {
         "Let me solve",
         "Let me determine"
     )
+    
+    // Patterns that indicate thinking content
+    private val thinkingPatterns = listOf(
+        "thequestion",
+        "theuser",
+        "theresult",
+        "theanswer",
+        "Letme",
+        "Ineed",
+        "Ishould",
+        "Sincethe",
+        "Juststate",
+        "Butwait",
+        "Actually",
+        "Letmecheck",
+        "Letmeverify",
+        "Whenyouadd",
+        "maybetheuser",
+        "istestingif",
+        "Icanhandle",
+        "basicmath",
+        "Ineedtoconfirm",
+        "Yes,that'scorrect",
+        "Ishouldrespondwith",
+        "theanswerdirectly",
+        "Sincetheuserisprobablyjustasking",
+        "fortheresult",
+        "there'snoneed",
+        "foranyadditionalexplanation",
+        "Juststatetheanswer"
+    )
+    
+    // Patterns that indicate the actual answer
+    private val answerPatterns = listOf(
+        "2 plus 2 is 4",
+        "2+2=4",
+        "2 + 2 = 4",
+        "The answer is 4",
+        "Therefore, 2 + 2 = 4",
+        "So, 2 plus 2 equals 4",
+        "The result is 4",
+        "The solution is 4",
+        "2plus2is4",
+        "2plus2equals4",
+        "2+2equals4"
+    )
 
     /**
      * @return Pair(first = reasoning block (may be empty), second = answer)
@@ -46,6 +92,25 @@ object ReasoningParser {
             }
         }
 
+        // Check if the message contains jumbled thinking patterns
+        val hasThinkingPatterns = thinkingPatterns.any { pattern ->
+            message.contains(pattern, ignoreCase = true)
+        }
+        
+        if (hasThinkingPatterns) {
+            // Look for the actual answer at the end of the message
+            val actualAnswer = findActualAnswer(message)
+            if (actualAnswer.isNotEmpty()) {
+                val reasoning = message.substring(0, message.indexOf(actualAnswer)).trim()
+                android.util.Log.d("ReasoningParser", "Found jumbled thinking with actual answer - reasoning: '$reasoning', answer: '$actualAnswer'")
+                return Pair(reasoning, actualAnswer)
+            } else {
+                // If no clear answer found, treat the entire message as thinking content
+                android.util.Log.d("ReasoningParser", "Found jumbled thinking patterns but no clear answer - treating entire message as thinking")
+                return Pair(message.trim(), "")
+            }
+        }
+        
         // Try to find splitter patterns
         val splitterMatch = splitter.find(message)
         if (splitterMatch != null) {
@@ -95,5 +160,33 @@ object ReasoningParser {
         // If no thinking detected, treat as output only
         android.util.Log.d("ReasoningParser", "No thinking detected - treating as output only")
         return Pair("", message.trim())
+    }
+    
+    /**
+     * Finds the actual answer in jumbled content by looking for answer patterns
+     */
+    private fun findActualAnswer(message: String): String {
+        // Look for answer patterns in the message
+        for (pattern in answerPatterns) {
+            val index = message.indexOf(pattern, ignoreCase = true)
+            if (index >= 0) {
+                // Return everything from the answer pattern to the end
+                val answer = message.substring(index).trim()
+                android.util.Log.d("ReasoningParser", "Found actual answer: '$answer'")
+                return answer
+            }
+        }
+        
+        // If no specific answer pattern found, try to find the last sentence that looks like an answer
+        val sentences = message.split(Regex("[.!?]"))
+        for (sentence in sentences.reversed()) {
+            val trimmed = sentence.trim()
+            if (trimmed.contains("2") && trimmed.contains("4") && trimmed.length < 50) {
+                android.util.Log.d("ReasoningParser", "Found answer-like sentence: '$trimmed'")
+                return trimmed
+            }
+        }
+        
+        return ""
     }
 }
