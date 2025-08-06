@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nervesparks.iris.ui.theme.ComponentStyles
 
 @Composable
 fun MessageBubble(
@@ -36,7 +37,7 @@ fun MessageBubble(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -48,15 +49,15 @@ fun MessageBubble(
                     .clickable { onLongClick?.invoke() },
                 colors = CardDefaults.cardColors(containerColor = backgroundColor),
                 shape = RoundedCornerShape(
-                    topStart = 20.dp,
-                    topEnd = 20.dp,
-                    bottomStart = if (isUser) 4.dp else 20.dp,
-                    bottomEnd = if (isUser) 20.dp else 4.dp
+                    topStart = ComponentStyles.extraLargeCardShape.topStart,
+                    topEnd = ComponentStyles.extraLargeCardShape.topEnd,
+                    bottomStart = if (isUser) ComponentStyles.smallCardShape.bottomStart else ComponentStyles.extraLargeCardShape.bottomStart,
+                    bottomEnd = if (isUser) ComponentStyles.extraLargeCardShape.bottomEnd else ComponentStyles.smallCardShape.bottomEnd
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.smallElevation)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(ComponentStyles.defaultPadding)
                 ) {
                     Text(
                         text = message,
@@ -65,7 +66,7 @@ fun MessageBubble(
                     )
                     
                     if (timestamp != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                         Text(
                             text = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                                 .format(java.util.Date(timestamp)),
@@ -87,16 +88,16 @@ fun SystemMessageBubble(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding)
             .clickable { onLongClick?.invoke() },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = ComponentStyles.defaultCardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.smallElevation)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(ComponentStyles.defaultSpacing),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(

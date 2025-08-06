@@ -189,19 +189,19 @@ fun SettingsScreen(
                 Text(
                     text = "IRIS - On-Device LLM App",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Text(
                     text = "Version: 1.0.0",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Text(
                     text = "Built with llama.cpp",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

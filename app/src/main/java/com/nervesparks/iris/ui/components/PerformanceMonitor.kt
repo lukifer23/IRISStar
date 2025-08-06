@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.IrisStarTheme
 
 data class PerformanceMonitorState(
@@ -46,15 +47,15 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation),
+        shape = ComponentStyles.smallCardShape
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(ComponentStyles.defaultSpacing)
         ) {
             Text(
                 text = "Performance",
@@ -63,7 +64,7 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
                 fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
 
             // Compact metrics layout
             Row(
@@ -94,7 +95,7 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
 
             // Generation progress
             if (state.isGenerating) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallSpacing))
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,

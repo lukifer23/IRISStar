@@ -51,7 +51,7 @@ import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.data.HuggingFaceApiService
 import com.nervesparks.iris.data.UserPreferencesRepository
-import com.nervesparks.iris.ui.components.InfoModal
+import com.nervesparks.iris.ui.components.DownloadInfoModal
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.ModelCard
 import kotlinx.coroutines.Dispatchers
@@ -85,8 +85,10 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
     }
     if (viewModel.showAlert) {
         // Modal dialog to show download options
-        LoadingModal(viewModel)
-
+        LoadingModal(
+            message = "Loading Search Results",
+            onDismiss = { }
+        )
     }
     Column(
         modifier = Modifier
@@ -94,10 +96,13 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
-        InfoModal(
-            showDialog = viewModel.showDownloadInfoModal,
-            onDismiss = { viewModel.showDownloadInfoModal = false }
-        )
+        if (viewModel.showDownloadInfoModal) {
+            DownloadInfoModal(
+                title = "Download Information",
+                message = "Model downloads will appear in your device's download folder. You can then move them to the models directory.",
+                onDismiss = { viewModel.showDownloadInfoModal = false }
+            )
+        }
         // Search Input and Button Row
         Row(
             verticalAlignment = Alignment.CenterVertically,

@@ -30,6 +30,7 @@ import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.components.ThinkingMessage
 import com.nervesparks.iris.llm.ReasoningParser
+import com.nervesparks.iris.ui.theme.ComponentStyles
 
 
 @Composable
@@ -100,7 +101,7 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                 }
             }
         }
-        item { Spacer(modifier = Modifier.height(1.dp).fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(ComponentStyles.smallPadding).fillMaxWidth()) }
     }
 }
 
@@ -114,22 +115,22 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
         horizontalArrangement = if (role == "user") Arrangement.End else Arrangement.Start,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(ComponentStyles.smallPadding)
     ) {
         if (role == "assistant") MessageIcon(iconRes = R.drawable.logo, description = "Bot Icon")
 
         Box(
             modifier = Modifier
-                .padding(horizontal = 2.dp)
+                .padding(horizontal = ComponentStyles.smallPadding)
                 .background(
                     color = if (role == "user") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(20.dp)
+                    shape = ComponentStyles.pillShape
                 )
                 .combinedClickable(
                     onLongClick = onLongClick,
                     onClick = {}
                 )
-                .padding(16.dp)
+                .padding(ComponentStyles.defaultPadding)
         ) {
             Text(
                 text = message.removePrefix("```"),
@@ -145,7 +146,7 @@ private fun UserOrAssistantMessage(role: String, message: String, onLongClick: (
                 },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(20.dp)
+                    .size(ComponentStyles.defaultIconSize)
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
@@ -166,8 +167,8 @@ private fun CodeBlockMessage(content: String) {
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
+            .padding(horizontal = ComponentStyles.defaultSpacing, vertical = ComponentStyles.smallPadding)
+            .background(MaterialTheme.colorScheme.surfaceVariant, shape = ComponentStyles.smallCardShape)
             .fillMaxWidth()
     ) {
         IconButton(
@@ -175,7 +176,7 @@ private fun CodeBlockMessage(content: String) {
                 clipboardManager.setText(AnnotatedString(content.removePrefix("```")))
                 Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
             },
-            modifier = Modifier.align(Alignment.TopEnd).size(20.dp)
+            modifier = Modifier.align(Alignment.TopEnd).size(ComponentStyles.defaultIconSize)
         ) {
             Icon(
                 imageVector = Icons.Default.Check,
@@ -189,7 +190,7 @@ private fun CodeBlockMessage(content: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = FontFamily.Monospace
             ),
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(ComponentStyles.defaultPadding)
         )
     }
 }
@@ -199,7 +200,7 @@ private fun MessageIcon(iconRes: Int, description: String) {
     androidx.compose.foundation.Image(
         painter = androidx.compose.ui.res.painterResource(id = iconRes),
         contentDescription = description,
-        modifier = Modifier.size(20.dp)
+        modifier = Modifier.size(ComponentStyles.defaultIconSize)
     )
 }
 

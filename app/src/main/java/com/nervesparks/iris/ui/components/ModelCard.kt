@@ -17,6 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ThemedWarningButton
+import com.nervesparks.iris.ui.theme.SecondaryButton
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -47,21 +50,21 @@ fun ModelCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = ComponentStyles.smallPadding)
             .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(8.dp)
+                elevation = ComponentStyles.modalElevation,
+                shape = ComponentStyles.smallCardShape
             ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.largeElevation)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(ComponentStyles.defaultPadding)
         ) {
             Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()){
                 if (modelName == viewModel.loadedModelName.value) {
@@ -72,25 +75,25 @@ fun ModelCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = modelName,
                     style = MaterialTheme.typography.titleMedium
                 )
                 if (supportsReasoning) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
                     Text(
                         text = "Reasoning",
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 12.sp,
                         modifier = Modifier
-                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .background(MaterialTheme.colorScheme.primary, ComponentStyles.smallCardShape)
+                            .padding(horizontal = ComponentStyles.smallPadding, vertical = ComponentStyles.smallPadding)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -115,14 +118,13 @@ fun ModelCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.padding(5.dp))
+                Spacer(modifier = Modifier.padding(ComponentStyles.smallPadding))
 
                 if (showDeleteButton) {
                     File(extFilesDir, modelName).let { downloadable ->
                         if (downloadable.exists()) {
-                            Button(
-                                onClick = { showDeleteConfirmation = true },
-                                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
+                            ThemedWarningButton(
+                                onClick = { showDeleteConfirmation = true }
                             ) {
                                 Text(text = "Delete", color = MaterialTheme.colorScheme.onError)
                             }
@@ -130,13 +132,13 @@ fun ModelCard(
                             if (showDeleteConfirmation) {
                                 AlertDialog(
                                     textContentColor = MaterialTheme.colorScheme.onSurface,
-                                    containerColor =  MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.background(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surface),
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier.background(shape = ComponentStyles.smallCardShape, color = MaterialTheme.colorScheme.surface),
                                     onDismissRequest = { showDeleteConfirmation = false },
                                     title = { Text("Confirm Deletion", color = MaterialTheme.colorScheme.onSurface) },
                                     text = { Text("Are you sure you want to delete this model? The app will restart after deletion.") },
                                     confirmButton = {
-                                        Button(
+                                        ThemedWarningButton(
                                             onClick = {
                                                 if (modelName == viewModel.loadedModelName.value) {
                                                     viewModel.setDefaultModelName("")
@@ -149,15 +151,13 @@ fun ModelCard(
                                                 }
                                                 isDeleted = true
                                                 viewModel.refresh = true
-                                            },
-                                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+                                            }
                                         ) {
                                             Text("Delete")
                                         }
                                     },
                                     dismissButton = {
-                                        Button(
-                                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.secondary),
+                                        SecondaryButton(
                                             onClick = { showDeleteConfirmation = false }
                                         ) {
                                             Text("Cancel")
@@ -171,7 +171,7 @@ fun ModelCard(
             }
 
             if (showDeletedMessage) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = "Model Deleted",
                     color = MaterialTheme.colorScheme.error,
@@ -179,7 +179,7 @@ fun ModelCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
             if (modelName == viewModel.loadedModelName.value){
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val context = LocalContext.current
@@ -198,7 +198,7 @@ fun ModelCard(
                             unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
                     Text(
                         text = "Set as Default Model",
                         color = MaterialTheme.colorScheme.onSurface,
@@ -208,7 +208,7 @@ fun ModelCard(
             }
 
             File(extFilesDir, modelName).let {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = if (formatFileSize(File(extFilesDir, modelName).length()) != "0 Bytes") {
                         "Size: ${formatFileSize(File(extFilesDir, modelName).length())}"

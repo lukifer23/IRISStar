@@ -27,6 +27,13 @@ import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.HuggingFaceApiService
 import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ThemedModalSurface
+import com.nervesparks.iris.ui.theme.ThemedModalCard
+import com.nervesparks.iris.ui.theme.ThemedAccentButton
+import com.nervesparks.iris.ui.theme.ThemedSuccessButton
+import com.nervesparks.iris.ui.theme.ThemedWarningButton
+import com.nervesparks.iris.ui.theme.SemanticColors
 import kotlinx.coroutines.launch
 
 @Composable
@@ -46,89 +53,74 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
     }
 
     Dialog(onDismissRequest = {}) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = Color(0xFF1a1a2e),
+        ThemedModalSurface(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(ComponentStyles.defaultPadding)
                 .height(if (showSearch) 650.dp else 400.dp)
                 .fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
+                    .padding(ComponentStyles.largePadding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header
                 Text(
                     text = "Download Required",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
+                    color = SemanticColors.TextInverse,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = "Don't close or minimize the app!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = SemanticColors.TextInverse.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = "Download at least 1 model",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF0f3460),
+                    color = SemanticColors.ModalAccent,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
 
                 // Mode selection
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(12.dp)
+                ThemedModalCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(ComponentStyles.smallPadding),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        Button(
+                        ThemedAccentButton(
                             onClick = { showSearch = false },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (!showSearch) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
-                                contentColor = MaterialTheme.colorScheme.onTertiary
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f).padding(end = 4.dp)
+                            modifier = Modifier.weight(1f).padding(end = ComponentStyles.smallPadding)
                         ) {
                             Text("Default Models", style = MaterialTheme.typography.bodyMedium)
                         }
-                        Button(
+                        ThemedAccentButton(
                             onClick = { showSearch = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (showSearch) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
-                                contentColor = MaterialTheme.colorScheme.onTertiary
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f).padding(start = 4.dp)
+                            modifier = Modifier.weight(1f).padding(start = ComponentStyles.smallPadding)
                         ) {
                             Text("Search Models", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
 
                 if (!showSearch) {
                     // Default models list
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                     ) {
                         val filteredModels = models.filter { !it.destination.exists() }
                         Log.d("DownloadModal", "Total models: ${models.size}")
@@ -144,7 +136,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                     // Search interface
                     Column(
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
                     ) {
                         OutlinedTextField(
                             value = searchQuery,
@@ -152,18 +144,18 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             label = { Text("Search for models (e.g., 'qwen', 'llama')") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF0f3460),
-                                unfocusedBorderColor = Color(0xFF16213e),
-                                focusedLabelColor = Color(0xFF0f3460),
-                                unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedBorderColor = SemanticColors.ModalAccent,
+                                unfocusedBorderColor = SemanticColors.ModalSurface,
+                                focusedLabelColor = SemanticColors.ModalAccent,
+                                unfocusedLabelColor = SemanticColors.TextInverse.copy(alpha = 0.7f),
+                                focusedTextColor = SemanticColors.TextInverse,
+                                unfocusedTextColor = SemanticColors.TextInverse
                             ),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = ComponentStyles.textFieldShape,
                             singleLine = true
                         )
 
-                        Button(
+                        ThemedAccentButton(
                             onClick = {
                                 coroutineScope.launch {
                                     isSearching = true
@@ -226,29 +218,17 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF0f3460),
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(8.dp),
                             enabled = !isSearching && searchQuery.isNotEmpty()
                         ) {
                             Text(if (isSearching) "Searching..." else "Search Models")
                         }
 
                         searchError?.let { error ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFB71C1C)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                                shape = RoundedCornerShape(8.dp)
+                            ThemedWarningButton(
+                                onClick = { },
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(
-                                    text = error,
-                                    modifier = Modifier.padding(12.dp),
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Text(error)
                             }
                         }
 
@@ -256,12 +236,12 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             Text(
                                 text = "Found ${results.size} models:",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White,
+                                color = SemanticColors.TextInverse,
                                 fontWeight = FontWeight.Medium
                             )
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                             ) {
                                 items(results) { model ->
                                     SearchResultCard(model, dm, context)
@@ -277,24 +257,21 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
 
 @Composable
 private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, model: Downloadable) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+    ThemedModalCard(
+        modifier = Modifier.fillMaxWidth().padding(vertical = ComponentStyles.smallPadding)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(ComponentStyles.defaultPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = model.name,
-                color = Color.White,
+                color = SemanticColors.TextInverse,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.defaultSpacing))
             Downloadable.Button(viewModel, dm, model)
         }
     }
@@ -304,30 +281,27 @@ private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, mode
 private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, context: Context) {
     var showFileSelection by remember { mutableStateOf(false) }
     
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xff0f172a)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+    ThemedModalCard(
+        modifier = Modifier.fillMaxWidth().padding(vertical = ComponentStyles.smallPadding)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(ComponentStyles.defaultPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = model["modelName"] ?: "Unknown Model",
-                color = Color(0xFFbbbdbf),
+                color = SemanticColors.TextInverse.copy(alpha = 0.8f),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
             
             model["description"]?.takeIf { it.isNotEmpty() }?.let { description ->
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = SemanticColors.TextInverse.copy(alpha = 0.7f),
                     maxLines = 2,
                     textAlign = TextAlign.Center
                 )
@@ -340,50 +314,50 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                 Text(
                     text = "Downloads: ${model["downloads"] ?: "0"}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF0f3460)
+                    color = SemanticColors.ModalAccent
                 )
                 Text(
                     text = "Likes: ${model["likes"] ?: "0"}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF2196F3)
+                    color = SemanticColors.Info
                 )
             }
             
             model["tags"]?.takeIf { it.isNotEmpty() }?.let { tags ->
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = "Tags: $tags",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = SemanticColors.TextInverse.copy(alpha = 0.6f),
                     maxLines = 1,
                     textAlign = TextAlign.Center
                 )
             }
             
             model["files"]?.takeIf { it != "File details not available" }?.let { files ->
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = "Available Files:",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF0f3460),
+                    color = SemanticColors.ModalAccent,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = files,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.LightGray,
+                    color = SemanticColors.TextInverse.copy(alpha = 0.7f),
                     maxLines = 3,
                     textAlign = TextAlign.Center
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.defaultSpacing))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
             ) {
-                Button(
+                ThemedAccentButton(
                     onClick = {
                         val modelId = model["modelId"] ?: ""
                         val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -391,24 +365,14 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                         clipboardManager.setPrimaryClip(clip)
                         Toast.makeText(context, "Model ID copied! Search for '$modelId' in the Models screen to download specific files.", Toast.LENGTH_LONG).show()
                     },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0f3460),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Copy Model ID")
                 }
                 
-                Button(
+                ThemedAccentButton(
                     onClick = { showFileSelection = !showFileSelection },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (showFileSelection) Color(0xFF16213e) else Color(0xFF0f3460),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(if (showFileSelection) "Hide Files" else "Select File")
                 }
@@ -416,23 +380,21 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
             
             // File selection dropdown
             if (showFileSelection) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 model["files"]?.takeIf { it != "File details not available" }?.let { files ->
                     val fileList = files.split("\n").filter { it.contains(".gguf") }
                     LazyColumn(
                         modifier = Modifier.height(120.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                     ) {
                         items(fileList) { file ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF16213e)),
-                                shape = RoundedCornerShape(8.dp)
+                            ThemedModalCard(
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(8.dp),
+                                        .padding(ComponentStyles.defaultPadding),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(
@@ -441,11 +403,11 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                                         Text(
                                             text = file,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color.White,
+                                            color = SemanticColors.TextInverse,
                                             maxLines = 1
                                         )
                                     }
-                                    Button(
+                                    ThemedAccentButton(
                                         onClick = {
                                             try {
                                                 val modelId = model["modelId"] ?: ""
@@ -466,12 +428,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                                                 Log.e("DownloadModal", "Download failed for $file", e)
                                                 Toast.makeText(context, "Download failed: ${e.message}", Toast.LENGTH_LONG).show()
                                             }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF0f3460),
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(4.dp)
+                                        }
                                     ) {
                                         Text("Download")
                                     }

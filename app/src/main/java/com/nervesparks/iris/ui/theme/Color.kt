@@ -51,3 +51,53 @@ val DarkOnSurface = Color(0xFFE6E1E5)
 val DarkSurfaceVariant = Color(0xFF49454F)
 val DarkOnSurfaceVariant = Color(0xFFCAC4D0)
 val DarkOutline = Color(0xFF938F99)
+
+// Semantic Color Tokens for consistent usage across components
+object SemanticColors {
+    // Status colors
+    val Success = Color(0xFF4CAF50)
+    val Warning = Color(0xFFFF9800)
+    val Info = Color(0xFF2196F3)
+    
+    // Interactive states
+    val Hover = Color(0xFFE3F2FD)
+    val Pressed = Color(0xFFBBDEFB)
+    val Disabled = Color(0xFFE0E0E0)
+    
+    // Special purpose colors (replacing hardcoded values)
+    val ModalBackground = Color(0xFF1a1a2e)
+    val ModalSurface = Color(0xFF16213e)
+    val ModalAccent = Color(0xFF0f3460)
+    val LoadingBackground = Color(0xFF01081a)
+    val LoadingAccent = Color(0xFF17246a)
+    val DownloadSurface = Color(0xFF233340)
+    
+    // Text variants
+    val TextPrimary = Color(0xFF1C1B1F)
+    val TextSecondary = Color(0xFF49454F)
+    val TextDisabled = Color(0xFF9E9E9E)
+    val TextInverse = Color(0xFFFFFFFF)
+    
+    // Border and divider colors
+    val BorderPrimary = Color(0xFF79747E)
+    val BorderSecondary = Color(0xFFE7E0EC)
+    val Divider = Color(0xFFE0E0E0)
+}
+
+// Extension functions for semantic color access
+fun androidx.compose.material3.ColorScheme.semanticSuccess() = SemanticColors.Success
+fun androidx.compose.material3.ColorScheme.semanticWarning() = SemanticColors.Warning
+fun androidx.compose.material3.ColorScheme.semanticInfo() = SemanticColors.Info
+fun androidx.compose.material3.ColorScheme.semanticHover() = SemanticColors.Hover
+fun androidx.compose.material3.ColorScheme.semanticPressed() = SemanticColors.Pressed
+fun androidx.compose.material3.ColorScheme.semanticDisabled() = SemanticColors.Disabled
+fun androidx.compose.material3.ColorScheme.semanticModalBackground() = SemanticColors.ModalBackground
+fun androidx.compose.material3.ColorScheme.semanticModalSurface() = SemanticColors.ModalSurface
+fun androidx.compose.material3.ColorScheme.semanticModalAccent() = SemanticColors.ModalAccent
+fun androidx.compose.material3.ColorScheme.semanticLoadingBackground() = SemanticColors.LoadingBackground
+fun androidx.compose.material3.ColorScheme.semanticLoadingAccent() = SemanticColors.LoadingAccent
+fun androidx.compose.material3.ColorScheme.semanticDownloadSurface() = SemanticColors.DownloadSurface
+fun androidx.compose.material3.ColorScheme.semanticTextPrimary() = SemanticColors.TextPrimary
+fun androidx.compose.material3.ColorScheme.semanticTextSecondary() = SemanticColors.TextSecondary
+fun androidx.compose.material3.ColorScheme.semanticTextDisabled() = SemanticColors.TextDisabled
+fun androidx.compose.material3.ColorScheme.semanticTextInverse() = SemanticColors.TextInverse

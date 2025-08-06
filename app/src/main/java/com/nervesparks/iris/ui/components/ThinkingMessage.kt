@@ -23,8 +23,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.MarkdownTextComponent
+import com.nervesparks.iris.ui.theme.ComponentStyles
 
 @Composable
 fun ThinkingMessage(
@@ -61,13 +63,13 @@ fun ThinkingMessage(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = ComponentStyles.extraLargeCardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.smallElevation)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(ComponentStyles.defaultPadding)
         ) {
             // Header with thinking indicator
             Row(
@@ -78,10 +80,10 @@ fun ThinkingMessage(
                     imageVector = Icons.Default.Info,
                     contentDescription = "Thinking",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
                 )
                 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
                 
                 Text(
                     text = "AI Reasoning",
@@ -102,7 +104,7 @@ fun ThinkingMessage(
                     ) {
                         val rotation by animateFloatAsState(
                             targetValue = if (isThinkingExpanded) 180f else 0f,
-                            animationSpec = tween(durationMillis = 300)
+                            animationSpec = tween(durationMillis = ComponentStyles.defaultAnimationDuration)
                         )
                         Icon(
                             imageVector = if (isThinkingExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -117,20 +119,20 @@ fun ThinkingMessage(
             // Thinking content (collapsible) - Only show if thinking content exists and is expanded
             AnimatedVisibility(
                 visible = isThinkingExpanded && thinkingContent.isNotEmpty(),
-                enter = expandVertically(animationSpec = tween(300)),
-                exit = shrinkVertically(animationSpec = tween(300))
+                enter = expandVertically(animationSpec = tween(ComponentStyles.defaultAnimationDuration)),
+                exit = shrinkVertically(animationSpec = tween(ComponentStyles.defaultAnimationDuration))
             ) {
                 android.util.Log.d("ThinkingMessage", "Rendering thinking content: expanded=$isThinkingExpanded, hasContent=${thinkingContent.isNotEmpty()}")
                 if (thinkingContent.isNotEmpty()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
+                            .padding(top = ComponentStyles.smallPadding),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ComponentStyles.defaultCardShape
                     ) {
                         Column(
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(ComponentStyles.defaultSpacing)
                         ) {
                             Text(
                                 text = "Internal Reasoning:",
@@ -138,12 +140,13 @@ fun ThinkingMessage(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                             Text(
-                                text = thinkingContent,
+                                text = formatThinkingContent(thinkingContent),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                lineHeight = 18.sp
                             )
                         }
                     }
@@ -152,16 +155,16 @@ fun ThinkingMessage(
             
             // Output content
             if (outputContent.isNotEmpty() || thinkingContent.isEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onLongClick() },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = ComponentStyles.defaultCardShape
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(ComponentStyles.defaultSpacing)
                     ) {
                         Text(
                             text = "Response:",
@@ -169,7 +172,7 @@ fun ThinkingMessage(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                         MarkdownTextComponent(
                             markdown = if (outputContent.isNotEmpty()) outputContent else message
                         )
@@ -182,7 +185,7 @@ fun ThinkingMessage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = ComponentStyles.smallPadding),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -208,4 +211,18 @@ fun ThinkingMessage(
             }
         }
     }
+}
+
+/**
+ * Formats thinking content to make it more readable
+ */
+private fun formatThinkingContent(content: String): String {
+    return content
+        .replace(Regex("([.!?])([A-Z])"), "$1\n$2") // Add line breaks after sentences
+        .replace(Regex("([.!?])([a-z])"), "$1 $2") // Add spaces after sentences
+        .replace(Regex("([a-z])([A-Z])"), "$1 $2") // Add spaces between camelCase
+        .replace(Regex("([a-z])([0-9])"), "$1 $2") // Add spaces between letters and numbers
+        .replace(Regex("([0-9])([a-zA-Z])"), "$1 $2") // Add spaces between numbers and letters
+        .replace(Regex("\\s+"), " ") // Normalize multiple spaces
+        .trim()
 }

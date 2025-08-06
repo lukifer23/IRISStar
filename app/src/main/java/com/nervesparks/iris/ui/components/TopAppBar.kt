@@ -22,6 +22,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.ModernIconButton
+import com.nervesparks.iris.ui.theme.ThemedModalCard
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,7 +54,8 @@ fun ModernTopAppBar(
                 Icon(
                     imageVector = Icons.Default.Menu,
                     contentDescription = "Menu",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
                 )
             }
         },
@@ -69,7 +71,7 @@ fun ModernTopAppBar(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = ComponentStyles.smallCardShape,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation)
                 ) {
                     Row(
                         modifier = Modifier.padding(
@@ -82,7 +84,7 @@ fun ModernTopAppBar(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(ComponentStyles.smallIconSize)
                         )
                         Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                         Text(
@@ -93,12 +95,12 @@ fun ModernTopAppBar(
                             maxLines = 1, // Ensure single line
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // Add ellipsis
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Select Model",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(ComponentStyles.smallIconSize)
                         )
                     }
                 }
@@ -140,29 +142,24 @@ private fun ModelSelectionDropdown(
             dismissOnClickOutside = true
         )
     ) {
-        Card(
+        ThemedModalCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(ComponentStyles.defaultPadding),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding)
             ) {
                 Text(
                     text = "Select Model",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
                 )
                 
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                 ) {
                     items(availableModels) { model ->
                         val isCurrentModel = model == currentModel
@@ -177,12 +174,12 @@ private fun ModelSelectionDropdown(
                                 else 
                                     MaterialTheme.colorScheme.surfaceVariant
                             ),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = ComponentStyles.smallCardShape
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(ComponentStyles.defaultSpacing),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -202,7 +199,7 @@ private fun ModelSelectionDropdown(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = "Current Model",
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
                                     )
                                 }
                             }

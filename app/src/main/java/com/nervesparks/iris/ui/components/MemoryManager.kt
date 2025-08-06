@@ -5,99 +5,46 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ModernCard
+import com.nervesparks.iris.ui.theme.PrimaryButton
 
 @Composable
 fun MemoryManager(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
-    var memoryUsage by remember { mutableStateOf(0L) }
-    var isOptimizing by remember { mutableStateOf(false) }
-    
-    // Update memory usage periodically
-    LaunchedEffect(Unit) {
-        while (true) {
-            try {
-                memoryUsage = viewModel.getMemoryUsage()
-            } catch (e: Exception) {
-                // Handle error silently
-            }
-            kotlinx.coroutines.delay(5000) // Update every 5 seconds
-        }
-    }
-    
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ModernCard(
+        modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(ComponentStyles.defaultSpacing)
         ) {
             Text(
                 text = "Memory Management",
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
+            
+            Text(
+                text = "Clear conversation history and free up memory",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.defaultSpacing))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            PrimaryButton(
+                onClick = { viewModel.clear() },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
-                    Text(
-                        text = "Memory Usage",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${memoryUsage / (1024 * 1024)} MB",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            isOptimizing = true
-                            viewModel.optimizeMemory()
-                            isOptimizing = false
-                        },
-                        enabled = !isOptimizing,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(
-                            text = if (isOptimizing) "Optimizing..." else "Optimize",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    
-                    if (viewModel.isModelLoaded()) {
-                        Button(
-                            onClick = { viewModel.unloadCurrentModel() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text(
-                                text = "Unload Model",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
+                Text("Clear Chat History")
             }
         }
     }

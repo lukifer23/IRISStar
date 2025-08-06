@@ -1,10 +1,7 @@
 package com.nervesparks.iris.ui.screens
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
@@ -32,6 +29,8 @@ import com.nervesparks.iris.ui.components.ModernChatInput
 import com.nervesparks.iris.ui.components.ModernTopAppBar
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.navigation.AppDestinations
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.PrimaryButton
 import kotlinx.coroutines.launch
 
 @Composable
@@ -41,22 +40,28 @@ fun NavDrawer(
     onNewChat: () -> Unit,
     onSettings: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(ComponentStyles.defaultPadding)) {
         Text(
             text = "IRIS",
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
         )
-        Button(onClick = {
-            onNewChat()
-            onCloseDrawer()
-        }) {
+        PrimaryButton(
+            onClick = {
+                onNewChat()
+                onCloseDrawer()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("New Chat")
         }
-        Button(onClick = {
-            onSettings()
-            onCloseDrawer()
-        }) {
+        PrimaryButton(
+            onClick = {
+                onSettings()
+                onCloseDrawer()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Settings")
         }
     }

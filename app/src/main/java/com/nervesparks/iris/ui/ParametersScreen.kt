@@ -69,7 +69,10 @@ fun ParametersScreen(viewModel: MainViewModel) {
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             if (viewModel.showAlert) {
-                LoadingModal(viewModel)
+                LoadingModal(
+                    message = "Loading Parameters",
+                    onDismiss = { }
+                )
             }
             LazyColumn(
                 modifier = Modifier

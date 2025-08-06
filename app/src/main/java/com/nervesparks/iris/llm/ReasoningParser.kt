@@ -6,7 +6,19 @@ package com.nervesparks.iris.llm
  */
 object ReasoningParser {
     private val tagRegex = Regex("<think>([\\s\\S]*?)</think>", RegexOption.IGNORE_CASE)
-    private val splitter = Regex("(?:The answer is:|Therefore,|Answer:|Result:)", RegexOption.IGNORE_CASE)
+    private val splitter = Regex("(?:The answer is:|Therefore,|Answer:|Result:|So,|Thus,|Hence,)", RegexOption.IGNORE_CASE)
+    private val thinkingIndicators = listOf(
+        "Let me think",
+        "Let me analyze",
+        "Let me consider",
+        "I need to think",
+        "Let me work through",
+        "Let me break this down",
+        "Let me figure out",
+        "Let me calculate",
+        "Let me solve",
+        "Let me determine"
+    )
 
     /**
      * @return Pair(first = reasoning block (may be empty), second = answer)
@@ -34,18 +46,54 @@ object ReasoningParser {
             }
         }
 
-        val idx = splitter.find(message)?.range?.first ?: -1
-        return if (idx >= 0) {
-            val reasoning = message.substring(0, idx).trim()
-            val answer = message.substring(idx).replace(splitter, "").trim()
+        // Try to find splitter patterns
+        val splitterMatch = splitter.find(message)
+        if (splitterMatch != null) {
+            val reasoning = message.substring(0, splitterMatch.range.first).trim()
+            val answer = message.substring(splitterMatch.range.last + 1).trim()
             android.util.Log.d("ReasoningParser", "Found splitter - reasoning: '$reasoning', answer: '$answer'")
-            Pair(reasoning, answer)
-        } else if (message.contains("Let me think", ignoreCase = true)) {
-            android.util.Log.d("ReasoningParser", "Found 'Let me think' - treating as reasoning")
-            Pair(message.trim(), "")
-        } else {
-            android.util.Log.d("ReasoningParser", "No thinking detected - treating as output only")
-            Pair("", message.trim())
+            return Pair(reasoning, answer)
         }
+        
+        // Check for thinking indicators
+        val thinkingIndicator = thinkingIndicators.find { indicator ->
+            message.contains(indicator, ignoreCase = true)
+        }
+        
+        if (thinkingIndicator != null) {
+            // Find the end of thinking content by looking for common answer patterns
+            val answerPatterns = listOf(
+                "The answer is",
+                "Therefore,",
+                "So,",
+                "Thus,",
+                "Hence,",
+                "In conclusion",
+                "To answer your question",
+                "The result is",
+                "The solution is"
+            )
+            
+            val thinkingStart = message.indexOf(thinkingIndicator, ignoreCase = true)
+            val answerStart = answerPatterns.mapNotNull { pattern ->
+                message.indexOf(pattern, ignoreCase = true).takeIf { it > thinkingStart }
+            }.minOrNull()
+            
+            if (answerStart != null) {
+                val reasoning = message.substring(thinkingStart, answerStart).trim()
+                val answer = message.substring(answerStart).trim()
+                android.util.Log.d("ReasoningParser", "Found thinking indicator - reasoning: '$reasoning', answer: '$answer'")
+                return Pair(reasoning, answer)
+            } else {
+                // If no clear answer pattern found, treat everything after thinking indicator as reasoning
+                val reasoning = message.substring(thinkingStart).trim()
+                android.util.Log.d("ReasoningParser", "Found thinking indicator but no clear answer - treating as reasoning only")
+                return Pair(reasoning, "")
+            }
+        }
+        
+        // If no thinking detected, treat as output only
+        android.util.Log.d("ReasoningParser", "No thinking detected - treating as output only")
+        return Pair("", message.trim())
     }
 }

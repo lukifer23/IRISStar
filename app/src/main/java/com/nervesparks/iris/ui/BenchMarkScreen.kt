@@ -15,6 +15,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.PrimaryButton
+import com.nervesparks.iris.ui.theme.ModernCard
 import kotlinx.coroutines.launch
 
 data class BenchmarkState(
@@ -37,7 +40,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(ComponentStyles.defaultPadding)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -46,48 +49,38 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             "Benchmark Information",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
         )
 
         // Device Info Card
-        Card(
+        ModernCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(bottom = ComponentStyles.defaultPadding)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding)
             ) {
                 deviceInfo.lines().forEach { line ->
-                    Text(line, modifier = Modifier.padding(vertical = 2.dp))
+                    Text(line, modifier = Modifier.padding(vertical = ComponentStyles.smallPadding))
                 }
             }
         }
         val context = LocalContext.current
         // Benchmark Button
 
-        androidx.compose.material3.Button(
-            modifier =Modifier.padding(vertical = 8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            shape = RoundedCornerShape(8.dp),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 6.dp,
-                pressedElevation = 3.dp
-            ),
+        PrimaryButton(
+            modifier = Modifier.padding(vertical = ComponentStyles.smallPadding),
             onClick = {
                 if(viewModel.loadedModelName.value == ""){
-
                     Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
                 }
                 else{
-                state = state.copy(showConfirmDialog = true) }},
+                    state = state.copy(showConfirmDialog = true)
+                }
+            },
             enabled = !state.isRunning,
-        )
-        {
+        ) {
             Text(if (state.isRunning) "Benchmarking..." else "Start Benchmark", color = MaterialTheme.colorScheme.onPrimary)
         }
 
@@ -95,34 +88,33 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
         if (state.isRunning) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding)
             ) {
                 CircularProgressIndicator()
                 Text(
                     "Benchmarking in progress...",
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = ComponentStyles.smallPadding)
                 )
             }
         }
 
         // Results Section
         if (state.results.isNotEmpty()) {
-            Card(
+            ModernCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .padding(vertical = ComponentStyles.defaultPadding)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(ComponentStyles.defaultPadding)) {
                     Text(
                         "Benchmark Results",
                         style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = ComponentStyles.smallPadding)
                     )
                     state.results.forEach { result ->
                         Text(
                             result,
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = ComponentStyles.smallPadding)
                         )
                     }
                 }
@@ -138,7 +130,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(ComponentStyles.defaultPadding)
         )
 
         // Error Display
@@ -146,7 +138,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             Text(
                 error,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(ComponentStyles.defaultPadding)
             )
         }
     }

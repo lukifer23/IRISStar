@@ -29,6 +29,7 @@ import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.ModelCard
+import com.nervesparks.iris.ui.theme.ComponentStyles
 import java.io.File
 
 @Composable
@@ -44,40 +45,43 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
     Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
         if (viewModel.showAlert) {
             // Modal dialog to show download options
-            LoadingModal(viewModel)
+            LoadingModal(
+                message = "Loading Model",
+                onDismiss = { }
+            )
         }
 
         val suggestedModels = viewModel.allModels.filter { it["supportsReasoning"] == "true" }.take(3)
 
-        LazyColumn(modifier = Modifier.padding(horizontal = 15.dp)) {
+        LazyColumn(modifier = Modifier.padding(horizontal = ComponentStyles.defaultPadding)) {
             item {
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(horizontal = ComponentStyles.defaultSpacing, vertical = ComponentStyles.smallPadding)
                             .clickable {
                                 onSearchResultButtonClick()
                             }
                     ) {
                         Icon(
-                            modifier = Modifier.size(20.dp), // Icon size
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.search_svgrepo_com__3_),
                             contentDescription = "Parameters",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(ComponentStyles.defaultSpacing))
                         Text(
                             text = "Search Hugging-Face Models",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 18.sp,
                             modifier = Modifier
-                                .padding(vertical = 12.dp, horizontal = 7.dp)
+                                .padding(vertical = ComponentStyles.defaultSpacing, horizontal = ComponentStyles.smallPadding)
                         )
                         Spacer(Modifier.weight(1f))
                         Icon(
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.right_arrow_svgrepo_com),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurface,
@@ -87,28 +91,28 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(horizontal = ComponentStyles.defaultSpacing, vertical = ComponentStyles.smallPadding)
                             .clickable {
                                 onQuantizeScreenButtonClicked()
                             }
                     ) {
                         Icon(
-                            modifier = Modifier.size(20.dp), // Icon size
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.ic_quantize),
                             contentDescription = "Quantize",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(ComponentStyles.defaultSpacing))
                         Text(
                             text = "Quantize Models",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 18.sp,
                             modifier = Modifier
-                                .padding(vertical = 12.dp, horizontal = 7.dp)
+                                .padding(vertical = ComponentStyles.defaultSpacing, horizontal = ComponentStyles.smallPadding)
                         )
                         Spacer(Modifier.weight(1f))
                         Icon(
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.right_arrow_svgrepo_com),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurface,
@@ -117,15 +121,15 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                     Divider(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.outline, // Set the color of the divider
-                        thickness = 1.dp
+                        color = MaterialTheme.colorScheme.outline,
+                        thickness = ComponentStyles.defaultBorderWidth
                     )
-                    Spacer(Modifier.height(25.dp))
+                    Spacer(Modifier.height(ComponentStyles.largePadding))
                     // Suggested Models Section
                     Text(
                         text = "Suggested Models",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(5.dp),
+                        modifier = Modifier.padding(ComponentStyles.smallPadding),
                         fontSize = 18.sp
                     )
                 }
@@ -151,8 +155,8 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.outline, // Set the color of the divider
-                    thickness = 1.dp
+                    color = MaterialTheme.colorScheme.outline,
+                    thickness = ComponentStyles.defaultBorderWidth
                 )
             }
 
@@ -161,7 +165,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 Text(
                     text = "My Models",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(5.dp),
+                    modifier = Modifier.padding(ComponentStyles.smallPadding),
                     fontSize = 18.sp
                 )
             }
@@ -187,7 +191,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                     Text(
                         text = "No models to show",
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 8.dp, start = 2.dp)
+                        modifier = Modifier.padding(top = ComponentStyles.smallPadding, start = ComponentStyles.smallPadding)
                     )
                 }
             }

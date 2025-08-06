@@ -22,6 +22,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.R
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.ThemedChatInputField
+import com.nervesparks.iris.ui.theme.ModernIconButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,84 +58,75 @@ fun ModernChatInput(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shadowElevation = 8.dp,
+        shadowElevation = ComponentStyles.modalElevation,
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
+                ModernIconButton(
                     onClick = {
                         showAttachmentDialog = true
                         onAttachmentClick()
                     },
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
                 ) {
                     Icon(
                         imageVector = Icons.Default.AddCircle,
                         contentDescription = "Attach",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
                     )
                 }
 
-                IconButton(
+                ModernIconButton(
                     onClick = onCodeClick,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Code,
                         contentDescription = "Code",
                         tint = if (isCodeMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
                     )
                 }
 
-                                IconButton(
+                ModernIconButton(
                     onClick = { showTranslationDialog = true },
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Translate,
                         contentDescription = "Translate",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
                     )
                 }
 
-                IconButton(
+                ModernIconButton(
                     onClick = onWebSearchClick,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Web Search",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
                     )
                 }
 
-                TextField(
+                ThemedChatInputField(
                     value = value,
                     onValueChange = onValueChange,
                     modifier = Modifier
                         .weight(1f)
                         .focusRequester(focusRequester),
                     placeholder = { Text(placeholder) },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor =  MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(20.dp),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Send
@@ -143,13 +137,13 @@ fun ModernChatInput(
                     enabled = enabled,
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
 
                 if (value.isNotBlank()) {
                     IconButton(
                         onClick = onSend,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(ComponentStyles.defaultIconSize)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                     ) {
@@ -160,15 +154,15 @@ fun ModernChatInput(
                         )
                     }
                 } else {
-                    IconButton(
+                    ModernIconButton(
                         onClick = onVoiceClick,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.mic_svgrepo_com),
                             contentDescription = "Voice Input",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize)
                         )
                     }
                 }
@@ -186,8 +180,6 @@ fun ModernChatInput(
     }
 }
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AttachmentBottomSheet(
@@ -200,12 +192,12 @@ private fun AttachmentBottomSheet(
         onDismissRequest = onDismiss,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(ComponentStyles.defaultPadding)
         ) {
             Text(
                 text = "Choose attachment",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
             )
 
             AttachmentOption(
@@ -248,17 +240,17 @@ private fun AttachmentOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+            .padding(vertical = ComponentStyles.defaultSpacing, horizontal = ComponentStyles.defaultPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = text,
             tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(ComponentStyles.defaultIconSize)
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(ComponentStyles.defaultPadding))
 
         Text(
             text = text,

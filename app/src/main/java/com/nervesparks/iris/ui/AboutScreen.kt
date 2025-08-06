@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nervesparks.iris.ui.theme.ComponentStyles
 
 
 @Composable
@@ -35,7 +36,7 @@ fun AboutScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(ComponentStyles.defaultPadding)
     ) {
         item {
             SectionHeader(text = "Welcome to Iris")
@@ -47,7 +48,7 @@ fun AboutScreen() {
                 color = MaterialTheme.colorScheme.onBackground,
                 lineHeight = 24.sp
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.largePadding))
         }
 
         item {
@@ -59,7 +60,7 @@ fun AboutScreen() {
         }
 
         item {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ComponentStyles.largePadding))
             SectionHeader(text = "FAQs")
         }
 
@@ -79,7 +80,7 @@ private fun SectionHeader(
         fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier.padding(bottom = 12.dp)
+        modifier = modifier.padding(bottom = ComponentStyles.defaultSpacing)
     )
 }
 
@@ -89,11 +90,11 @@ private fun FeatureItem(feature: String) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = ComponentStyles.smallPadding)
     ) {
         Box(
             modifier = Modifier
-                .size(20.dp)
+                .size(ComponentStyles.defaultIconSize)
                 .background(MaterialTheme.colorScheme.primary, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
@@ -101,88 +102,55 @@ private fun FeatureItem(feature: String) {
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(ComponentStyles.smallIconSize)
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(ComponentStyles.defaultSpacing))
         Text(
             text = feature,
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 24.sp
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
 
 @Composable
-private fun FaqItem(
-    question: String,
-    answer: String
-) {
+private fun FaqItem(question: String, answer: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = ComponentStyles.smallPadding)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .background(MaterialTheme.colorScheme.secondary, shape = CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondary,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = question,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 24.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = question,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = ComponentStyles.smallPadding)
+        )
         Text(
             text = answer,
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onBackground,
             lineHeight = 20.sp,
-            modifier = Modifier.padding(start = 32.dp)  // Aligned with question text
+            modifier = Modifier.padding(start = ComponentStyles.extraLargePadding)
         )
     }
 }
 
 private val features = listOf(
-    "Offline Functionality: Runs without the need for an internet connection.",
-    "Privacy First: All data is processed locally on your device.",
-    "Customizable Models: Download and use your preferred AI model with ease.",
-    "Open Source: Built on the foundations of the llama.cpp Android example, enabling developers to contribute and modify."
+    "Offline AI Chat",
+    "Privacy-First Design",
+    "Multiple Model Support",
+    "Customizable Parameters",
+    "Code Generation",
+    "Markdown Support"
 )
 
 private val faqs = listOf(
-    "What is llama.cpp?" to "llama.cpp is an open-source project that enables running large language models (LLMs) on edge devices such as smartphones and laptops.",
-    "Do I need an internet connection to use this app?" to "Yes, but only to download models to your device. After that, the app operates entirely offline. All operations are performed locally on your device.",
-    "Which AI models are supported?" to "The app supports GGUF models. You can download and integrate them as needed.",
-    "Is my data safe while using this app?" to "Yes, since the app works offline, no data is transmitted to external servers, ensuring complete privacy.",
-    "How do I change parameters?" to "You can adjust thread parameters to modify the text generation speed by navigating to:\n" +
-            "Settings > Change Parameters > Modify the parameters > Save changes.",
-    "How do I download models online?" to "You can download models from Hugging Face by providing the gguf model names:\n" +
-            "\n" +
-            "Go to Settings > Models.\n" +
-            "Click on Search Hugging Face Models.\n" +
-            "Enter the model name and click the search button.\n" +
-            "A list of matching models will appear. Select the model you want to download.",
-    "How do I delete a model?" to "To free up device storage, you can delete downloaded models:\n" +
-            "\n" +
-            "Go to Settings > Models.\n" +
-            "Select the model you want to delete.\n" +
-            "Click the Delete button."
+    "How does Iris work?" to "Iris uses the llama.cpp framework to run large language models locally on your device. It downloads model files and processes them entirely offline, ensuring your conversations remain private.",
+    "What models are supported?" to "Iris supports GGUF format models from Hugging Face. You can download and use various models like Llama, Mistral, and others that are compatible with llama.cpp.",
+    "Is my data private?" to "Yes! All processing happens locally on your device. No data is sent to external servers, ensuring complete privacy and security.",
+    "How much storage do I need?" to "Model sizes vary from 1GB to 8GB depending on the model you choose. Make sure you have sufficient storage space before downloading models.",
+    "Can I use my own models?" to "Yes, you can download and use any GGUF format model from Hugging Face or other sources that are compatible with llama.cpp."
 )

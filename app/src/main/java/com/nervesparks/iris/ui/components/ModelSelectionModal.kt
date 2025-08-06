@@ -27,6 +27,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.SemanticColors
 import com.nervesparks.iris.ui.theme.ModernIconButton
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.SecondaryButton
@@ -304,7 +305,7 @@ fun ModelSelectionModal(
                                                     color = Color.Black,
                                                     fontSize = 12.sp,
                                                     modifier = Modifier
-                                                        .background(Color.Yellow, RoundedCornerShape(4.dp))
+                                                        .background(SemanticColors.Warning, ComponentStyles.smallCardShape)
                                                         .padding(horizontal = 4.dp, vertical = 2.dp)
                                                 )
                                             }
