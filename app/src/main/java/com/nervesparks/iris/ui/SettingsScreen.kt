@@ -320,6 +320,78 @@ fun SettingsScreen(
             }
         }
         
+        // Hardware Information Section
+        ModernCard(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(ComponentStyles.defaultPadding),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
+            ) {
+                Text(
+                    text = "Hardware Acceleration",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                // Current Backend
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Current Backend:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = viewModel.currentBackend,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                    )
+                }
+                
+                // Available Backends
+                Text(
+                    text = "Available Backends: ${viewModel.availableBackends}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                // GPU Information
+                Text(
+                    text = "GPU Info: ${viewModel.gpuInfo}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                // Adreno GPU Status
+                if (viewModel.isAdrenoGpu) {
+                    Text(
+                        text = "✓ Adreno GPU detected - OpenCL acceleration available",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "ℹ CPU-only mode - No GPU acceleration detected",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                // Refresh Button
+                SecondaryButton(
+                    onClick = { viewModel.detectHardwareCapabilities() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Refresh Hardware Detection")
+                }
+            }
+        }
+        
         // Memory Management Section
         MemoryManager(
             viewModel = viewModel,

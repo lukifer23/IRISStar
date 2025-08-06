@@ -86,6 +86,7 @@ class LLamaAndroid {
     private external fun free_context(context: Long)
     private external fun backend_init(numa: Boolean)
     private external fun backend_free()
+    private external fun set_backend(backend: String)
     private external fun new_batch(nTokens: Int, embd: Int, nSeqMax: Int): Long
     private external fun free_batch(batch: Long)
     private external fun new_sampler(top_p: Float, top_k: Int, temp: Float): Long
@@ -230,6 +231,12 @@ class LLamaAndroid {
         return res
     }
     
+    suspend fun setBackend(backend: String) {
+        withContext(runLoop) {
+            set_backend(backend)
+        }
+    }
+    
     suspend fun getMemoryUsage(): Long {
         var res = 0L
         withContext(runLoop) {
@@ -370,6 +377,36 @@ class LLamaAndroid {
             }
         }
 
+    }
+
+    // Hardware detection functions for GPU acceleration
+    external fun getAvailableBackends(): String
+    external fun getOptimalBackend(): String
+    external fun getGpuInfo(): String
+    external fun isAdrenoGpu(): Boolean
+    
+    // Comparative benchmark function
+    external fun runComparativeBenchmark(model: Long, context: Long, batch: Long, sampler: Long): String
+    
+    // Getter functions for current model state
+    fun getModel(): Long = when (val state = threadLocalState.get()) {
+        is State.Loaded -> state.model
+        else -> 0L
+    }
+    
+    fun getContext(): Long = when (val state = threadLocalState.get()) {
+        is State.Loaded -> state.context
+        else -> 0L
+    }
+    
+    fun getBatch(): Long = when (val state = threadLocalState.get()) {
+        is State.Loaded -> state.batch
+        else -> 0L
+    }
+    
+    fun getSampler(): Long = when (val state = threadLocalState.get()) {
+        is State.Loaded -> state.sampler
+        else -> 0L
     }
 
     companion object {

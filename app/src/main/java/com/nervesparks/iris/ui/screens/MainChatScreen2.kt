@@ -30,6 +30,7 @@ import com.nervesparks.iris.ui.components.ModernChatInput
 import com.nervesparks.iris.ui.components.ModernTopAppBar
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.components.SearchLoadingModal
+import com.nervesparks.iris.ui.components.ModelSelectionModal
 import com.nervesparks.iris.ui.navigation.AppDestinations
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.PrimaryButton
@@ -242,6 +243,15 @@ fun MainChatScreen2(
                             message = viewModel.searchProgress,
                             searchQuery = viewModel.currentSearchQuery,
                             onDismiss = { }
+                        )
+                    }
+                    
+                    // Show model selection modal when models are available
+                    if (viewModel.showModelSelection) {
+                        ModelSelectionModal(
+                            viewModel = viewModel,
+                            onDismiss = { viewModel.hideModelSelectionDialog() },
+                            onNavigateToModels = { navController.navigate(AppDestinations.MODELS) }
                         )
                     }
                 }

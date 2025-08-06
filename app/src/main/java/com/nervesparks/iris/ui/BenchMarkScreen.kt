@@ -14,15 +14,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Arrangement
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.ModernCard
+import com.nervesparks.iris.ui.components.ModelSelectionModal
 import kotlinx.coroutines.launch
 
 data class BenchmarkState(
     val isRunning: Boolean = false,
     val showConfirmDialog: Boolean = false,
+    val showComparativeDialog: Boolean = false,
     val results: List<String> = emptyList(),
     val error: String? = null
 )
@@ -67,21 +70,39 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             }
         }
         val context = LocalContext.current
-        // Benchmark Button
-
-        PrimaryButton(
-            modifier = Modifier.padding(vertical = ComponentStyles.smallPadding),
-            onClick = {
-                if(viewModel.loadedModelName.value == ""){
-                    Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
-                }
-                else{
-                    state = state.copy(showConfirmDialog = true)
-                }
-            },
-            enabled = !state.isRunning,
+        // Benchmark Buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(if (state.isRunning) "Benchmarking..." else "Start Benchmark", color = MaterialTheme.colorScheme.onPrimary)
+            PrimaryButton(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = ComponentStyles.smallPadding),
+                onClick = {
+                    if(viewModel.loadedModelName.value == ""){
+                        Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
+                    }
+                    else{
+                        state = state.copy(showConfirmDialog = true)
+                    }
+                },
+                enabled = !state.isRunning && !viewModel.isComparativeBenchmarkRunning,
+            ) {
+                Text(if (state.isRunning) "Benchmarking..." else "Standard Benchmark", color = MaterialTheme.colorScheme.onPrimary)
+            }
+            
+            PrimaryButton(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = ComponentStyles.smallPadding),
+                onClick = {
+                    viewModel.showBenchmarkModelSelection()
+                },
+                enabled = !state.isRunning && !viewModel.isComparativeBenchmarkRunning,
+            ) {
+                Text(if (viewModel.isComparativeBenchmarkRunning) "Testing..." else "CPU vs GPU Test", color = MaterialTheme.colorScheme.onPrimary)
+            }
         }
 
         // Progress Indicator
@@ -132,6 +153,67 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(ComponentStyles.defaultPadding)
         )
+        
+        // Comparative Benchmark Results
+        viewModel.comparativeBenchmarkResults?.let { results ->
+            ModernCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = ComponentStyles.defaultPadding)
+            ) {
+                Column(modifier = Modifier.padding(ComponentStyles.defaultPadding)) {
+                    Text(
+                        "CPU vs GPU Performance Test",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(bottom = ComponentStyles.smallPadding)
+                    )
+                    
+                    // CPU Results
+                    Text(
+                        "CPU Performance:",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = ComponentStyles.smallPadding)
+                    )
+                    Text("Tokens/sec: %.2f".format(results["cpu_tokens_per_sec"] as Double))
+                    Text("Duration: ${results["cpu_duration_ms"]}ms")
+                    Text("Tokens generated: ${results["cpu_tokens_generated"]}")
+                    
+                    // GPU Results
+                    if (results["gpu_available"] as Boolean) {
+                        Text(
+                            "GPU Performance:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
+                        )
+                        Text("Tokens/sec: %.2f".format(results["gpu_tokens_per_sec"] as Double))
+                        Text("Duration: ${results["gpu_duration_ms"]}ms")
+                        Text("Tokens generated: ${results["gpu_tokens_generated"]}")
+                        
+                        // Speedup
+                        val speedup = results["speedup"] as Double
+                        val speedupPercentage = results["speedup_percentage"] as Double
+                        Text(
+                            "Performance Improvement:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
+                        )
+                        Text(
+                            "%.1fx faster (%.1f%% improvement)".format(speedup, speedupPercentage),
+                            color = if (speedup > 1.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Text(
+                            "GPU not available: ${results["gpu_error"]}",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
+                        )
+                    }
+                }
+            }
+        }
 
         // Error Display
         state.error?.let { error ->
@@ -192,6 +274,48 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             }
         )
     }
+    
+    // Comparative Benchmark Dialog
+    if (state.showComparativeDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                state = state.copy(showComparativeDialog = false)
+            },
+            title = { Text("CPU vs GPU Performance Test") },
+            text = { Text("This will test the same model on both CPU and GPU backends to compare performance. Takes about 10-15 seconds. Continue?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state = state.copy(showComparativeDialog = false)
+                        scope.launch {
+                            try {
+                                viewModel.runComparativeBenchmark()
+                            } catch (e: Exception) {
+                                state = state.copy(
+                                    error = "Error: ${e.message}"
+                                )
+                            }
+                        }
+                    }
+                ) {
+                    Text("Start Test")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        state = state.copy(showComparativeDialog = false)
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    }
+    
+    // Model Selection Modal for Benchmark
+    BenchmarkModelSelectionModal(viewModel)
 }
 
 
@@ -204,5 +328,17 @@ private fun buildDeviceInfo(viewModel: MainViewModel): String {
         append("Available Threads: ${Runtime.getRuntime().availableProcessors()}\n")
         append("Current Model: ${viewModel.loadedModelName.value ?: "N/A"}\n")
         append("User Threads: ${viewModel.user_thread}")
+    }
+}
+
+// Model Selection Modal for Benchmark
+@Composable
+fun BenchmarkModelSelectionModal(viewModel: MainViewModel) {
+    if (viewModel.showBenchmarkModelSelection) {
+        ModelSelectionModal(
+            viewModel = viewModel,
+            onDismiss = { viewModel.hideBenchmarkModelSelection() },
+            onNavigateToModels = { /* Navigate to models screen */ }
+        )
     }
 }

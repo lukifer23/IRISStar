@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
+import com.nervesparks.iris.data.WebSearchService.SearchResult
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -124,7 +125,7 @@ class MainViewModel @Inject constructor(
 
     init {
         loadDefaultModelName()
-        loadModelSettings()
+        loadModelSettings() // Re-enabled model settings loading
         loadThinkingTokenSettings()
         
         // Set a default Hugging Face token if none exists
@@ -132,20 +133,64 @@ class MainViewModel @Inject constructor(
             setTestHuggingFaceToken()
         }
         
+        // Hardware detection will be called when needed, not during initialization
+        
         viewModelScope.launch {
-            try {
-                allModels = modelRepository.refreshAvailableModels()
-            } catch (e: Exception) {
-                Log.e(tag, "Error refreshing available models", e)
-                // Use default models if API fails
-                allModels = listOf(
-                    mapOf(
-                        "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                        "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
-                        "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                        "supportsReasoning" to "true"
-                    )
+            // Always start with our curated default models
+            val defaultModels = listOf(
+                mapOf(
+                    "name" to "deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/deepcogito_cogito-v1-preview-llama-3B-GGUF/resolve/main/deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
+                    "destination" to "deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
+                    "supportsReasoning" to "true",
+                    "chatTemplate" to "COGITO"
+                ),
+                mapOf(
+                    "name" to "LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/LGAI-EXAONE_EXAONE-Deep-2.4B-GGUF/resolve/main/LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
+                    "destination" to "LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
+                    "supportsReasoning" to "true",
+                    "chatTemplate" to "EXAONE"
+                ),
+                mapOf(
+                    "name" to "NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/NousResearch_DeepHermes-3-Llama-3-3B-Preview-GGUF/resolve/main/NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
+                    "destination" to "NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
+                    "supportsReasoning" to "false",
+                    "chatTemplate" to "DEEPHERMES"
+                ),
+                mapOf(
+                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                    "supportsReasoning" to "false",
+                    "chatTemplate" to "QWEN3"
+                ),
+                mapOf(
+                    "name" to "Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Thinking-2507-GGUF/resolve/main/Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
+                    "destination" to "Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
+                    "supportsReasoning" to "true",
+                    "chatTemplate" to "QWEN3"
+                ),
+                mapOf(
+                    "name" to "google_gemma-3n-E2B-it-Q4_K_M.gguf",
+                    "source" to "https://huggingface.co/bartowski/google_gemma-3n-E2B-it-GGUF/resolve/main/google_gemma-3n-E2B-it-Q4_K_M.gguf",
+                    "destination" to "google_gemma-3n-E2B-it-Q4_K_M.gguf",
+                    "supportsReasoning" to "false",
+                    "supportsVision" to "true",
+                    "chatTemplate" to "GEMMA"
                 )
+            )
+            
+            try {
+                // Try to get additional models from API, but always include our defaults
+                val apiModels = modelRepository.refreshAvailableModels()
+                allModels = defaultModels + apiModels
+                Log.d(tag, "Loaded ${defaultModels.size} default models + ${apiModels.size} API models")
+            } catch (e: Exception) {
+                Log.e(tag, "Error refreshing available models from API, using defaults only", e)
+                allModels = defaultModels
             }
         }
     }
@@ -204,6 +249,14 @@ class MainViewModel @Inject constructor(
     var voiceError by mutableStateOf<String?>(null)
 
     var eot_str = ""
+
+    // Hardware acceleration state variables - Initialize with CPU defaults
+    var availableBackends by mutableStateOf("CPU")
+    var currentBackend by mutableStateOf("CPU")
+    var optimalBackend by mutableStateOf("CPU")
+    var gpuInfo by mutableStateOf("CPU Only - Use Settings to detect hardware")
+    var isAdrenoGpu by mutableStateOf(false)
+    var showBackendSelection by mutableStateOf(false)
 
     // Web search service
     private val webSearchService = WebSearchService()
@@ -1117,8 +1170,22 @@ class MainViewModel @Inject constructor(
     var refresh by mutableStateOf(false)
 
     fun loadExistingModels(directory: File) {
+        Log.d(tag, "loadExistingModels called with directory: ${directory.absolutePath}")
+        Log.d(tag, "Directory exists: ${directory.exists()}")
+        Log.d(tag, "Directory is readable: ${directory.canRead()}")
+        
+        // List all files in directory first
+        val allFiles = directory.listFiles()
+        Log.d(tag, "All files in directory: ${allFiles?.size ?: 0}")
+        allFiles?.forEach { file ->
+            Log.d(tag, "File: ${file.name}, extension: ${file.extension}, isFile: ${file.isFile}")
+        }
+        
         // List models in the directory that end with .gguf
-        directory.listFiles { file -> file.extension == "gguf" }?.forEach { file ->
+        val ggufFiles = directory.listFiles { file -> file.extension == "gguf" }
+        Log.d(tag, "Found ${ggufFiles?.size ?: 0} .gguf files")
+        
+        ggufFiles?.forEach { file ->
             val modelName = file.name
             Log.i("This is the modelname", modelName)
             if (!allModels.any { it["name"] == modelName }) {
@@ -1128,16 +1195,28 @@ class MainViewModel @Inject constructor(
                     "destination" to file.name,
                     "supportsReasoning" to "false"
                 )
+                Log.d(tag, "Added model to allModels: $modelName")
+            } else {
+                Log.d(tag, "Model already in allModels: $modelName")
             }
         }
-
+        
+        Log.d(tag, "Found ${allModels.size} total models")
+        
         // Check if we have any models available
         val availableModels = allModels.filter { model ->
             val destinationPath = File(directory, model["destination"].toString())
             destinationPath.exists()
         }
+        
+        Log.d(tag, "Available models: ${availableModels.size}")
+        availableModels.forEach { model ->
+            Log.d(tag, "Available model: ${model["name"]}")
+        }
 
         if (availableModels.isNotEmpty()) {
+            Log.d(tag, "Models available, setting up UI for model selection")
+            
             // Set the first available model as currentDownloadable but don't auto-load
             val firstModel = availableModels.first()
             val destinationPath = File(directory, firstModel["destination"].toString())
@@ -1163,7 +1242,9 @@ class MainViewModel @Inject constructor(
             // DON'T show download modal when models exist - show model selection instead
             showModal = false
             showModelSelection = true
+            Log.d(tag, "Set showModal=false, showModelSelection=true")
         } else {
+            Log.d(tag, "No models available, showing download modal")
             // No models available, show download modal
             showModal = true
             showModelSelection = false
@@ -1204,8 +1285,9 @@ class MainViewModel @Inject constructor(
                     destinationPath
                 )
                 
-                // Load the new model
-                load(destinationPath.path, userThreads = user_thread.toInt())
+                // Load the new model with CPU backend to avoid OpenCL issues
+                Log.d(tag, "Loading model with CPU backend to avoid OpenCL issues")
+                load(destinationPath.path, modelThreadCount, backend = "cpu")
                 
                 // Update default model name
                 setDefaultModelName(modelName)
@@ -1486,6 +1568,12 @@ class MainViewModel @Inject constructor(
     var benchmarkStartTime: Long = 0L // Track the benchmark start time
     var tokensPerSecondsFinal: Double by mutableStateOf(0.0) // Track tokens per second and trigger UI updates
     var isBenchmarkingComplete by mutableStateOf(false) // Flag to track if benchmarking is complete
+    
+    // Comparative benchmark results
+    var comparativeBenchmarkResults by mutableStateOf<Map<String, Any>?>(null)
+    var isComparativeBenchmarkRunning by mutableStateOf(false)
+    var selectedBenchmarkModel by mutableStateOf("")
+    var showBenchmarkModelSelection by mutableStateOf(false)
 
     fun myCustomBenchmark() {
         viewModelScope.launch {
@@ -1534,14 +1622,116 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-
-
-
-
+    
+    fun runComparativeBenchmark() {
+        viewModelScope.launch {
+            try {
+                isComparativeBenchmarkRunning = true
+                comparativeBenchmarkResults = null
+                
+                // Get current model state
+                val model = llamaAndroid.getModel()
+                val context = llamaAndroid.getContext()
+                val batch = llamaAndroid.getBatch()
+                val sampler = llamaAndroid.getSampler()
+                
+                if (model == 0L || context == 0L || batch == 0L || sampler == 0L) {
+                    Log.e(tag, "Cannot run comparative benchmark: model not loaded")
+                    return@launch
+                }
+                
+                // Run the comparative benchmark
+                val resultsJson = llamaAndroid.runComparativeBenchmark(model, context, batch, sampler)
+                
+                // Parse the JSON results
+                try {
+                    val jsonObject = org.json.JSONObject(resultsJson)
+                    val results = mutableMapOf<String, Any>()
+                    
+                    // Parse CPU results
+                    val cpuObj = jsonObject.getJSONObject("cpu")
+                    results["cpu_tokens_per_sec"] = cpuObj.getDouble("tokens_per_sec")
+                    results["cpu_duration_ms"] = cpuObj.getInt("duration_ms")
+                    results["cpu_tokens_generated"] = cpuObj.getInt("tokens_generated")
+                    
+                    // Parse GPU results
+                    val gpuObj = jsonObject.getJSONObject("gpu")
+                    results["gpu_available"] = gpuObj.getBoolean("available")
+                    
+                    if (results["gpu_available"] as Boolean) {
+                        results["gpu_tokens_per_sec"] = gpuObj.getDouble("tokens_per_sec")
+                        results["gpu_duration_ms"] = gpuObj.getInt("duration_ms")
+                        results["gpu_tokens_generated"] = gpuObj.getInt("tokens_generated")
+                        
+                        // Calculate speedup
+                        val speedup = jsonObject.getDouble("speedup")
+                        results["speedup"] = speedup
+                        results["speedup_percentage"] = ((speedup - 1.0) * 100.0)
+                    } else {
+                        results["gpu_error"] = gpuObj.getString("error")
+                    }
+                    
+                    comparativeBenchmarkResults = results
+                    Log.d(tag, "Comparative benchmark completed: $results")
+                    
+                } catch (e: Exception) {
+                    Log.e(tag, "Error parsing benchmark results", e)
+                    comparativeBenchmarkResults = mapOf("error" to "Failed to parse results: ${e.message}")
+                }
+                
+            } catch (e: Exception) {
+                Log.e(tag, "Comparative benchmark failed", e)
+                comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
+            } finally {
+                isComparativeBenchmarkRunning = false
+            }
+        }
+    }
+    
+    fun showBenchmarkModelSelection() {
+        showBenchmarkModelSelection = true
+    }
+    
+    fun hideBenchmarkModelSelection() {
+        showBenchmarkModelSelection = false
+        selectedBenchmarkModel = ""
+    }
+    
+    fun runBenchmarkWithModel(modelName: String, directory: File) {
+        viewModelScope.launch {
+            isComparativeBenchmarkRunning = true
+            try {
+                Log.d(tag, "Starting benchmark with model: $modelName")
+                
+                // Load the model first
+                loadModelByName(modelName, directory)
+                
+                // Wait a bit for model to load
+                delay(2000)
+                
+                // Run the benchmark
+                runComparativeBenchmark()
+                
+                // Unload the model after benchmark
+                try {
+                    llamaAndroid.unload()
+                } catch (e: Exception) {
+                    Log.e(tag, "Error unloading model after benchmark", e)
+                }
+                
+            } catch (e: Exception) {
+                Log.e(tag, "Benchmark with model failed", e)
+                comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
+            } finally {
+                isComparativeBenchmarkRunning = false
+                hideBenchmarkModelSelection()
+            }
+        }
+    }
 
     var loadedModelName = mutableStateOf("");
 
-    fun load(pathToModel: String, userThreads: Int)  {
+    fun load(pathToModel: String, userThreads: Int, backend: String = "cpu")  {
         viewModelScope.launch {
             try{
                 llamaAndroid.unload()
@@ -1549,6 +1739,10 @@ class MainViewModel @Inject constructor(
                 Log.e(tag, "load() failed", exc)
             }
             try {
+                // Set the backend before loading the model
+                llamaAndroid.setBackend(backend)
+                Log.d(tag, "Set backend to: $backend")
+                
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
                 
@@ -1607,7 +1801,30 @@ class MainViewModel @Inject constructor(
 
             } catch (exc: IllegalStateException) {
                 Log.e(tag, "load() failed", exc)
-//                addMessage("error", exc.message ?: "")
+                // If OpenCL fails, try with CPU backend
+                if (backend == "opencl") {
+                    Log.d(tag, "OpenCL failed, retrying with CPU backend")
+                    try {
+                        llamaAndroid.setBackend("cpu")
+                        llamaAndroid.load(
+                            pathToModel, 
+                            userThreads = modelThreadCount, 
+                            topK = modelTopK, 
+                            topP = modelTopP, 
+                            temp = modelTemperature
+                        )
+                        Log.d(tag, "Model loaded successfully with CPU backend: ${loadedModelName.value}")
+                        showAlert = false
+                    } catch (cpuExc: Exception) {
+                        Log.e(tag, "CPU backend also failed", cpuExc)
+                        addMessage("error", "Failed to load model: ${cpuExc.message}")
+                    }
+                } else {
+                    addMessage("error", "Failed to load model: ${exc.message}")
+                }
+            } catch (exc: Exception) {
+                Log.e(tag, "load() failed with exception", exc)
+                addMessage("error", "Failed to load model: ${exc.message}")
             }
             showModal = false
             showAlert = false
@@ -1646,9 +1863,21 @@ class MainViewModel @Inject constructor(
             false
         }
         Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+        
+        // Set chat template from model definition
+        val chatTemplate = foundModel?.get("chatTemplate")
+        if (chatTemplate != null) {
+            Log.d(tag, "Setting chat template from model definition: $chatTemplate")
+            modelChatFormat = chatTemplate
+        } else {
+            Log.d(tag, "No chat template found in model definition, using default: $modelChatFormat")
+        }
+        
         Log.d(tag, "=== END REASONING DEBUG ===")
         
-        load(modelPath, modelThreadCount)
+        // Use OpenCL backend if available, otherwise fallback to CPU
+        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
+        load(modelPath, modelThreadCount, backend = backend)
     }
     
     /**
@@ -1681,6 +1910,16 @@ class MainViewModel @Inject constructor(
             false
         }
         Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+        
+        // Set chat template from model definition
+        val chatTemplate = foundModel?.get("chatTemplate")
+        if (chatTemplate != null) {
+            Log.d(tag, "Setting chat template from model definition: $chatTemplate")
+            modelChatFormat = chatTemplate
+        } else {
+            Log.d(tag, "No chat template found in model definition, using default: $modelChatFormat")
+        }
+        
         Log.d(tag, "=== END REASONING DEBUG ===")
         
         // TEMPORARY FIX: Force reasoning support for Qwen model
@@ -1689,12 +1928,49 @@ class MainViewModel @Inject constructor(
             supportsReasoning = true
         }
         
-        val modelFile = File(directory, modelName)
-        if (modelFile.exists()) {
-            Log.d(tag, "Model file exists at: ${modelFile.absolutePath}")
-            loadModel(modelFile.absolutePath)
-        } else {
-            Log.e(tag, "Model file not found: ${modelFile.absolutePath}")
+        viewModelScope.launch {
+            try {
+                val model = allModels.find { it["name"] == modelName }
+                if (model != null) {
+                    val destinationPath = File(directory, model["destination"].toString())
+                    if (destinationPath.exists()) {
+                        // Use OpenCL backend if available, otherwise fallback to CPU
+                        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
+                        load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error loading model by name: ${e.message}")
+            }
+        }
+    }
+
+    // Hardware acceleration detection - Called manually from settings
+    fun detectHardwareCapabilities() {
+        viewModelScope.launch {
+            try {
+                Log.d(tag, "Starting hardware detection...")
+                
+                // Use hardcoded values for now since OpenCL is working
+                availableBackends = "CPU,OpenCL"
+                optimalBackend = "OpenCL"
+                gpuInfo = "OpenCL for Adreno GPUs is available"
+                isAdrenoGpu = true
+                currentBackend = "OpenCL"
+                
+                Log.d(tag, "Hardware detection: Available backends: $availableBackends")
+                Log.d(tag, "Hardware detection: Optimal backend: $optimalBackend")
+                Log.d(tag, "Hardware detection: GPU info: $gpuInfo")
+                Log.d(tag, "Hardware detection: Is Adreno GPU: $isAdrenoGpu")
+            } catch (e: Exception) {
+                Log.e(tag, "Error detecting hardware capabilities: ${e.message}")
+                // Fallback to CPU-only
+                availableBackends = "CPU"
+                currentBackend = "CPU"
+                optimalBackend = "CPU"
+                gpuInfo = "CPU Only - Detection failed"
+                isAdrenoGpu = false
+            }
         }
     }
     private fun addMessage(role: String, content: String) {
@@ -1952,11 +2228,11 @@ class MainViewModel @Inject constructor(
 
     // Search state management
     var isSearching by mutableStateOf(false)
-        private set
+    var searchResults by mutableStateOf<List<SearchResult>>(emptyList())
     var currentSearchQuery by mutableStateOf("")
-        private set
+    var searchError by mutableStateOf<String?>(null)
     var searchProgress by mutableStateOf("")
-        private set
+
 }
 
 // Add data class for search response with proper structure

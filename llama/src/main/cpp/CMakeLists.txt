@@ -31,6 +31,24 @@ project("llama-android")
 # is preferred for the same purpose.
 #
 
+# Configure OpenCL for Android
+if(ANDROID)
+    # Find OpenCL library in vendor directory
+    find_library(OpenCL_LIBRARIES "OpenCL" PATHS /vendor/lib64 NO_DEFAULT_PATH)
+    if(OpenCL_LIBRARIES)
+        message(STATUS "Found OpenCL: ${OpenCL_LIBRARIES}")
+    else()
+        message(WARNING "OpenCL not found in /vendor/lib64, will build without GPU acceleration")
+        set(OpenCL_LIBRARIES "")
+    endif()
+    
+    set(OpenCL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../llama.cpp/ggml/src/ggml-opencl")
+    
+    # Add vendor library path to runtime search path
+    set(CMAKE_INSTALL_RPATH "/vendor/lib64")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
+
 #load local llama.cpp
 add_subdirectory(../../../../llama.cpp build-llama)
 
@@ -54,6 +72,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         common
         android
         log)
+
+# Add OpenCL runtime path for Android
+if(ANDROID)
+    target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "LINKER:-rpath,/vendor/lib64")
+endif()
+
 if (${ANDROID_ABI} STREQUAL "arm64-v8a")
     message(STATUS "llama.android: Added optimizations for arm64-v8a")
     add_compile_options(-O3 -mcpu=native -march=armv8.2-a+fp16 -mfpu=neon-v8fp16_va)

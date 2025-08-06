@@ -16,7 +16,11 @@ object TemplateRegistry {
         "ALPACA" to ::alpacaTemplate,
         "VICUNA" to ::vicunaTemplate,
         "LLAMA2" to ::llama2Template,
-        "ZEPHYR" to ::zephyrTemplate
+        "ZEPHYR" to ::zephyrTemplate,
+        "COGITO" to ::cogitoTemplate,
+        "EXAONE" to ::exaoneTemplate,
+        "DEEPHERMES" to ::deepHermesTemplate,
+        "GEMMA" to ::gemmaTemplate
     )
 
     /**
@@ -186,6 +190,142 @@ object TemplateRegistry {
             sb.append(content).append("<|end|>\n")
         }
         sb.append("<|assistant|>\n")
+        return sb.toString()
+    }
+
+    private fun cogitoTemplate(
+        messages: List<Map<String, String>>,
+        systemPrompt: String,
+        includeThinking: Boolean
+    ): String {
+        val sb = StringBuilder()
+        
+        // Handle system message
+        if (systemPrompt.isNotBlank()) {
+            sb.append("<|start_header_id|>system<|end_header_id|>\n\n")
+            sb.append(systemPrompt)
+            sb.append("<|eot_id|>\n")
+        }
+        
+        // Process messages
+        for (m in messages) {
+            val role = m["role"] ?: "user"
+            val content = m["content"] ?: ""
+            
+            if (role == "system") continue // system handled above
+            
+            sb.append("<|start_header_id|>").append(role).append("<|end_header_id|>\n\n")
+            var processedContent = content
+            if (role == "assistant" && includeThinking) {
+                processedContent = THINK_OPEN + content + THINK_CLOSE
+            }
+            sb.append(processedContent)
+            sb.append("<|eot_id|>\n")
+        }
+        
+        // Add generation prompt
+        sb.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
+        return sb.toString()
+    }
+
+    private fun exaoneTemplate(
+        messages: List<Map<String, String>>,
+        systemPrompt: String,
+        includeThinking: Boolean
+    ): String {
+        val sb = StringBuilder()
+        
+        // Add system message if present
+        if (systemPrompt.isNotBlank()) {
+            sb.append("[|system|]").append(systemPrompt).append("[|endofturn|]\n")
+        }
+        
+        // Process messages
+        for (m in messages) {
+            val role = m["role"] ?: "user"
+            var content = m["content"] ?: ""
+            
+            // Remove </thought> tags if present
+            if ("</thought>" in content) {
+                content = content.split("</thought>").last().trimStart()
+            }
+            
+            sb.append("[|").append(role).append("|]").append(content)
+            
+            // Add end of turn for non-user messages
+            if (role != "user") {
+                sb.append("[|endofturn|]")
+            }
+            
+            if (m != messages.last()) {
+                sb.append("\n")
+            }
+        }
+        
+        // Add generation prompt with thinking
+        sb.append("\n[|assistant|]<thought>\n")
+        return sb.toString()
+    }
+
+    private fun deepHermesTemplate(
+        messages: List<Map<String, String>>,
+        systemPrompt: String,
+        includeThinking: Boolean
+    ): String {
+        val sb = StringBuilder()
+        
+        // Add BOS token for first message
+        var isFirst = true
+        
+        for (m in messages) {
+            val role = m["role"] ?: "user"
+            val content = m["content"] ?: ""
+            
+            val messageContent = "<|start_header_id|>" + role + "<|end_header_id|>\n\n" + content.trim() + "<|eot_id|>"
+            
+            if (isFirst) {
+                sb.append("{{ bos_token }}").append(messageContent)
+                isFirst = false
+            } else {
+                sb.append(messageContent)
+            }
+        }
+        
+        // Add generation prompt
+        sb.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
+        return sb.toString()
+    }
+
+    private fun gemmaTemplate(
+        messages: List<Map<String, String>>,
+        systemPrompt: String,
+        includeThinking: Boolean
+    ): String {
+        val sb = StringBuilder()
+        
+        // Add BOS token
+        sb.append("{{ bos_token }}")
+        
+        // Handle system message
+        if (systemPrompt.isNotBlank()) {
+            sb.append(systemPrompt).append("\n\n")
+        }
+        
+        // Process messages
+        for (m in messages) {
+            val role = m["role"] ?: "user"
+            val content = m["content"] ?: ""
+            
+            // Map assistant to model for Gemma
+            val gemmaRole = if (role == "assistant") "model" else role
+            
+            sb.append("<start_of_turn>").append(gemmaRole).append("\n")
+            sb.append(content.trim())
+            sb.append("<end_of_turn>\n")
+        }
+        
+        // Add generation prompt
+        sb.append("<start_of_turn>model\n")
         return sb.toString()
     }
 }

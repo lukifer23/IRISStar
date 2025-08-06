@@ -20,6 +20,10 @@ android {
                 arguments += "-DLLAMA_BUILD_COMMON=ON"
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
                 arguments += "-DLLAMA_CURL=OFF"
+                // OpenCL for Adreno GPUs - properly configured for Android
+                arguments += "-DGGML_OPENCL=ON"
+                arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
+                arguments += "-DGGML_OPENCL_EMBED_KERNELS=ON"
                 cppFlags += listOf()
                 arguments += listOf()
 
