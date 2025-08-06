@@ -194,10 +194,8 @@ class MainViewModel @Inject constructor(
         // forward content to the summarization pipeline.
     }
 
-    // Quick action and attachment handlers
+    // Quick action handlers
     var lastQuickAction by mutableStateOf<String?>(null)
-        private set
-    var lastAttachmentAction by mutableStateOf<String?>(null)
         private set
 
     fun onLatestNews() {
@@ -215,18 +213,6 @@ class MainViewModel @Inject constructor(
         performWebSearch("cartoon style art")
     }
 
-    fun onCameraAttachment() {
-        lastAttachmentAction = "camera"
-    }
-
-    fun onPhotosAttachment() {
-        lastAttachmentAction = "photos"
-    }
-
-    fun onFilesAttachment() {
-        lastAttachmentAction = "files"
-    }
-
     fun summarizeDocument(text: String) {
         viewModelScope.launch {
             val prompt = "Summarize the following text:\n\n$text"
@@ -239,8 +225,36 @@ class MainViewModel @Inject constructor(
         Log.d(tag, "Handling tool call: $toolCall")
     }
 
-    fun sendImage(uri: Uri) {
-        Log.d(tag, "Sending image: $uri")
+    fun handleAttachment(context: Context, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val resolver = context.contentResolver
+                val type = resolver.getType(uri) ?: "application/octet-stream"
+                val extension = android.webkit.MimeTypeMap.getSingleton()
+                    .getExtensionFromMimeType(type)?.let { ".$it" } ?: ""
+                val dest = File(
+                    context.filesDir,
+                    "attachment_${UUID.randomUUID()}$extension"
+                )
+                resolver.openInputStream(uri)?.use { input ->
+                    dest.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                addMessage("user", "[file] ${dest.name}")
+            } catch (e: Exception) {
+                Log.e(tag, "Failed to handle attachment", e)
+                addMessage("error", "Failed to attach file")
+            } finally {
+                try {
+                    context.contentResolver.releasePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: Exception) {
+                }
+            }
+        }
     }
 
     var isCodeMode by mutableStateOf(false)
@@ -278,10 +292,6 @@ class MainViewModel @Inject constructor(
 
     fun clearLastQuickAction() {
         lastQuickAction = null
-    }
-
-    fun clearLastAttachmentAction() {
-        lastAttachmentAction = null
     }
 
     // Performance monitoring variables

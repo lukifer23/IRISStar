@@ -88,9 +88,9 @@ fun ModernTestScreen(
             },
             onAttachmentClick = { /* TODO: Implement attachments */ },
             onVoiceClick = { /* TODO: Implement voice input */ },
-            onCameraClick = { viewModel.onCameraAttachment() },
-            onPhotosClick = { viewModel.onPhotosAttachment() },
-            onFilesClick = { viewModel.onFilesAttachment() },
+            onCameraClick = { /* TODO: Implement camera capture */ },
+            onPhotosClick = { /* TODO: Implement photo selection */ },
+            onFilesClick = { /* TODO: Implement file picker */ },
             onCodeClick = { viewModel.toggleCodeMode() },
             isCodeMode = viewModel.isCodeMode,
             onTranslateClick = { viewModel.translate(messageText, "English") }

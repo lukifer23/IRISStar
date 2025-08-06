@@ -33,6 +33,15 @@ import com.nervesparks.iris.ui.components.ModernTopAppBar
 import com.nervesparks.iris.ui.components.PerformanceMonitor
 import com.nervesparks.iris.ui.navigation.AppDestinations
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import java.io.File
 
 @Composable
 fun NavDrawer(
@@ -85,9 +94,36 @@ fun MainChatScreen2(
         }
     }
 
-    LaunchedEffect(viewModel.lastAttachmentAction) {
-        viewModel.lastAttachmentAction?.let {
-            actionHandler.handleAttachmentAction(it, viewModel)
+    val cameraImageFile = remember { mutableStateOf<File?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success: Boolean ->
+        val file = cameraImageFile.value
+        if (success && file != null) {
+            viewModel.handleAttachment(context, Uri.fromFile(file))
+        } else {
+            file?.delete()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            val photoFile = File.createTempFile("camera_", ".jpg", context.cacheDir)
+            cameraImageFile.value = photoFile
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
+            cameraLauncher.launch(uri)
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { viewModel.handleAttachment(context, it) }
+    }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            viewModel.handleAttachment(context, it)
         }
     }
 
@@ -148,9 +184,18 @@ fun MainChatScreen2(
                         onSend = { viewModel.send() },
                         onAttachmentClick = {},
                         onVoiceClick = {},
-                        onCameraClick = { viewModel.onCameraAttachment() },
-                        onPhotosClick = { viewModel.onPhotosAttachment() },
-                        onFilesClick = { viewModel.onFilesAttachment() },
+                        onCameraClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                val photoFile = File.createTempFile("camera_", ".jpg", context.cacheDir)
+                                cameraImageFile.value = photoFile
+                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
+                                cameraLauncher.launch(uri)
+                            } else {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
+                        onPhotosClick = { galleryLauncher.launch("image/*") },
+                        onFilesClick = { filePickerLauncher.launch(arrayOf("*/*")) },
                         onCodeClick = { viewModel.toggleCodeMode() },
                         isCodeMode = viewModel.isCodeMode,
                         onTranslateClick = { viewModel.translate(viewModel.message, "English") }
