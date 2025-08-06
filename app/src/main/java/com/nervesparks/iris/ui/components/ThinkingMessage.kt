@@ -71,33 +71,32 @@ fun ThinkingMessage(
         Column(
             modifier = Modifier.padding(ComponentStyles.defaultPadding)
         ) {
-            // Header with thinking indicator
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Thinking",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
-                )
-                
-                Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
-                
-                Text(
-                    text = "AI Reasoning",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                
-                Spacer(modifier = Modifier.weight(1f))
-                
-                // Toggle button - only show if there's thinking content
-                if (thinkingContent.isNotEmpty()) {
+            // Header with thinking indicator - only show when reasoning text exists
+            if (thinkingContent.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Thinking",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                    )
+
+                    Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
+
+                    Text(
+                        text = "AI Reasoning",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     IconButton(
-                        onClick = { 
+                        onClick = {
                             isThinkingExpanded = !isThinkingExpanded
                             viewModel.updateShowThinkingTokens(isThinkingExpanded)
                         }
