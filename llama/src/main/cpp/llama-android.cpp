@@ -1073,11 +1073,15 @@ Java_android_llama_cpp_LLamaAndroid_count_1tokens(JNIEnv *env, jobject, jlong jm
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_getMemoryUsageNative(JNIEnv *env, jobject thiz) {
-    // Get current memory usage from llama.cpp context
-    // For now, return a placeholder value since we need to access the context
-    // TODO: Implement proper memory tracking by passing context as parameter
-    return 0;
+Java_android_llama_cpp_LLamaAndroid_getMemoryUsageNative(JNIEnv *, jobject, jlong jctx) {
+    auto * ctx = reinterpret_cast<llama_context *>(jctx);
+    if (ctx == nullptr) {
+        return 0;
+    }
+
+    // llama_get_state_size() returns the amount of memory (in bytes) currently used by the context
+    const size_t used = llama_get_state_size(ctx);
+    return static_cast<jlong>(used);
 }
 
 struct quant_option {

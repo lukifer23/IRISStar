@@ -130,7 +130,7 @@ class LLamaAndroid {
     private external fun get_embeddings(model: Long, text: String): FloatArray
     private external fun quantizeNative(inputPath: String, outputPath: String, quantizeType: String): Int
 
-    private external fun getMemoryUsageNative(): Long
+    private external fun getMemoryUsageNative(context: Long): Long
 
 
 
@@ -235,7 +235,7 @@ class LLamaAndroid {
         withContext(runLoop) {
             when (val state = threadLocalState.get()) {
                 is State.Loaded -> {
-                    res = getMemoryUsageNative()
+                    res = getMemoryUsageNative(state.context)
                 }
                 else -> {}
             }
