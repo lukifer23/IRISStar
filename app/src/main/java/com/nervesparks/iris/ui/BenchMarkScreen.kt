@@ -337,7 +337,8 @@ fun BenchmarkModelSelectionModal(viewModel: MainViewModel) {
         ModelSelectionModal(
             viewModel = viewModel,
             onDismiss = { viewModel.hideBenchmarkModelSelection() },
-            onNavigateToModels = { /* Navigate to models screen */ }
+            onNavigateToModels = { /* Navigate to models screen */ },
+            isForBenchmark = true
         )
     }
 }

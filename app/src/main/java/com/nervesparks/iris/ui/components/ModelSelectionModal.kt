@@ -37,7 +37,8 @@ import java.io.File
 fun ModelSelectionModal(
     viewModel: MainViewModel,
     onDismiss: () -> Unit,
-    onNavigateToModels: () -> Unit = {}
+    onNavigateToModels: () -> Unit = {},
+    isForBenchmark: Boolean = false
 ) {
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
@@ -351,14 +352,18 @@ fun ModelSelectionModal(
                         PrimaryButton(
                             onClick = {
                                 if (selectedModel.isNotEmpty() && extFilesDir != null) {
-                                    viewModel.loadModelByName(selectedModel, extFilesDir)
+                                    if (isForBenchmark) {
+                                        viewModel.runBenchmarkWithModel(selectedModel, extFilesDir)
+                                    } else {
+                                        viewModel.loadModelByName(selectedModel, extFilesDir)
+                                    }
                                     onDismiss()
                                 }
                             },
                             modifier = Modifier.weight(1f),
                             enabled = selectedModel.isNotEmpty()
                         ) {
-                            Text("Load Model")
+                            Text(if (isForBenchmark) "Run Benchmark" else "Load Model")
                         }
                     }
                 }
