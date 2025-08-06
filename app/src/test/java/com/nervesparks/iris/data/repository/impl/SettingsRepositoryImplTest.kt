@@ -18,13 +18,13 @@ import org.robolectric.RobolectricTestRunner
 class SettingsRepositoryImplTest {
 
     private lateinit var context: Context
-    private lateinit var userPrefs: UserPreferencesRepository
+    private lateinit var userPrefs: FakeUserPreferencesRepository
     private lateinit var repository: SettingsRepositoryImpl
 
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        userPrefs = UserPreferencesRepository.getInstance(context)
+        userPrefs = UserPreferencesRepository(context)
         userPrefs.clearAll()
         repository = SettingsRepositoryImpl(userPrefs)
     }

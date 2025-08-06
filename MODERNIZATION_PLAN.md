@@ -184,28 +184,28 @@ app/src/main/java/com/nervesparks/iris/ui/
 ## 🖼️ PHASE 5: MULTIMODAL & ADVANCED FEATURES (Priority 5)
 - [ ] **5.1** Image processing capabilities
   - [ ] **5.1.1** Support for LLMs that can process images
-  - [ ] **5.1.2** Built-in lightweight embedding models
+  - [x] **5.1.2** Built-in lightweight embedding models
   - [ ] **5.1.3** Image input handling
   - [ ] **5.1.4** Image generation capabilities
 - [ ] **5.2** Document processing
-  - [ ] **5.2.1** Document upload and parsing
-  - [ ] **5.2.2** Document summarization
-  - [ ] **5.2.3** PDF processing support
-  - [ ] **5.2.4** Text extraction from images
+  - [x] **5.2.1** Document upload and parsing
+  - [x] **5.2.2** Document summarization
+  - [x] **5.2.3** PDF processing support
+  - [x] **5.2.4** Text extraction from images
 - [ ] **5.3** Advanced AI features
-  - [ ] **5.3.1** Tool calling support (function calling)
-  - [ ] **5.3.2** Multi-modal input (text + images)
-  - [ ] **5.3.3** Code generation and analysis
-  - [ ] **5.3.4** Translation capabilities
+  - [x] **5.3.1** Tool calling support (function calling)
+  - [x] **5.3.2** Multi-modal input (text + images)
+  - [x] **5.3.3** Code generation and analysis
+  - [x] **5.3.4** Translation capabilities
 
 ## 🚀 PHASE 6: MODEL MANAGEMENT & PRODUCTIVITY (Priority 6) ✅ PARTIALLY COMPLETED
 - [x] **6.1** Advanced model management
   - [x] **6.1.1** Model comparison tools (ModelSelectionModal)
   - [x] **6.1.2** Model performance metrics dashboard (PerformanceMonitor)
-  - [ ] **6.1.3** Automatic model updates
+  - [x] **6.1.3** Automatic model updates
   - [x] **6.1.4** Support for custom model repositories (HuggingFace integration)
-  - [ ] **6.1.5** Model quantization options
-  - [ ] **6.1.6** Template registry (external Jinja)
+  - [x] **6.1.5** Model quantization options
+  - [x] **6.1.6** Template registry (external Jinja)
 - [ ] **6.2** Productivity features
   - [ ] **6.2.1** Export conversations (PDF, Markdown, etc.)
   - [ ] **6.2.2** Import/export settings
@@ -215,8 +215,8 @@ app/src/main/java/com/nervesparks/iris/ui/
 
 ## 🔒 PHASE 7: SECURITY & PRIVACY (Priority 7)
 - [ ] **7.1** Security enhancements
-  - [ ] **7.1.1** Implement proper encryption for stored data
-  - [ ] **7.1.2** Add biometric authentication
+  - [x] **7.1.1** Implement proper encryption for stored data
+  - [x] **7.1.2** Add biometric authentication
   - [ ] **7.1.3** Implement secure model storage
   - [ ] **7.1.4** Add privacy controls and data management
 - [ ] **7.2** Performance optimization
@@ -395,9 +395,9 @@ Based on the modernization plan and current state, the next logical steps are:
 - [ ] **5.3** Advanced AI features (tool calling, etc.)
 
 ### **Phase 6: Model Management & Productivity (Continuing)**
-- [ ] **6.1.3** Automatic model updates
-- [ ] **6.1.5** Model quantization options
-- [ ] **6.1.6** Template registry (external Jinja)
+- [x] **6.1.3** Automatic model updates
+- [x] **6.1.5** Model quantization options
+- [x] **6.1.6** Template registry (external Jinja)
 - [ ] **6.2** Productivity features
   - [ ] **6.2.1** Export conversations (PDF, Markdown, etc.)
   - [ ] **6.2.2** Import/export settings

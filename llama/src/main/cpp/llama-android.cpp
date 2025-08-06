@@ -1066,3 +1066,145 @@ Java_android_llama_cpp_LLamaAndroid_getMemoryUsageNative(JNIEnv *env, jobject th
     // TODO: Implement proper memory tracking by passing context as parameter
     return 0;
 }
+
+struct quant_option {
+    std::string name;
+    llama_ftype ftype;
+    std::string desc;
+};
+
+static const std::vector<quant_option> QUANT_OPTIONS = {
+    { "Q4_0",     LLAMA_FTYPE_MOSTLY_Q4_0,     " 4.34G, +0.4685 ppl @ Llama-3-8B",  },
+    { "Q4_1",     LLAMA_FTYPE_MOSTLY_Q4_1,     " 4.78G, +0.4511 ppl @ Llama-3-8B",  },
+    { "Q5_0",     LLAMA_FTYPE_MOSTLY_Q5_0,     " 5.21G, +0.1316 ppl @ Llama-3-8B",  },
+    { "Q5_1",     LLAMA_FTYPE_MOSTLY_Q5_1,     " 5.65G, +0.1062 ppl @ Llama-3-8B",  },
+    { "IQ2_XXS",  LLAMA_FTYPE_MOSTLY_IQ2_XXS,  " 2.06 bpw quantization",            },
+    { "IQ2_XS",   LLAMA_FTYPE_MOSTLY_IQ2_XS,   " 2.31 bpw quantization",            },
+    { "IQ2_S",    LLAMA_FTYPE_MOSTLY_IQ2_S,    " 2.5  bpw quantization",            },
+    { "IQ2_M",    LLAMA_FTYPE_MOSTLY_IQ2_M,    " 2.7  bpw quantization",            },
+    { "IQ1_S",    LLAMA_FTYPE_MOSTLY_IQ1_S,    " 1.56 bpw quantization",            },
+    { "IQ1_M",    LLAMA_FTYPE_MOSTLY_IQ1_M,    " 1.75 bpw quantization",            },
+    { "TQ1_0",    LLAMA_FTYPE_MOSTLY_TQ1_0,    " 1.69 bpw ternarization",           },
+    { "TQ2_0",    LLAMA_FTYPE_MOSTLY_TQ2_0,    " 2.06 bpw ternarization",           },
+    { "Q2_K",     LLAMA_FTYPE_MOSTLY_Q2_K,     " 2.96G, +3.5199 ppl @ Llama-3-8B",  },
+    { "Q2_K_S",   LLAMA_FTYPE_MOSTLY_Q2_K_S,   " 2.96G, +3.1836 ppl @ Llama-3-8B",  },
+    { "IQ3_XXS",  LLAMA_FTYPE_MOSTLY_IQ3_XXS,  " 3.06 bpw quantization",            },
+    { "IQ3_S",    LLAMA_FTYPE_MOSTLY_IQ3_S,    " 3.44 bpw quantization",            },
+    { "IQ3_M",    LLAMA_FTYPE_MOSTLY_IQ3_M,    " 3.66 bpw quantization mix",        },
+    { "Q3_K",     LLAMA_FTYPE_MOSTLY_Q3_K_M,   "alias for Q3_K_M"                   },
+    { "IQ3_XS",   LLAMA_FTYPE_MOSTLY_IQ3_XS,   " 3.3 bpw quantization",             },
+    { "Q3_K_S",   LLAMA_FTYPE_MOSTLY_Q3_K_S,   " 3.41G, +1.6321 ppl @ Llama-3-8B",  },
+    { "Q3_K_M",   LLAMA_FTYPE_MOSTLY_Q3_K_M,   " 3.74G, +0.6569 ppl @ Llama-3-8B",  },
+    { "Q3_K_L",   LLAMA_FTYPE_MOSTLY_Q3_K_L,   " 4.03G, +0.5562 ppl @ Llama-3-8B",  },
+    { "IQ4_NL",   LLAMA_FTYPE_MOSTLY_IQ4_NL,   " 4.50 bpw non-linear quantization", },
+    { "IQ4_XS",   LLAMA_FTYPE_MOSTLY_IQ4_XS,   " 4.25 bpw non-linear quantization", },
+    { "Q4_K",     LLAMA_FTYPE_MOSTLY_Q4_K_M,   "alias for Q4_K_M",                  },
+    { "Q4_K_S",   LLAMA_FTYPE_MOSTLY_Q4_K_S,   " 4.37G, +0.2689 ppl @ Llama-3-8B",  },
+    { "Q4_K_M",   LLAMA_FTYPE_MOSTLY_Q4_K_M,   " 4.58G, +0.1754 ppl @ Llama-3-8B",  },
+    { "Q5_K",     LLAMA_FTYPE_MOSTLY_Q5_K_M,   "alias for Q5_K_M",                  },
+    { "Q5_K_S",   LLAMA_FTYPE_MOSTLY_Q5_K_S,   " 5.21G, +0.1049 ppl @ Llama-3-8B",  },
+    { "Q5_K_M",   LLAMA_FTYPE_MOSTLY_Q5_K_M,   " 5.33G, +0.0569 ppl @ Llama-3-8B",  },
+    { "Q6_K",     LLAMA_FTYPE_MOSTLY_Q6_K,     " 6.14G, +0.0217 ppl @ Llama-3-8B",  },
+    { "Q8_0",     LLAMA_FTYPE_MOSTLY_Q8_0,     " 7.96G, +0.0026 ppl @ Llama-3-8B",  },
+    { "F16",      LLAMA_FTYPE_MOSTLY_F16,      "14.00G, +0.0020 ppl @ Mistral-7B",  },
+    { "BF16",     LLAMA_FTYPE_MOSTLY_BF16,     "14.00G, -0.0050 ppl @ Mistral-7B",  },
+    { "F32",      LLAMA_FTYPE_ALL_F32,         "26.00G              @ 7B",          },
+    // Note: Ensure COPY comes after F32 to avoid ftype 0 from matching.
+    { "COPY",     LLAMA_FTYPE_ALL_F32,         "only copy tensors, no quantizing",  },
+};
+
+static bool try_parse_ftype(const std::string & ftype_str_in, llama_ftype & ftype, std::string & ftype_str_out) {
+    std::string ftype_str;
+
+    for (auto ch : ftype_str_in) {
+        ftype_str.push_back(std::toupper(ch));
+    }
+    for (const auto & it : QUANT_OPTIONS) {
+        if (it.name == ftype_str) {
+            ftype = it.ftype;
+            ftype_str_out = it.name;
+            return true;
+        }
+    }
+    try {
+        int ftype_int = std::stoi(ftype_str);
+        for (const auto & it : QUANT_OPTIONS) {
+            if (it.ftype == ftype_int) {
+                ftype = it.ftype;
+                ftype_str_out = it.name;
+                return true;
+            }
+        }
+    }
+    catch (...) {
+        // stoi failed
+    }
+    return false;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_android_llama_cpp_LLamaAndroid_quantizeNative(
+        JNIEnv *env,
+        jobject,
+        jstring jinputPath,
+        jstring joutputPath,
+        jstring jquantizeType
+) {
+    const char *inputPath = env->GetStringUTFChars(jinputPath, 0);
+    const char *outputPath = env->GetStringUTFChars(joutputPath, 0);
+    const char *quantizeType = env->GetStringUTFChars(jquantizeType, 0);
+
+    llama_model_quantize_params params = llama_model_quantize_default_params();
+    std::string ftype_str;
+    if (!try_parse_ftype(quantizeType, params.ftype, ftype_str)) {
+        return -1;
+    }
+
+    int result = llama_model_quantize(inputPath, outputPath, &params);
+
+    env->ReleaseStringUTFChars(jinputPath, inputPath);
+    env->ReleaseStringUTFChars(joutputPath, outputPath);
+    env->ReleaseStringUTFChars(jquantizeType, quantizeType);
+
+    return result;
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_android_llama_cpp_LLamaAndroid_get_1embeddings(JNIEnv *env, jobject, jlong jmodel, jstring jtext) {
+    const llama_model *model = reinterpret_cast<llama_model *>(jmodel);
+    if (model == nullptr) {
+        return nullptr;
+    }
+    const char *c_text = env->GetStringUTFChars(jtext, nullptr);
+    std::string text(c_text);
+    env->ReleaseStringUTFChars(jtext, c_text);
+
+    llama_context_params ctx_params = llama_context_default_params();
+    ctx_params.embeddings = true;
+    llama_context *ctx = llama_init_from_model(const_cast<llama_model *>(model), ctx_params);
+    if (ctx == nullptr) {
+        return nullptr;
+    }
+
+    std::vector<llama_token> tokens(text.size());
+    int n_tokens = llama_tokenize(llama_model_get_vocab(model), text.c_str(), text.length(), tokens.data(), tokens.size(), false, false);
+    if (n_tokens < 0) {
+        return nullptr;
+    }
+
+    if (n_tokens > 0) {
+        llama_batch batch = llama_batch_get_one(tokens.data(), n_tokens);
+        llama_decode(ctx, batch);
+        const int n_embd = llama_model_n_embd(model);
+        const float *embeddings = llama_get_embeddings(ctx);
+        if (embeddings != nullptr) {
+            jfloatArray result = env->NewFloatArray(n_embd);
+            env->SetFloatArrayRegion(result, 0, n_embd, embeddings);
+            llama_free(ctx);
+            return result;
+        }
+    }
+
+    llama_free(ctx);
+    return nullptr;
+}

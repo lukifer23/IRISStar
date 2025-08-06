@@ -1,6 +1,7 @@
 package com.nervesparks.iris.ui
 
 import android.app.DownloadManager
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +32,7 @@ import com.nervesparks.iris.ui.components.ModelCard
 import java.io.File
 
 @Composable
-fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButtonClick: () -> Unit, dm: DownloadManager) {
+fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButtonClick: () -> Unit, dm: DownloadManager, onQuantizeScreenButtonClicked: () -> Unit) {
     // Observe viewModel.refresh to trigger recomposition
     val refresh = viewModel.refresh
 
@@ -69,6 +70,37 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         Spacer(Modifier.width(10.dp))
                         Text(
                             text = "Search Hugging-Face Models",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .padding(vertical = 12.dp, horizontal = 7.dp)
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            painter = painterResource(id = R.drawable.right_arrow_svgrepo_com),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .clickable {
+                                onQuantizeScreenButtonClicked()
+                            }
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp), // Icon size
+                            painter = painterResource(id = R.drawable.ic_quantize),
+                            contentDescription = "Quantize",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = "Quantize Models",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 18.sp,
                             modifier = Modifier

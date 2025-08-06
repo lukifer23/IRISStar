@@ -34,12 +34,23 @@ fun ModernChatInput(
     onCameraClick: () -> Unit = {},
     onPhotosClick: () -> Unit = {},
     onFilesClick: () -> Unit = {},
+    onCodeClick: () -> Unit = {},
+    isCodeMode: Boolean = false,
+    onTranslateClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     placeholder: String = "Ask anything",
     enabled: Boolean = true
 ) {
     val focusRequester = remember { FocusRequester() }
     var showAttachmentDialog by remember { mutableStateOf(false) }
+    var showTranslationDialog by remember { mutableStateOf(false) }
+
+    if (showTranslationDialog) {
+        TranslationDialog(
+            onDismiss = { showTranslationDialog = false },
+            onTranslate = { onTranslateClick() }
+        )
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -64,6 +75,30 @@ fun ModernChatInput(
                     Icon(
                         imageVector = Icons.Default.AddCircle,
                         contentDescription = "Attach",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onCodeClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Code,
+                        contentDescription = "Code",
+                        tint = if (isCodeMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { showTranslationDialog = true },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Translate,
+                        contentDescription = "Translate",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )

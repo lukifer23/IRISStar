@@ -2,6 +2,7 @@ package com.nervesparks.iris.di
 
 import android.content.Context
 import androidx.room.Room
+import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.db.AppDatabase
 import com.nervesparks.iris.data.db.ChatDao
 import com.nervesparks.iris.data.db.DocumentDao

@@ -150,7 +150,10 @@ fun MainChatScreen2(
                         onVoiceClick = {},
                         onCameraClick = { viewModel.onCameraAttachment() },
                         onPhotosClick = { viewModel.onPhotosAttachment() },
-                        onFilesClick = { viewModel.onFilesAttachment() }
+                        onFilesClick = { viewModel.onFilesAttachment() },
+                        onCodeClick = { viewModel.toggleCodeMode() },
+                        isCodeMode = viewModel.isCodeMode,
+                        onTranslateClick = { viewModel.translate(viewModel.message, "English") }
                     )
                 }
             }

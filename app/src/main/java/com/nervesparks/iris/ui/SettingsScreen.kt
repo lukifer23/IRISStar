@@ -30,18 +30,22 @@ import com.nervesparks.iris.ui.theme.ModernCard
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.SecondaryButton
 import com.nervesparks.iris.ui.theme.ModernTextField
+import com.nervesparks.iris.security.BiometricAuthenticator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
+    preferencesRepository: UserPreferencesRepository,
     onModelsScreenButtonClicked: () -> Unit,
     onParamsScreenButtonClicked: () -> Unit,
     onAboutScreenButtonClicked: () -> Unit,
     onBenchMarkScreenButtonClicked: () -> Unit,
+    onTemplatesScreenButtonClicked: () -> Unit,
 ) {
     val context = LocalContext.current
-    val preferencesRepository = remember { UserPreferencesRepository.getInstance(context) }
+    val biometricAuthenticator = remember { BiometricAuthenticator(context) }
+    var biometricEnabled by remember { mutableStateOf(preferencesRepository.getSecurityBiometricEnabled()) }
     
     var huggingFaceToken by remember { mutableStateOf(preferencesRepository.getHuggingFaceToken()) }
     var huggingFaceUsername by remember { mutableStateOf(preferencesRepository.getHuggingFaceUsername()) }
@@ -286,6 +290,32 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("About")
+                }
+
+                // Templates Button
+                SecondaryButton(
+                    onClick = onTemplatesScreenButtonClicked,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Templates")
+                }
+
+                // Biometric Switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Biometric Authentication")
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = biometricEnabled,
+                        onCheckedChange = {
+                            if (biometricAuthenticator.isBiometricAuthAvailable()) {
+                                biometricEnabled = it
+                                preferencesRepository.setSecurityBiometricEnabled(it)
+                            }
+                        }
+                    )
                 }
             }
         }

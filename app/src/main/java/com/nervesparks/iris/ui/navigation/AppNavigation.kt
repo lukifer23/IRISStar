@@ -15,6 +15,7 @@ import com.nervesparks.iris.ui.ModelsScreen
 import com.nervesparks.iris.ui.ParametersScreen
 import com.nervesparks.iris.ui.SettingsScreen
 import com.nervesparks.iris.ui.screens.MainChatScreen2
+import com.nervesparks.iris.data.UserPreferencesRepository
 import java.io.File
 
 object AppDestinations {
@@ -25,6 +26,8 @@ object AppDestinations {
     const val PARAMS = "params"
     const val ABOUT = "about"
     const val BENCHMARK = "benchmark"
+    const val QUANTIZE = "quantize"
+    const val TEMPLATES = "templates"
 }
 
 @Composable
@@ -33,7 +36,8 @@ fun AppNavigation(
     clipboardManager: ClipboardManager,
     downloadManager: DownloadManager,
     models: List<Downloadable>,
-    extFilesDir: File?
+    extFilesDir: File?,
+    preferencesRepository: UserPreferencesRepository
 ) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = AppDestinations.CHAT) {
@@ -62,10 +66,12 @@ fun AppNavigation(
         composable(AppDestinations.SETTINGS) {
             SettingsScreen(
                 viewModel = viewModel,
+                preferencesRepository = preferencesRepository,
                 onModelsScreenButtonClicked = { navController.navigate(AppDestinations.MODELS) },
                 onParamsScreenButtonClicked = { navController.navigate(AppDestinations.PARAMS) },
                 onAboutScreenButtonClicked = { navController.navigate(AppDestinations.ABOUT) },
-                onBenchMarkScreenButtonClicked = { navController.navigate(AppDestinations.BENCHMARK) }
+                onBenchMarkScreenButtonClicked = { navController.navigate(AppDestinations.BENCHMARK) },
+                onTemplatesScreenButtonClicked = { navController.navigate(AppDestinations.TEMPLATES) }
             )
         }
         composable(AppDestinations.MODELS) {
@@ -73,7 +79,8 @@ fun AppNavigation(
                 extFileDir = extFilesDir,
                 viewModel = viewModel,
                 onSearchResultButtonClick = { navController.popBackStack() },
-                dm = downloadManager
+                dm = downloadManager,
+                onQuantizeScreenButtonClicked = { navController.navigate(AppDestinations.QUANTIZE) }
             )
         }
         composable(AppDestinations.PARAMS) {
@@ -84,6 +91,12 @@ fun AppNavigation(
         }
         composable(AppDestinations.BENCHMARK) {
             BenchMarkScreen(viewModel = viewModel)
+        }
+        composable(AppDestinations.QUANTIZE) {
+            com.nervesparks.iris.ui.screens.QuantizeScreen(viewModel = viewModel)
+        }
+        composable(AppDestinations.TEMPLATES) {
+            com.nervesparks.iris.ui.screens.TemplatesScreen(viewModel = viewModel)
         }
     }
 }

@@ -65,13 +65,13 @@ class MainViewModel @Inject constructor(
     fun indexDocument(text: String) {
         viewModelScope.launch {
             val embedding = embedText(text)
-            documentRepository.addDocument(text, embedding)
+            documentRepository.addDocument(text, embedding.toList())
         }
     }
 
-    suspend fun embedText(text: String): List<Float> =
+    suspend fun embedText(text: String): FloatArray =
         withContext(Dispatchers.Default) {
-            listOf(llamaAndroid.countTokens(text).toFloat())
+            llamaAndroid.getEmbeddings(text)
         }
 
     private var currentChat: com.nervesparks.iris.data.db.Chat? = null
@@ -206,6 +206,55 @@ class MainViewModel @Inject constructor(
 
     fun onFilesAttachment() {
         lastAttachmentAction = "files"
+    }
+
+    fun summarizeDocument(text: String) {
+        viewModelScope.launch {
+            val prompt = "Summarize the following text:\n\n$text"
+            addMessage("user", prompt)
+            send()
+        }
+    }
+
+    fun handleToolCall(toolCall: com.nervesparks.iris.data.ToolCall) {
+        Log.d(tag, "Handling tool call: $toolCall")
+    }
+
+    fun sendImage(uri: Uri) {
+        Log.d(tag, "Sending image: $uri")
+    }
+
+    var isCodeMode by mutableStateOf(false)
+        private set
+
+    fun toggleCodeMode() {
+        isCodeMode = !isCodeMode
+    }
+
+    fun sendCode(code: String) {
+        val prompt = "Analyze the following code:\n\n```\n$code\n```"
+        addMessage("user", prompt)
+        send()
+    }
+
+    fun translate(text: String, targetLanguage: String) {
+        val prompt = "Translate the following text to $targetLanguage:\n\n$text"
+        addMessage("user", prompt)
+        send()
+    }
+
+    fun quantizeModel(model: String, quantizeType: String) {
+        viewModelScope.launch {
+            val inputFile = File(getApplication<Application>().getExternalFilesDir(null), model)
+            val outputFile = File(getApplication<Application>().getExternalFilesDir(null), "${model.substringBeforeLast(".")}-$quantizeType.gguf")
+            llamaAndroid.quantize(inputFile.absolutePath, outputFile.absolutePath, quantizeType)
+        }
+    }
+
+    private var template by mutableStateOf("")
+
+    fun updateTemplate(template: String) {
+        this.template = template
     }
 
     fun clearLastQuickAction() {
@@ -692,6 +741,11 @@ class MainViewModel @Inject constructor(
         val userMessage = removeExtraWhiteSpaces(message)
         message = ""
 
+        if (isCodeMode) {
+            sendCode(userMessage)
+            return
+        }
+
         // Add to messages console.
         if (userMessage.isNotBlank()) {
             Log.d(tag, "User message is not blank: $userMessage")
@@ -710,27 +764,33 @@ class MainViewModel @Inject constructor(
 
             viewModelScope.launch {
                 try {
-                    var workingMessages = messages.toMutableList()
-                    val userEmbedding = embedText(userMessage)
-                    val docs = documentRepository.topKSimilar(userEmbedding, 3)
-                    val docMsgs = docs.map { mapOf("role" to "system", "content" to it.text) }
-                    val docCount = docMsgs.size
-                    if (docCount > 0) {
-                        workingMessages = (docMsgs + workingMessages).toMutableList()
+                    val userEmbedding = embedText(userMessage).toList()
+                    val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
+                    val contextDocs = similarDocs.joinToString("\n") { it.text }
+                    val fullMessage = if (contextDocs.isNotEmpty()) {
+                        "Context: $contextDocs\n\nQuestion: $userMessage"
+                    } else {
+                        userMessage
                     }
-                    var prompt: String
-                    var promptTokens: Int
+
+                    var workingMessages = messages.toMutableList()
                     val reserve = reserveTokens
 
                     // Trim history until it fits within the context window
                     while (true) {
-                        prompt = com.nervesparks.iris.llm.TemplateRegistry.render(
-                            modelChatFormat,
-                            workingMessages,
-                            modelSystemPrompt,
-                            includeThinkingTags = true
-                        )
-                        promptTokens = llamaAndroid.countTokens(prompt)
+                        val prompt = if (template.isNotBlank()) {
+                            val jinjava = com.hubspot.jinjava.Jinjava()
+                            val context = mapOf("messages" to workingMessages)
+                            jinjava.render(template, context)
+                        } else {
+                            com.nervesparks.iris.llm.TemplateRegistry.render(
+                                modelChatFormat,
+                                workingMessages,
+                                modelSystemPrompt,
+                                includeThinkingTags = true
+                            )
+                        }
+                        val promptTokens = llamaAndroid.countTokens(prompt)
                         if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
                             break
                         }
@@ -742,29 +802,43 @@ class MainViewModel @Inject constructor(
                         }
                     }
 
-                    val finalMessages = if (docMsgs.isNotEmpty()) workingMessages.drop(docCount) else workingMessages
-                    if (finalMessages.size != messages.size) {
-                        messages = finalMessages
+                    if (workingMessages.size != messages.size) {
+                        messages = workingMessages
                     }
 
-                    contextLimit = promptTokens
+                    contextLimit = llamaAndroid.countTokens(fullMessage)
                     maxContextLimit = modelContextLength
 
                     var generatedTokens = 0
-                    llamaAndroid.send(prompt)
+                    llamaAndroid.send(fullMessage)
                         .catch {
                             Log.e(tag, "send() failed", it)
                             addMessage("error", it.message ?: "")
                         }
-                        .collect { response ->
+                        .collect {
                             generatedTokens++
                             updateTokenCount(generatedTokens)
-                            contextLimit = promptTokens + generatedTokens
+                            contextLimit = llamaAndroid.countTokens(fullMessage) + generatedTokens
 
                             if (getIsMarked()) {
-                                addMessage("codeBlock", response)
+                                addMessage("codeBlock", it)
                             } else {
-                                addMessage("assistant", response)
+                                try {
+                                    val json = org.json.JSONObject(it)
+                                    if (json.has("tool")) {
+                                        val tool = json.getString("tool")
+                                        val args = json.getJSONObject("args")
+                                        val argsMap = mutableMapOf<String, Any>()
+                                        args.keys().forEach { key ->
+                                            argsMap[key] = args.get(key)
+                                        }
+                                        handleToolCall(com.nervesparks.iris.data.ToolCall(tool, argsMap))
+                                    } else {
+                                        addMessage("assistant", it)
+                                    }
+                                } catch (e: org.json.JSONException) {
+                                    addMessage("assistant", it)
+                                }
                             }
                         }
                 } finally {

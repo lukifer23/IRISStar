@@ -86,7 +86,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation-layout-android:1.6.0")
     implementation("androidx.games:games-activity:3.0.0")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.test:core:1.5.0") {
+        exclude(group = "com.google.guava", module = "listenablefuture")
+    }
     testImplementation("org.robolectric:robolectric:4.10.3")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -115,6 +117,35 @@ dependencies {
 
     // Timber
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // iText for PDF processing
+    implementation("com.itextpdf:itext7-core:7.1.17") {
+        exclude(group = "com.google.guava")
+    }
+
+    // ML Kit for text recognition
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+
+    // Jinja2 for templates
+    implementation("com.hubspot.jinjava:jinjava:2.2.0") {
+        exclude(group = "com.google.guava", module = "guava")
+    }
+
+    // Security Crypto for encrypted shared preferences
+    implementation("androidx.security:security-crypto:1.0.0")
+
+    // WorkManager for background tasks
+    implementation("androidx.work:work-runtime-ktx:2.9.0") {
+        exclude(group = "com.google.guava", module = "listenablefuture")
+    }
+
+    // Biometric
+    implementation("androidx.biometric:biometric-ktx:1.2.0-alpha05")
+}
+
+configurations.all {
+    exclude(group = "com.google.code.findbugs", module = "jsr305")
+    exclude(group = "com.google.code.findbugs", module = "annotations")
 }
 
 kapt {

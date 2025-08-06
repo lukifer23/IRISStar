@@ -90,7 +90,10 @@ fun ModernTestScreen(
             onVoiceClick = { /* TODO: Implement voice input */ },
             onCameraClick = { viewModel.onCameraAttachment() },
             onPhotosClick = { viewModel.onPhotosAttachment() },
-            onFilesClick = { viewModel.onFilesAttachment() }
+            onFilesClick = { viewModel.onFilesAttachment() },
+            onCodeClick = { viewModel.toggleCodeMode() },
+            isCodeMode = viewModel.isCodeMode,
+            onTranslateClick = { viewModel.translate(messageText, "English") }
         )
     }
 }
