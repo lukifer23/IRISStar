@@ -65,8 +65,10 @@ fun ModernChatInput(
             modifier = Modifier
                 .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding)
         ) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ModernIconButton(
@@ -119,7 +121,14 @@ fun ModernChatInput(
                         modifier = Modifier.size(ComponentStyles.defaultIconSize)
                     )
                 }
+            }
 
+            Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 ThemedChatInputField(
                     value = value,
                     onValueChange = onValueChange,
@@ -145,7 +154,7 @@ fun ModernChatInput(
                         modifier = Modifier
                             .size(ComponentStyles.defaultIconSize)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Send,
@@ -167,7 +176,6 @@ fun ModernChatInput(
                     }
                 }
             }
-
             if (showAttachmentDialog) {
                 AttachmentBottomSheet(
                     onDismiss = { showAttachmentDialog = false },
