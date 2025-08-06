@@ -73,6 +73,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
     val kc = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    val preferencesRepository = UserPreferencesRepository.getInstance(context)
     
     var UserGivenModel by remember {
         mutableStateOf(
@@ -175,13 +176,13 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
         Button(
             onClick = {
                 kc?.hide()
-                
-                // TODO: Add proper credentials check when API is implemented
-                // if (!preferencesRepository.hasHuggingFaceCredentials()) {
-                //     errorMessage = "Please set your HuggingFace credentials in Settings first"
-                //     return@Button
-                // }
-                
+
+                if (!preferencesRepository.hasHuggingFaceCredentials()) {
+                    errorMessage = "Please set your HuggingFace credentials in Settings first"
+                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                    return@Button
+                }
+
                 coroutineScope.launch {
                     isLoading = true
                     errorMessage = null
