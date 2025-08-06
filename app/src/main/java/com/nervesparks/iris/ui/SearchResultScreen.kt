@@ -182,21 +182,31 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             onClick = {
                 kc?.hide()
 
+                val query = UserGivenModel.text.trim()
+
                 if (!preferencesRepository.hasHuggingFaceCredentials()) {
                     errorMessage = "Please set your HuggingFace credentials in Settings first"
                     Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                     return@Button
                 }
 
+                if (query.isBlank()) {
+                    errorMessage = "Please enter a model name to search"
+                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                    modelData = null
+                    return@Button
+                }
+
                 coroutineScope.launch {
                     isLoading = true
                     errorMessage = null
+                    modelData = null
 
                     try {
                         // Use searchModelsAsync for proper async search
-                        val response = viewModel.searchModelsAsync(UserGivenModel.text)
-                        
-                        if (response.success && response.data != null) {
+                        val response = viewModel.searchModelsAsync(query)
+
+                        if (response.success && !response.data.isNullOrEmpty()) {
                             // Convert search results to the expected format
                             // Note: Search results don't include siblings, so we'll show model info directly
                             modelData = response.data.map { model ->
@@ -209,14 +219,14 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                     "tags" to model.tags.joinToString(", ")
                                 )
                             }
+                        } else if (response.success && response.data.isNullOrEmpty()) {
+                            errorMessage = "No models found for \"$query\""
                         } else {
                             errorMessage = response.error ?: "Failed to search models"
-                            modelData = null
                         }
                     } catch (e: Exception) {
                         Log.e("SearchResultScreen", "Error searching models", e)
                         errorMessage = "Error: ${e.localizedMessage}"
-                        modelData = null
                     } finally {
                         isLoading = false
                     }
