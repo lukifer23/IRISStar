@@ -14,8 +14,8 @@ class WebSearchService {
     
     // Google Custom Search API credentials
     // You'll need to get these from Google Cloud Console
-    private val GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY" // Replace with your API key
-    private val GOOGLE_CSE_ID = "YOUR_CUSTOM_SEARCH_ENGINE_ID" // Replace with your CSE ID
+    private val GOOGLE_API_KEY = "AIzaSyAoFgCVdXg6lOsHVPVVd4en9I5m1WusmiY" // Replace with your API key
+    private val GOOGLE_CSE_ID = "017576662512468239146:omuauf_lfve" // Default search engine ID
     
     // Fallback to DuckDuckGo if Google API not configured
     private val useGoogleAPI = GOOGLE_API_KEY != "YOUR_GOOGLE_API_KEY" && GOOGLE_CSE_ID != "YOUR_CUSTOM_SEARCH_ENGINE_ID"

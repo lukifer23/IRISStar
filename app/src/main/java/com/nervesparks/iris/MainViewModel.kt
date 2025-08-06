@@ -244,7 +244,7 @@ class MainViewModel @Inject constructor(
                         processWebSearch(summaryPrompt)
                     }
                 } else {
-                    // If API search fails, try Android system search
+                    // If API search fails, try Android browser search
                     searchProgress = "📱 Launching browser search..."
                     
                     val androidSearchResponse = androidSearchService.launchBrowserSearch(query)
@@ -255,7 +255,7 @@ class MainViewModel @Inject constructor(
                     } else {
                         // Handle search error
                         val errorMessage = searchResponse.error ?: "Unknown search error"
-                        addMessage("assistant", "❌ Search failed: $errorMessage\n\nI've tried both API search and browser search. Please try rephrasing your search query.")
+                        addMessage("assistant", "❌ Search failed: $errorMessage\n\nI've tried API search and browser search. Please try rephrasing your search query.")
                     }
                 }
                 
