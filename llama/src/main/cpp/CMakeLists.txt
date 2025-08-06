@@ -33,20 +33,17 @@ project("llama-android")
 
 # Configure OpenCL for Android
 if(ANDROID)
-    # Find OpenCL library in vendor directory
-    find_library(OpenCL_LIBRARIES "OpenCL" PATHS /vendor/lib64 NO_DEFAULT_PATH)
-    if(OpenCL_LIBRARIES)
-        message(STATUS "Found OpenCL: ${OpenCL_LIBRARIES}")
+    # Use bundled OpenCL libraries
+    set(OpenCL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../app/src/main/jniLibs/${ANDROID_ABI}/libOpenCL.so")
+    
+    if(EXISTS ${OpenCL_LIBRARIES})
+        message(STATUS "Found bundled OpenCL: ${OpenCL_LIBRARIES}")
     else()
-        message(WARNING "OpenCL not found in /vendor/lib64, will build without GPU acceleration")
+        message(WARNING "Bundled OpenCL not found at ${OpenCL_LIBRARIES}, will build without GPU acceleration")
         set(OpenCL_LIBRARIES "")
     endif()
     
     set(OpenCL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../llama.cpp/ggml/src/ggml-opencl")
-    
-    # Add vendor library path to runtime search path
-    set(CMAKE_INSTALL_RPATH "/vendor/lib64")
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
 #load local llama.cpp
