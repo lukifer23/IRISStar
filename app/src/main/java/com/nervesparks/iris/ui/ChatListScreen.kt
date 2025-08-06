@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +23,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ChatListScreen(
     viewModel: MainViewModel,
@@ -32,9 +33,25 @@ fun ChatListScreen(
     val chats by viewModel.chats.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
     val filteredChats = chats.filter { it.title.contains(searchQuery, ignoreCase = true) }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Chats") },
+                actions = {
+                    if (chats.isNotEmpty()) {
+                        IconButton(onClick = { showDeleteAllDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete All Chats"
+                            )
+                        }
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onNewChat) {
                 Icon(Icons.Default.Add, contentDescription = "New Chat")
@@ -76,6 +93,34 @@ fun ChatListScreen(
                 }
             }
         }
+    }
+    
+    // Delete All Chats Dialog
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text("Delete All Chats") },
+            text = { Text("Are you sure you want to delete all chats? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            chats.forEach { chat ->
+                                viewModel.deleteChat(chat)
+                            }
+                        }
+                        showDeleteAllDialog = false
+                    }
+                ) {
+                    Text("Delete All", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

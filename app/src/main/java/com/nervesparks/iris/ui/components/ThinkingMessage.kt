@@ -38,7 +38,7 @@ fun ThinkingMessage(
     var isThinkingExpanded by remember { mutableStateOf(showThinkingTokens) }
     
     // Parse via centralised parser
-    val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message)
+    val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message, viewModel.supportsReasoning)
     
     // Update expanded state when showThinkingTokens changes
     LaunchedEffect(showThinkingTokens) {

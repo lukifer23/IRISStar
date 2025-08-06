@@ -34,13 +34,28 @@ import com.nervesparks.iris.ui.navigation.AppDestinations
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Alignment
 
 @Composable
 fun NavDrawer(
     navController: NavController,
     onCloseDrawer: () -> Unit,
     onNewChat: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onChatList: () -> Unit,
+    viewModel: MainViewModel
 ) {
     Column(modifier = Modifier.padding(ComponentStyles.defaultPadding)) {
         Text(
@@ -48,6 +63,8 @@ fun NavDrawer(
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
         )
+        
+        // New Chat
         PrimaryButton(
             onClick = {
                 onNewChat()
@@ -55,8 +72,37 @@ fun NavDrawer(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(ComponentStyles.defaultIconSize)
+            )
+            Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
             Text("New Chat")
         }
+        
+        Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
+        
+        // Chat List
+        PrimaryButton(
+            onClick = {
+                onChatList()
+                onCloseDrawer()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.List,
+                contentDescription = null,
+                modifier = Modifier.size(ComponentStyles.defaultIconSize)
+            )
+            Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
+            Text("Chat History")
+        }
+        
+        Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
+        
+        // Settings
         PrimaryButton(
             onClick = {
                 onSettings()
@@ -64,7 +110,41 @@ fun NavDrawer(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                modifier = Modifier.size(ComponentStyles.defaultIconSize)
+            )
+            Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
             Text("Settings")
+        }
+        
+        Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
+        
+        // Current Model Info
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            shape = ComponentStyles.smallCardShape
+        ) {
+            Column(
+                modifier = Modifier.padding(ComponentStyles.defaultPadding)
+            ) {
+                Text(
+                    text = "Current Model",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = viewModel.loadedModelName.value.ifEmpty { "No Model" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -120,7 +200,12 @@ fun MainChatScreen2(
                 },
                 onSettings = {
                     navController.navigate(AppDestinations.SETTINGS)
-                }
+                },
+                onChatList = {
+                    viewModel.persistChat()
+                    navController.navigate(AppDestinations.CHAT_LIST)
+                },
+                viewModel = viewModel
             )
         }
     ) {
@@ -140,11 +225,7 @@ fun MainChatScreen2(
                     showModelDropdown = showModelDropdown,
                     onModelDropdownDismiss = { showModelDropdown = false },
                     viewModel = viewModel,
-                    extFilesDir = extFilesDir,
-                    onChatListClick = {
-                        viewModel.persistChat()
-                        navController.navigate(AppDestinations.CHAT_LIST)
-                    }
+                    extFilesDir = extFilesDir
                 )
             },
             content = {

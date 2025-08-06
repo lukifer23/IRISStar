@@ -148,7 +148,6 @@ class MainViewModel @Inject constructor(
                 )
             }
         }
-        templates.addAll(userPreferencesRepository.getTemplates())
     }
     private fun loadDefaultModelName(){
         try {
@@ -1177,6 +1176,18 @@ class MainViewModel @Inject constructor(
         if (model != null) {
             val destinationPath = File(directory, model["destination"].toString())
             if (destinationPath.exists()) {
+                // Set reasoning support based on model configuration
+                Log.d(tag, "=== SWITCH MODEL REASONING DEBUG ===")
+                Log.d(tag, "Switching to model: $modelName")
+                Log.d(tag, "Model configuration: $model")
+                
+                val reasoningSupport = model["supportsReasoning"]
+                Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+                
+                supportsReasoning = reasoningSupport == "true"
+                Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+                Log.d(tag, "=== END SWITCH MODEL DEBUG ===")
+                
                 // Unload current model if any
                 viewModelScope.launch {
                     try {
@@ -1540,6 +1551,43 @@ class MainViewModel @Inject constructor(
             try {
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
+                
+                // Add reasoning support detection here
+                Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
+                Log.d(tag, "Loading model: ${loadedModelName.value}")
+                Log.d(tag, "All models count: ${allModels.size}")
+                Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
+                
+                val foundModel = allModels.find { it["name"] == loadedModelName.value }
+                Log.d(tag, "Found model in allModels: $foundModel")
+                
+                val reasoningSupport = foundModel?.get("supportsReasoning")
+                Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+                
+                // Fallback logic: if model not found, check if it's a known reasoning model
+                supportsReasoning = if (reasoningSupport == "true") {
+                    true
+                } else if (foundModel == null) {
+                    // Fallback: check if model name contains reasoning-related keywords
+                    val reasoningKeywords = listOf("reasoning", "think", "qwen", "nemotron", "openreasoning")
+                    val hasReasoningKeyword = reasoningKeywords.any { keyword ->
+                        loadedModelName.value.lowercase().contains(keyword.lowercase())
+                    }
+                    Log.d(tag, "Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+                    hasReasoningKeyword
+                } else {
+                    false
+                }
+                
+                // TEMPORARY FIX: Force reasoning support for Qwen model
+                if (loadedModelName.value.contains("Qwen")) {
+                    Log.d(tag, "TEMPORARY FIX: Forcing reasoning support for Qwen model")
+                    supportsReasoning = true
+                }
+                
+                Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+                Log.d(tag, "=== END REASONING DEBUG ===")
+                
                 showModal = false
                 showAlert = true
                 
@@ -1572,7 +1620,34 @@ class MainViewModel @Inject constructor(
      */
     fun loadModel(modelPath: String) {
         val modelName = modelPath.substringAfterLast("/")
-        supportsReasoning = allModels.find { it["name"] == modelName }?.get("supportsReasoning") == "true"
+        Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
+        Log.d(tag, "Loading model: $modelName")
+        Log.d(tag, "All models count: ${allModels.size}")
+        Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
+        
+        val foundModel = allModels.find { it["name"] == modelName }
+        Log.d(tag, "Found model in allModels: $foundModel")
+        
+        val reasoningSupport = foundModel?.get("supportsReasoning")
+        Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+        
+        // Fallback logic: if model not found, check if it's a known reasoning model
+        supportsReasoning = if (reasoningSupport == "true") {
+            true
+        } else if (foundModel == null) {
+            // Fallback: check if model name contains reasoning-related keywords
+            val reasoningKeywords = listOf("reasoning", "think", "qwen", "nemotron", "openreasoning")
+            val hasReasoningKeyword = reasoningKeywords.any { keyword ->
+                modelName.lowercase().contains(keyword.lowercase())
+            }
+            Log.d(tag, "Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+            hasReasoningKeyword
+        } else {
+            false
+        }
+        Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+        Log.d(tag, "=== END REASONING DEBUG ===")
+        
         load(modelPath, modelThreadCount)
     }
     
@@ -1581,7 +1656,39 @@ class MainViewModel @Inject constructor(
      */
     fun loadModelByName(modelName: String, directory: File) {
         Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
-        supportsReasoning = allModels.find { it["name"] == modelName }?.get("supportsReasoning") == "true"
+        Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
+        Log.d(tag, "All models count: ${allModels.size}")
+        Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
+        
+        val foundModel = allModels.find { it["name"] == modelName }
+        Log.d(tag, "Found model in allModels: $foundModel")
+        
+        val reasoningSupport = foundModel?.get("supportsReasoning")
+        Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+        
+        // Fallback logic: if model not found, check if it's a known reasoning model
+        supportsReasoning = if (reasoningSupport == "true") {
+            true
+        } else if (foundModel == null) {
+            // Fallback: check if model name contains reasoning-related keywords
+            val reasoningKeywords = listOf("reasoning", "think", "qwen", "nemotron", "openreasoning")
+            val hasReasoningKeyword = reasoningKeywords.any { keyword ->
+                modelName.lowercase().contains(keyword.lowercase())
+            }
+            Log.d(tag, "Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+            hasReasoningKeyword
+        } else {
+            false
+        }
+        Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+        Log.d(tag, "=== END REASONING DEBUG ===")
+        
+        // TEMPORARY FIX: Force reasoning support for Qwen model
+        if (modelName.contains("Qwen")) {
+            Log.d(tag, "TEMPORARY FIX: Forcing reasoning support for Qwen model in loadModelByName")
+            supportsReasoning = true
+        }
+        
         val modelFile = File(directory, modelName)
         if (modelFile.exists()) {
             Log.d(tag, "Model file exists at: ${modelFile.absolutePath}")

@@ -69,7 +69,17 @@ object ReasoningParser {
     /**
      * @return Pair(first = reasoning block (may be empty), second = answer)
      */
-    fun parse(message: String): Pair<String, String> {
+    fun parse(message: String, supportsReasoning: Boolean = false): Pair<String, String> {
+        // If the model doesn't support reasoning, return the message as-is without parsing
+        if (!supportsReasoning) {
+            android.util.Log.d("ReasoningParser", "Model doesn't support reasoning - returning message as-is")
+            android.util.Log.d("ReasoningParser", "Message preview: ${message.take(100)}...")
+            return Pair("", message.trim())
+        }
+        
+        android.util.Log.d("ReasoningParser", "Model supports reasoning - parsing for thinking content")
+        android.util.Log.d("ReasoningParser", "Message preview: ${message.take(100)}...")
+        
         // Debug logging
         android.util.Log.d("ReasoningParser", "Parsing message: $message")
         

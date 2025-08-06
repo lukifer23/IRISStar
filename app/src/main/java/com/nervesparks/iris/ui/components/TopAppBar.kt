@@ -36,8 +36,7 @@ fun ModernTopAppBar(
     showModelDropdown: Boolean,
     onModelDropdownDismiss: () -> Unit,
     viewModel: MainViewModel,
-    extFilesDir: File?,
-    onChatListClick: (() -> Unit)? = null
+    extFilesDir: File?
 ) {
     TopAppBar(
         title = {
@@ -61,17 +60,6 @@ fun ModernTopAppBar(
             }
         },
         actions = {
-            onChatListClick?.let { click ->
-                ModernIconButton(onClick = click) {
-                    Icon(
-                        imageVector = Icons.Default.List,
-                        contentDescription = "Chats",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
-                    )
-                }
-            }
-
             // Model selection button
             if (availableModels.isNotEmpty()) {
                 Card(

@@ -119,30 +119,6 @@ class ModelRepositoryImpl @Inject constructor(
             // Return default models even if API fails
             listOf(
                 mapOf(
-                    "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                    "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
-                    "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                    "supportsReasoning" to "false"
-                ),
-                mapOf(
-                    "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                    "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
-                    "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                    "supportsReasoning" to "false"
-                ),
-                mapOf(
-                    "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                    "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
-                    "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                    "supportsReasoning" to "false"
-                ),
-                mapOf(
-                    "name" to "NemoTron-1.5B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
-                    "destination" to "NemoTron-1.5B-Q4_K_M.gguf",
-                    "supportsReasoning" to "true"
-                ),
-                mapOf(
                     "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
                     "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
                     "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
