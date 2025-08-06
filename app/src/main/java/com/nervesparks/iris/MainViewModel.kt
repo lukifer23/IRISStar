@@ -108,8 +108,27 @@ class MainViewModel @Inject constructor(
         loadDefaultModelName()
         loadModelSettings()
         loadThinkingTokenSettings()
+        
+        // Set a default Hugging Face token if none exists
+        if (userPreferencesRepository.getHuggingFaceToken().isEmpty()) {
+            setTestHuggingFaceToken()
+        }
+        
         viewModelScope.launch {
-            allModels = modelRepository.refreshAvailableModels()
+            try {
+                allModels = modelRepository.refreshAvailableModels()
+            } catch (e: Exception) {
+                Log.e(tag, "Error refreshing available models", e)
+                // Use default models if API fails
+                allModels = listOf(
+                    mapOf(
+                        "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                        "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
+                        "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+                        "supportsReasoning" to "true"
+                    )
+                )
+            }
         }
     }
     private fun loadDefaultModelName(){
@@ -369,15 +388,47 @@ class MainViewModel @Inject constructor(
         isGenerating = false
     }
 
-    // Model configuration variables
-    var modelTemperature by mutableStateOf(0.7f)
-    var modelTopP by mutableStateOf(0.9f)
-    var modelTopK by mutableStateOf(40)
-    var modelMaxTokens by mutableStateOf(2048)
-    var modelContextLength by mutableStateOf(32768) // Increased for Qwen3 support
-    var modelSystemPrompt by mutableStateOf("You are a helpful AI assistant.")
-    var modelChatFormat by mutableStateOf("QWEN3")
-    var modelThreadCount by mutableStateOf(4)
+    // Model configuration variables - Initialize with default values
+    private var _modelTemperature = mutableStateOf(0.7f)
+    var modelTemperature: Float
+        get() = _modelTemperature.value
+        set(value) { _modelTemperature.value = value }
+    
+    private var _modelTopP = mutableStateOf(0.9f)
+    var modelTopP: Float
+        get() = _modelTopP.value
+        set(value) { _modelTopP.value = value }
+    
+    private var _modelTopK = mutableStateOf(40)
+    var modelTopK: Int
+        get() = _modelTopK.value
+        set(value) { _modelTopK.value = value }
+    
+    private var _modelMaxTokens = mutableStateOf(2048)
+    var modelMaxTokens: Int
+        get() = _modelMaxTokens.value
+        set(value) { _modelMaxTokens.value = value }
+    
+    private var _modelContextLength = mutableStateOf(32768) // Increased for Qwen3 support
+    var modelContextLength: Int
+        get() = _modelContextLength.value
+        set(value) { _modelContextLength.value = value }
+    
+    private var _modelSystemPrompt = mutableStateOf("You are a helpful AI assistant.")
+    var modelSystemPrompt: String
+        get() = _modelSystemPrompt.value
+        set(value) { _modelSystemPrompt.value = value }
+    
+    private var _modelChatFormat = mutableStateOf("QWEN3")
+    var modelChatFormat: String
+        get() = _modelChatFormat.value
+        set(value) { _modelChatFormat.value = value }
+    
+    private var _modelThreadCount = mutableStateOf(4)
+    var modelThreadCount: Int
+        get() = _modelThreadCount.value
+        set(value) { _modelThreadCount.value = value }
+    
     var showModelSettings by mutableStateOf(false)
 
     // Model configuration functions
@@ -777,8 +828,9 @@ class MainViewModel @Inject constructor(
                     val reserve = reserveTokens
 
                     // Trim history until it fits within the context window
+                    var prompt = ""
                     while (true) {
-                        val prompt = if (template.isNotBlank()) {
+                        prompt = if (template.isNotBlank()) {
                             val jinjava = com.hubspot.jinjava.Jinjava()
                             val context = mapOf("messages" to workingMessages)
                             jinjava.render(template, context)
@@ -806,11 +858,11 @@ class MainViewModel @Inject constructor(
                         messages = workingMessages
                     }
 
-                    contextLimit = llamaAndroid.countTokens(fullMessage)
+                    contextLimit = llamaAndroid.countTokens(prompt)
                     maxContextLimit = modelContextLength
 
                     var generatedTokens = 0
-                    llamaAndroid.send(fullMessage)
+                    llamaAndroid.send(prompt)
                         .catch {
                             Log.e(tag, "send() failed", it)
                             addMessage("error", it.message ?: "")
@@ -818,7 +870,7 @@ class MainViewModel @Inject constructor(
                         .collect {
                             generatedTokens++
                             updateTokenCount(generatedTokens)
-                            contextLimit = llamaAndroid.countTokens(fullMessage) + generatedTokens
+                            contextLimit = llamaAndroid.countTokens(prompt) + generatedTokens
 
                             if (getIsMarked()) {
                                 addMessage("codeBlock", it)
@@ -956,6 +1008,8 @@ class MainViewModel @Inject constructor(
                 showModal = false
                 showAlert = true
                 
+                Log.d(tag, "Loading model with settings: threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
+                
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
                     pathToModel, 
@@ -964,6 +1018,8 @@ class MainViewModel @Inject constructor(
                     topP = modelTopP, 
                     temp = modelTemperature
                 )
+                
+                Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
                 showAlert = false
 
             } catch (exc: IllegalStateException) {

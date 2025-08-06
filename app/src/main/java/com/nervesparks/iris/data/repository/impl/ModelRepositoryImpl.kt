@@ -4,6 +4,10 @@ import android.llama.cpp.LLamaAndroid
 import android.util.Log
 import com.nervesparks.iris.data.HuggingFaceApiService
 import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.data.exceptions.ModelNotFoundException
+import com.nervesparks.iris.data.exceptions.InvalidModelException
+import com.nervesparks.iris.data.exceptions.ValidationException
+import com.nervesparks.iris.data.exceptions.NetworkException
 import com.nervesparks.iris.data.repository.ModelRepository
 import com.nervesparks.iris.data.repository.ModelConfiguration
 import com.squareup.moshi.Moshi
@@ -35,8 +39,14 @@ class ModelRepositoryImpl @Inject constructor(
 
     override suspend fun refreshAvailableModels(): List<Map<String, String>> {
         return try {
+            // Validate input parameters
+            val searchQuery = "gguf"
+            if (searchQuery.isBlank()) {
+                throw ValidationException("Search query cannot be blank")
+            }
+            
             val token = userPreferencesRepository.getHuggingFaceToken().takeIf { it.isNotEmpty() }
-            val models = huggingFaceApiService.searchModels("gguf", token)
+            val models = huggingFaceApiService.searchModels(searchQuery, token)
             val mapped = models.flatMap { info ->
                 info.siblings.filter { it.filename.endsWith(".gguf") }.map { file ->
                     val source = "https://huggingface.co/${info.id}/resolve/main/${file.filename}?download=true"
@@ -100,6 +110,9 @@ class ModelRepositoryImpl @Inject constructor(
             userPreferencesRepository.setCachedModels(adapter.toJson(cacheData))
 
             allModels
+        } catch (e: NetworkException) {
+            Log.e(tag, "Network error refreshing model catalogue", e)
+            throw e
         } catch (e: Exception) {
             Log.e(tag, "Error refreshing model catalogue", e)
             
@@ -172,6 +185,20 @@ class ModelRepositoryImpl @Inject constructor(
     
     override suspend fun loadModel(modelPath: String): Result<Unit> {
         return try {
+            // Validate input parameters
+            if (modelPath.isBlank()) {
+                throw ValidationException("Model path cannot be blank")
+            }
+            
+            val modelFile = File(modelPath)
+            if (!modelFile.exists()) {
+                throw ModelNotFoundException(modelFile.name)
+            }
+            
+            if (!modelFile.canRead()) {
+                throw InvalidModelException(modelFile.name, Exception("File is not readable"))
+            }
+            
             Log.d(tag, "Loading model: $modelPath")
             llamaAndroid.load(
                 modelPath,
@@ -180,9 +207,15 @@ class ModelRepositoryImpl @Inject constructor(
                 topP = 0.9f, // Default top-p
                 temp = 0.7f // Default temperature
             )
-            currentLoadedModel = File(modelPath).name
+            currentLoadedModel = modelFile.name
             Log.i(tag, "Successfully loaded model: $currentLoadedModel")
             Result.success(Unit)
+        } catch (e: ModelNotFoundException) {
+            Log.e(tag, "Model not found: $modelPath", e)
+            Result.failure(e)
+        } catch (e: InvalidModelException) {
+            Log.e(tag, "Invalid model: $modelPath", e)
+            Result.failure(e)
         } catch (e: Exception) {
             Log.e(tag, "Error loading model: $modelPath", e)
             Result.failure(e)
@@ -191,6 +224,23 @@ class ModelRepositoryImpl @Inject constructor(
     
     override suspend fun loadModelByName(modelName: String, directory: File): Result<Unit> {
         return try {
+            // Validate input parameters
+            if (modelName.isBlank()) {
+                throw IllegalArgumentException("Model name cannot be blank")
+            }
+            
+            if (!directory.exists()) {
+                throw IllegalArgumentException("Directory does not exist: ${directory.absolutePath}")
+            }
+            
+            if (!directory.isDirectory) {
+                throw IllegalArgumentException("Path is not a directory: ${directory.absolutePath}")
+            }
+            
+            if (!directory.canRead()) {
+                throw IllegalArgumentException("Directory is not readable: ${directory.absolutePath}")
+            }
+            
             val modelFile = File(directory, modelName)
             if (modelFile.exists()) {
                 loadModel(modelFile.absolutePath)

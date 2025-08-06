@@ -2,6 +2,7 @@ package com.nervesparks.iris.data
 
 import com.nervesparks.iris.data.db.Document
 import com.nervesparks.iris.data.db.DocumentDao
+import com.nervesparks.iris.data.exceptions.ValidationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -11,10 +12,44 @@ class DocumentRepository @Inject constructor(
     private val documentDao: DocumentDao
 ) {
     suspend fun addDocument(text: String, embedding: List<Float>) = withContext(Dispatchers.IO) {
+        // Validate input parameters
+        if (text.isBlank()) {
+            throw ValidationException("Document text cannot be blank")
+        }
+        
+        if (text.length > 10000) {
+            throw ValidationException("Document text too long (max 10000 characters)")
+        }
+        
+        if (embedding.isEmpty()) {
+            throw ValidationException("Document embedding cannot be empty")
+        }
+        
+        if (embedding.size > 4096) {
+            throw ValidationException("Document embedding too large (max 4096 dimensions)")
+        }
+        
         documentDao.insertDocument(Document(text = text, embedding = embedding))
     }
 
     suspend fun topKSimilar(embedding: List<Float>, k: Int): List<Document> = withContext(Dispatchers.IO) {
+        // Validate input parameters
+        if (embedding.isEmpty()) {
+            throw ValidationException("Query embedding cannot be empty")
+        }
+        
+        if (embedding.size > 4096) {
+            throw ValidationException("Query embedding too large (max 4096 dimensions)")
+        }
+        
+        if (k <= 0) {
+            throw ValidationException("Invalid k value: $k")
+        }
+        
+        if (k > 100) {
+            throw ValidationException("k value too large (max 100)")
+        }
+        
         val docs = documentDao.getAllDocuments()
         docs.sortedByDescending { cosineSimilarity(it.embedding, embedding) }.take(k)
     }

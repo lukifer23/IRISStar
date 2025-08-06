@@ -3,6 +3,9 @@ package com.nervesparks.iris.data.repository.impl
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.ChatDao
 import com.nervesparks.iris.data.db.Message
+import com.nervesparks.iris.data.exceptions.ChatNotFoundException
+import com.nervesparks.iris.data.exceptions.MessageNotFoundException
+import com.nervesparks.iris.data.exceptions.ValidationException
 import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.repository.ChatStats
 import kotlinx.coroutines.Dispatchers
@@ -25,11 +28,33 @@ class ChatRepositoryImpl @Inject constructor(
     override fun observeChat(chatId: Long): Flow<Chat> = chatDao.observeChat(chatId)
 
     override suspend fun createChat(title: String): Long = withContext(Dispatchers.IO) {
+        // Validate input parameters
+        if (title.isBlank()) {
+            throw ValidationException("Chat title cannot be blank")
+        }
+        
+        if (title.length > 100) {
+            throw ValidationException("Chat title too long (max 100 characters)")
+        }
+        
         val chat = Chat(title = title)
         chatDao.insertChat(chat)
     }
 
     override suspend fun updateChatTitle(chatId: Long, title: String) = withContext(Dispatchers.IO) {
+        // Validate input parameters
+        if (chatId <= 0) {
+            throw ValidationException("Invalid chat ID: $chatId")
+        }
+        
+        if (title.isBlank()) {
+            throw ValidationException("Chat title cannot be blank")
+        }
+        
+        if (title.length > 100) {
+            throw ValidationException("Chat title too long (max 100 characters)")
+        }
+        
         val chat = chatDao.getChat(chatId)
         if (chat != null) {
             chatDao.updateChat(chat.copy(title = title, updated = System.currentTimeMillis()))
@@ -52,6 +77,27 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addMessage(chatId: Long, role: String, content: String, index: Int) = withContext(Dispatchers.IO) {
+        // Validate input parameters
+        if (chatId <= 0) {
+            throw ValidationException("Invalid chat ID: $chatId")
+        }
+        
+        if (role.isBlank()) {
+            throw ValidationException("Message role cannot be blank")
+        }
+        
+        if (!listOf("user", "assistant", "system", "error").contains(role.lowercase())) {
+            throw ValidationException("Invalid message role: $role")
+        }
+        
+        if (content.isBlank()) {
+            throw ValidationException("Message content cannot be blank")
+        }
+        
+        if (index < 0) {
+            throw ValidationException("Invalid message index: $index")
+        }
+        
         val message = Message(chatId = chatId, role = role, content = content, index = index)
         chatDao.insertMessage(message)
     }
