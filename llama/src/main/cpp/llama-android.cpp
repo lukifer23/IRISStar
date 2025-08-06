@@ -343,7 +343,20 @@ Java_android_llama_cpp_LLamaAndroid_bench_1model(
     const auto model_size     = double(llama_model_size(model)) / 1024.0 / 1024.0 / 1024.0;
     const auto model_n_params = double(llama_model_n_params(model)) / 1e9;
 
-    const auto backend    = "(Android)"; // TODO: What should this be?
+    // Determine backend based on build flags so benchmarks report the
+    // actual runtime used. This mirrors the backends supported by
+    // ggml/llama.cpp.
+#if defined(GGML_USE_CUDA)
+    const auto backend    = "CUDA";
+#elif defined(GGML_USE_VULKAN)
+    const auto backend    = "Vulkan";
+#elif defined(GGML_USE_METAL) || defined(GGML_USE_MPS)
+    const auto backend    = "Metal";
+#elif defined(GGML_USE_CLBLAST) || defined(GGML_USE_OPENCL)
+    const auto backend    = "OpenCL";
+#else
+    const auto backend    = "CPU";
+#endif
 
     std::stringstream result;
     result << std::setprecision(2);
