@@ -1703,17 +1703,41 @@ class MainViewModel @Inject constructor(
     fun runBenchmarkWithModel(modelName: String, directory: File) {
         viewModelScope.launch {
             isComparativeBenchmarkRunning = true
+
+            // Save the currently loaded model so we can restore it later
+            val previousModelName = loadedModelName.value
+            val previousModelPath = allModels
+                .find { it["name"] == previousModelName }
+                ?.let { File(directory, it["destination"].toString()).path }
+
             try {
                 Log.d(tag, "Starting benchmark with model: $modelName")
-                
-                // Since the benchmark is simulated, we don't need to actually load the model
-                // Just run the simulated benchmark directly
-                runComparativeBenchmark()
-                
-            } catch (e: Exception) {
-                Log.e(tag, "Benchmark with model failed", e)
-                comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
+
+                // Attempt to load the user selected model
+                val loaded = loadModelByName(modelName, directory)
+                if (!loaded) {
+                    comparativeBenchmarkResults = mapOf("error" to "Failed to load model: $modelName")
+                    return@launch
+                }
+
+                // Run the benchmark and capture any errors
+                try {
+                    runComparativeBenchmark()
+                } catch (benchExc: Exception) {
+                    Log.e(tag, "Benchmark with model failed", benchExc)
+                    comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${benchExc.message}")
+                }
+
             } finally {
+                // Restore the previously loaded model
+                if (previousModelPath != null) {
+                    try {
+                        val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
+                        load(previousModelPath, userThreads = modelThreadCount, backend = backend)
+                    } catch (restoreExc: Exception) {
+                        Log.e(tag, "Failed to reload previous model", restoreExc)
+                    }
+                }
                 isComparativeBenchmarkRunning = false
                 hideBenchmarkModelSelection()
             }
@@ -1854,23 +1878,22 @@ class MainViewModel @Inject constructor(
     /**
      * Load a model by name from the external files directory
      */
-    fun loadModelByName(modelName: String, directory: File) {
+    fun loadModelByName(modelName: String, directory: File): Boolean {
         Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
         Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
         Log.d(tag, "All models count: ${allModels.size}")
         Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
-        
+
         val foundModel = allModels.find { it["name"] == modelName }
         Log.d(tag, "Found model in allModels: $foundModel")
-        
+
         val reasoningSupport = foundModel?.get("supportsReasoning")
         Log.d(tag, "Raw reasoning support value: $reasoningSupport")
-        
+
         // Fallback logic: if model not found, check if it's a known reasoning model
         supportsReasoning = if (reasoningSupport == "true") {
             true
         } else if (foundModel == null) {
-            // Fallback: check if model name contains reasoning-related keywords
             val reasoningKeywords = listOf("reasoning", "think", "qwen", "nemotron", "openreasoning")
             val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                 modelName.lowercase().contains(keyword.lowercase())
@@ -1881,7 +1904,7 @@ class MainViewModel @Inject constructor(
             false
         }
         Log.d(tag, "Final supportsReasoning: $supportsReasoning")
-        
+
         // Set chat template from model definition
         val chatTemplate = foundModel?.get("chatTemplate")
         if (chatTemplate != null) {
@@ -1890,29 +1913,40 @@ class MainViewModel @Inject constructor(
         } else {
             Log.d(tag, "No chat template found in model definition, using default: $modelChatFormat")
         }
-        
+
         Log.d(tag, "=== END REASONING DEBUG ===")
-        
+
         // TEMPORARY FIX: Force reasoning support for Qwen model
         if (modelName.contains("Qwen")) {
             Log.d(tag, "TEMPORARY FIX: Forcing reasoning support for Qwen model in loadModelByName")
             supportsReasoning = true
         }
-        
-        viewModelScope.launch {
-            try {
-                val model = allModels.find { it["name"] == modelName }
-                if (model != null) {
-                    val destinationPath = File(directory, model["destination"].toString())
-                    if (destinationPath.exists()) {
-                        // Use OpenCL backend if available, otherwise fallback to CPU
-                        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
-                        load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
-                    }
+
+        return try {
+            val model = allModels.find { it["name"] == modelName }
+            if (model != null) {
+                val destinationPath = File(directory, model["destination"].toString())
+                if (destinationPath.exists()) {
+                    // Use the currently selected backend
+                    val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
+                    load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
+                    true
+                } else {
+                    val msg = "Model file not found: ${destinationPath.path}"
+                    Log.e(tag, msg)
+                    addMessage("error", msg)
+                    false
                 }
-            } catch (e: Exception) {
-                Log.e(tag, "Error loading model by name: ${e.message}")
+            } else {
+                val msg = "Model not found: $modelName"
+                Log.e(tag, msg)
+                addMessage("error", msg)
+                false
             }
+        } catch (e: Exception) {
+            Log.e(tag, "Error loading model by name: ${e.message}", e)
+            addMessage("error", "Failed to load model: ${e.message}")
+            false
         }
     }
 
