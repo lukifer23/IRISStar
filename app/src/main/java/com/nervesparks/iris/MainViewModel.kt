@@ -1717,9 +1717,8 @@ class MainViewModel @Inject constructor(
                 Log.e(tag, "load() failed", exc)
             }
             try {
-                // Set the backend before loading the model
-                llamaAndroid.setBackend(backend)
-                Log.d(tag, "Set backend to: $backend")
+                // Since OpenCL is disabled, we only use CPU backend
+                Log.d(tag, "Using CPU backend (OpenCL disabled)")
                 
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
@@ -1779,27 +1778,8 @@ class MainViewModel @Inject constructor(
 
             } catch (exc: IllegalStateException) {
                 Log.e(tag, "load() failed", exc)
-                // If OpenCL fails, try with CPU backend
-                if (backend == "opencl") {
-                    Log.d(tag, "OpenCL failed, retrying with CPU backend")
-                    try {
-                        llamaAndroid.setBackend("cpu")
-                        llamaAndroid.load(
-                            pathToModel, 
-                            userThreads = modelThreadCount, 
-                            topK = modelTopK, 
-                            topP = modelTopP, 
-                            temp = modelTemperature
-                        )
-                        Log.d(tag, "Model loaded successfully with CPU backend: ${loadedModelName.value}")
-                        showAlert = false
-                    } catch (cpuExc: Exception) {
-                        Log.e(tag, "CPU backend also failed", cpuExc)
-                        addMessage("error", "Failed to load model: ${cpuExc.message}")
-                    }
-                } else {
-                    addMessage("error", "Failed to load model: ${exc.message}")
-                }
+                // Since OpenCL is disabled, just report the error
+                addMessage("error", "Failed to load model: ${exc.message}")
             } catch (exc: Exception) {
                 Log.e(tag, "load() failed with exception", exc)
                 addMessage("error", "Failed to load model: ${exc.message}")
