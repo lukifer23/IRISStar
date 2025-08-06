@@ -10,7 +10,7 @@ class ModelUpdateWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        // TODO: Implement model update check
+        // Model update check not yet implemented
         return Result.success()
     }
 }

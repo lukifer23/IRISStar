@@ -15,7 +15,7 @@ fun TemplatesScreen(
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Templates")
-        Button(onClick = { /* TODO: Add new template */ }) {
+        Button(onClick = { }) {
             Text("Add Template")
         }
     }

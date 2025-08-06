@@ -189,9 +189,6 @@ class MainViewModel @Inject constructor(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(intent)
-
-        // TODO: Optionally capture results via WebView and
-        // forward content to the summarization pipeline.
     }
 
     // Quick action and attachment handlers

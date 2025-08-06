@@ -343,7 +343,7 @@ Java_android_llama_cpp_LLamaAndroid_bench_1model(
     const auto model_size     = double(llama_model_size(model)) / 1024.0 / 1024.0 / 1024.0;
     const auto model_n_params = double(llama_model_n_params(model)) / 1e9;
 
-    const auto backend    = "(Android)"; // TODO: What should this be?
+    const auto backend    = "android";
 
     std::stringstream result;
     result << std::setprecision(2);
@@ -1061,9 +1061,8 @@ Java_android_llama_cpp_LLamaAndroid_count_1tokens(JNIEnv *env, jobject, jlong jm
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_getMemoryUsageNative(JNIEnv *env, jobject thiz) {
-    // Get current memory usage from llama.cpp context
-    // For now, return a placeholder value since we need to access the context
-    // TODO: Implement proper memory tracking by passing context as parameter
+    // Memory tracking is not available without a context parameter.
+    // Return 0 until the JNI interface provides the necessary data.
     return 0;
 }
 

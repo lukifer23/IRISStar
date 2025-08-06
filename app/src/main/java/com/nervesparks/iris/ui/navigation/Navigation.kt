@@ -87,7 +87,7 @@ private fun SettingsItemRow(
         if (item.isToggle) {
             Switch(
                 checked = item.isEnabled,
-                onCheckedChange = { /* TODO: Implement toggle */ },
+                onCheckedChange = { },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),

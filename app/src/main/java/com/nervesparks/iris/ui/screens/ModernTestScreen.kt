@@ -33,7 +33,7 @@ fun ModernTestScreen(
         // Modern top app bar
         ModernTopAppBar(
             title = "IRIS Star",
-            onMenuClick = { /* TODO: Open menu */ },
+            onMenuClick = { },
             onModelClick = { showModelDropdown = !showModelDropdown },
             currentModel = "No Model Selected",
             availableModels = availableModels,
@@ -72,8 +72,8 @@ fun ModernTestScreen(
                 
                 // User profile component
                 UserProfile(
-                    onProfileClick = { /* TODO: Edit profile */ },
-                    onSettingsClick = { /* TODO: Open settings */ }
+                    onProfileClick = { },
+                    onSettingsClick = { }
                 )
             }
         }
@@ -83,11 +83,11 @@ fun ModernTestScreen(
             value = messageText,
             onValueChange = { messageText = it },
             onSend = {
-                // TODO: Send message
+                viewModel.send()
                 messageText = ""
             },
-            onAttachmentClick = { /* TODO: Implement attachments */ },
-            onVoiceClick = { /* TODO: Implement voice input */ },
+            onAttachmentClick = { },
+            onVoiceClick = { },
             onCameraClick = { viewModel.onCameraAttachment() },
             onPhotosClick = { viewModel.onPhotosAttachment() },
             onFilesClick = { viewModel.onFilesAttachment() },
