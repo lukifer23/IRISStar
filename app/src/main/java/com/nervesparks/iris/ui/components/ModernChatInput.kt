@@ -37,6 +37,7 @@ fun ModernChatInput(
     onCodeClick: () -> Unit = {},
     isCodeMode: Boolean = false,
     onTranslateClick: () -> Unit = {},
+    onWebSearchClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     placeholder: String = "Ask anything",
     enabled: Boolean = true
@@ -92,13 +93,25 @@ fun ModernChatInput(
                     )
                 }
 
-                IconButton(
+                                IconButton(
                     onClick = { showTranslationDialog = true },
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Translate,
                         contentDescription = "Translate",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onWebSearchClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Web Search",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )

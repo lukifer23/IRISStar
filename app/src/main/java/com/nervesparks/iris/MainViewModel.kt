@@ -29,11 +29,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
 import java.io.File
 import java.util.Locale
 import java.util.UUID
 
 import android.app.Application
+import android.content.Context
 import com.nervesparks.iris.data.ChatRepository
 import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.db.Chat
@@ -342,13 +345,157 @@ class MainViewModel @Inject constructor(
     fun sendCode(code: String) {
         val prompt = "Analyze the following code:\n\n```\n$code\n```"
         addMessage("user", prompt)
-        send()
+        // Don't call send() to avoid infinite recursion
+        // Instead, directly process the code analysis
+        processCodeAnalysis(prompt)
+    }
+
+    private fun processCodeAnalysis(prompt: String) {
+        viewModelScope.launch {
+            try {
+                startGeneration()
+                
+                var workingMessages = messages.toMutableList()
+                val reserve = 256
+
+                // Trim history until it fits within the context window
+                var finalPrompt = ""
+                while (true) {
+                    finalPrompt = if (template.isNotBlank()) {
+                        val jinjava = com.hubspot.jinjava.Jinjava()
+                        val context = mapOf("messages" to workingMessages)
+                        jinjava.render(template, context)
+                    } else {
+                        com.nervesparks.iris.llm.TemplateRegistry.render(
+                            modelChatFormat,
+                            workingMessages,
+                            modelSystemPrompt,
+                            includeThinkingTags = true
+                        )
+                    }
+                    val promptTokens = llamaAndroid.countTokens(finalPrompt)
+                    if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
+                        break
+                    }
+                    val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
+                    if (removeIdx >= 0) {
+                        workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
+                    } else {
+                        break
+                    }
+                }
+
+                if (workingMessages.size != messages.size) {
+                    messages = workingMessages
+                }
+
+                contextLimit = llamaAndroid.countTokens(finalPrompt)
+                maxContextLimit = modelContextLength
+
+                var generatedTokens = 0
+                llamaAndroid.send(finalPrompt)
+                    .catch {
+                        Log.e(tag, "processCodeAnalysis() failed", it)
+                        addMessage("error", it.message ?: "")
+                    }
+                    .collect {
+                        generatedTokens++
+                        updateTokenCount(generatedTokens)
+                        contextLimit = llamaAndroid.countTokens(finalPrompt) + generatedTokens
+
+                        if (getIsMarked()) {
+                            addMessage("codeBlock", it)
+                        } else {
+                            addMessage("assistant", it)
+                        }
+                    }
+                    .also {
+                        endGeneration()
+                        persistChat()
+                    }
+            } catch (e: Exception) {
+                Log.e(tag, "Error in processCodeAnalysis", e)
+                addMessage("error", "Failed to analyze code: ${e.message}")
+                endGeneration()
+            }
+        }
     }
 
     fun translate(text: String, targetLanguage: String) {
         val prompt = "Translate the following text to $targetLanguage:\n\n$text"
         addMessage("user", prompt)
-        send()
+        processTranslation(prompt)
+    }
+
+    private fun processTranslation(prompt: String) {
+        viewModelScope.launch {
+            try {
+                startGeneration()
+                
+                var workingMessages = messages.toMutableList()
+                val reserve = 256
+
+                // Trim history until it fits within the context window
+                var finalPrompt = ""
+                while (true) {
+                    finalPrompt = if (template.isNotBlank()) {
+                        val jinjava = com.hubspot.jinjava.Jinjava()
+                        val context = mapOf("messages" to workingMessages)
+                        jinjava.render(template, context)
+                    } else {
+                        com.nervesparks.iris.llm.TemplateRegistry.render(
+                            modelChatFormat,
+                            workingMessages,
+                            modelSystemPrompt,
+                            includeThinkingTags = true
+                        )
+                    }
+                    val promptTokens = llamaAndroid.countTokens(finalPrompt)
+                    if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
+                        break
+                    }
+                    val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
+                    if (removeIdx >= 0) {
+                        workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
+                    } else {
+                        break
+                    }
+                }
+
+                if (workingMessages.size != messages.size) {
+                    messages = workingMessages
+                }
+
+                contextLimit = llamaAndroid.countTokens(finalPrompt)
+                maxContextLimit = modelContextLength
+
+                var generatedTokens = 0
+                llamaAndroid.send(finalPrompt)
+                    .catch {
+                        Log.e(tag, "processTranslation() failed", it)
+                        addMessage("error", it.message ?: "")
+                    }
+                    .collect {
+                        generatedTokens++
+                        updateTokenCount(generatedTokens)
+                        contextLimit = llamaAndroid.countTokens(finalPrompt) + generatedTokens
+
+                        if (getIsMarked()) {
+                            addMessage("codeBlock", it)
+                        } else {
+                            addMessage("assistant", it)
+                        }
+                    }
+                    .also {
+                        endGeneration()
+                        persistChat()
+                    }
+            } catch (e: Exception) {
+                Log.e(tag, "Error in processTranslation", e)
+                addMessage("error", "Failed to translate: ${e.message}")
+                endGeneration()
+            }
+        }
     }
 
     fun quantizeModel(model: String, quantizeType: String) {

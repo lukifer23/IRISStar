@@ -153,7 +153,12 @@ fun MainChatScreen2(
                         onFilesClick = { viewModel.onFilesAttachment() },
                         onCodeClick = { viewModel.toggleCodeMode() },
                         isCodeMode = viewModel.isCodeMode,
-                        onTranslateClick = { viewModel.translate(viewModel.message, "English") }
+                        onTranslateClick = { viewModel.translate(viewModel.message, "English") },
+                        onWebSearchClick = { 
+                            if (viewModel.message.isNotBlank()) {
+                                viewModel.performWebSearch(viewModel.message)
+                            }
+                        }
                     )
                 }
             }
