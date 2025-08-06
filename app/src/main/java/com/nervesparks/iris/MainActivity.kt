@@ -64,15 +64,12 @@ import android.app.Application
 import androidx.compose.foundation.border
 import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.security.BiometricAuthenticator
 import com.nervesparks.iris.ui.theme.IrisStarTheme
 import com.nervesparks.iris.ui.navigation.AppNavigation
 import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -129,8 +126,7 @@ class MainActivity : FragmentActivity() {
             viewModel.loadExistingModels(extFilesDir)
         }
 
-        val workRequest = PeriodicWorkRequestBuilder<ModelUpdateWorker>(1, TimeUnit.DAYS).build()
-        WorkManager.getInstance(this).enqueue(workRequest)
+        ModelUpdateWorker.schedule(this)
 
         if (preferencesRepository.getSecurityBiometricEnabled()) {
             val biometricAuthenticator = BiometricAuthenticator(this)
