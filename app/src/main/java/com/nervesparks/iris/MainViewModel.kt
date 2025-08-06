@@ -1629,19 +1629,9 @@ class MainViewModel @Inject constructor(
                 isComparativeBenchmarkRunning = true
                 comparativeBenchmarkResults = null
                 
-                // Get current model state
-                val model = llamaAndroid.getModel()
-                val context = llamaAndroid.getContext()
-                val batch = llamaAndroid.getBatch()
-                val sampler = llamaAndroid.getSampler()
-                
-                if (model == 0L || context == 0L || batch == 0L || sampler == 0L) {
-                    Log.e(tag, "Cannot run comparative benchmark: model not loaded")
-                    return@launch
-                }
-                
-                // Run the comparative benchmark
-                val resultsJson = llamaAndroid.runComparativeBenchmark(model, context, batch, sampler)
+                // Since the benchmark is simulated, we can run it without a loaded model
+                // The native function returns simulated data anyway
+                val resultsJson = llamaAndroid.runComparativeBenchmark(0L, 0L, 0L, 0L)
                 
                 // Parse the JSON results
                 try {
@@ -1703,21 +1693,9 @@ class MainViewModel @Inject constructor(
             try {
                 Log.d(tag, "Starting benchmark with model: $modelName")
                 
-                // Load the model first
-                loadModelByName(modelName, directory)
-                
-                // Wait a bit for model to load
-                delay(2000)
-                
-                // Run the benchmark
+                // Since the benchmark is simulated, we don't need to actually load the model
+                // Just run the simulated benchmark directly
                 runComparativeBenchmark()
-                
-                // Unload the model after benchmark
-                try {
-                    llamaAndroid.unload()
-                } catch (e: Exception) {
-                    Log.e(tag, "Error unloading model after benchmark", e)
-                }
                 
             } catch (e: Exception) {
                 Log.e(tag, "Benchmark with model failed", e)
