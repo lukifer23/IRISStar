@@ -31,6 +31,8 @@ fun ChatListScreen(
 ) {
     val chats by viewModel.chats.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredChats = chats.filter { it.title.contains(searchQuery, ignoreCase = true) }
 
     Scaffold(
         floatingActionButton = {
@@ -43,16 +45,26 @@ fun ChatListScreen(
             Modifier
                 .fillMaxSize()
                 .padding(paddingValues)) {
-            if (chats.isEmpty()) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search chats") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                singleLine = true
+            )
+
+            if (filteredChats.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "No chats yet.",
+                        if (chats.isEmpty()) "No chats yet." else "No chats found.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
                 LazyColumn(Modifier.weight(1f)) {
-                    items(chats, key = { it.id }) { chat ->
+                    items(filteredChats, key = { it.id }) { chat ->
                         ChatRow(
                             chat = chat,
                             onClick = { onChatSelected(chat.id) },

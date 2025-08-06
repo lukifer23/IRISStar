@@ -1538,7 +1538,7 @@ class MainViewModel @Inject constructor(
         return input.replace("\\s+".toRegex(), " ")
     }
 
-    private fun persistChat() {
+    fun persistChat() {
         val title = messages.firstOrNull { it["role"] == "user" }?.get("content")?.take(64) ?: "Chat"
         val baseChat = currentChat?.copy(title = title, updated = System.currentTimeMillis())
             ?: Chat(title = title)
