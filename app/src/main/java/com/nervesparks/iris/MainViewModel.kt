@@ -211,50 +211,66 @@ class MainViewModel @Inject constructor(
                 isSearching = true
                 currentSearchQuery = query
                 searchProgress = "Initializing search..."
-                
+
                 // Show search in progress
                 addMessage("assistant", "🔍 Searching the web for \"$query\"...")
-                
+
                 searchProgress = "Querying search engine..."
-                
+
                 // Perform actual web search
                 val searchResponse = webSearchService.searchWeb(query)
-                
+
                 searchProgress = "Processing results..."
-                
+
                 if (searchResponse.success && searchResponse.results != null) {
                     searchProgress = "Formatting results..."
-                    
+
                     // Format and display search results
                     val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
                     addMessage("assistant", formattedResults)
-                    
+
                     // If summarize is true, ask the model to summarize the results
                     if (summarize && searchResponse.results.isNotEmpty()) {
                         searchProgress = "Generating summary..."
-                        
+
                         val summaryPrompt = """
                             Based on the search results above, provide a concise summary of the key information about "$query".
                             Focus on the most important facts and recent developments.
                         """.trimIndent()
-                        
-                        addMessage("user", summaryPrompt)
-                        processWebSearch(summaryPrompt)
+
+                        try {
+                            addMessage("user", summaryPrompt)
+                            processWebSearch(summaryPrompt)
+                            searchProgress = "Search complete"
+                        } catch (e: Exception) {
+                            Log.e(tag, "Error generating summary", e)
+                            addMessage(
+                                "assistant",
+                                "❌ Summary failed: ${e.message}\n\nPlease try again later."
+                            )
+                            searchProgress = "Summary failed"
+                        }
+                    } else {
+                        searchProgress = "Search complete"
                     }
                 } else {
                     // Handle search error
                     val errorMessage = searchResponse.error ?: "Unknown search error"
-                    addMessage("assistant", "❌ Search failed: $errorMessage\n\nPlease try rephrasing your search query.")
+                    addMessage(
+                        "assistant",
+                        "❌ Search failed: $errorMessage\n\nPlease try rephrasing your search query."
+                    )
+                    searchProgress = "Search failed"
                 }
-                
+
             } catch (e: Exception) {
                 Log.e(tag, "Error performing web search", e)
                 addMessage("assistant", "❌ Search error: ${e.message}\n\nPlease try again later.")
+                searchProgress = "Search error"
             } finally {
                 // Reset search state
                 isSearching = false
                 currentSearchQuery = ""
-                searchProgress = ""
             }
         }
     }

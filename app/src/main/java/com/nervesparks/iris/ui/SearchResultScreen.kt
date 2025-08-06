@@ -22,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -239,6 +240,41 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
             )
         ) {
             Text("Search Models")
+        }
+
+        // Web search status/progress
+        when {
+            viewModel.isSearching -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = viewModel.searchProgress,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
+            viewModel.searchProgress.isNotBlank() -> {
+                val isError = viewModel.searchProgress.contains("failed", ignoreCase = true) ||
+                    viewModel.searchProgress.contains("error", ignoreCase = true)
+                Text(
+                    text = viewModel.searchProgress,
+                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
+            }
         }
 
         // Error Message
