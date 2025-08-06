@@ -39,16 +39,15 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
     val context = LocalContext.current
 
     LazyColumn(state = scrollState) {
-        itemsIndexed(messages.drop(3)) { index, messageMap ->
+        itemsIndexed(messages.drop(3)) { _, messageMap ->
             val role = messageMap["role"] ?: ""
             val content = (messageMap["content"] ?: "").trimEnd()
-            val isLastMessage = index == messages.size - 4 // Adjust index because of drop(3)
-
             if (role != "system") {
                 when (role) {
                     "codeBlock" -> CodeBlockMessage(content)
                     "assistant" -> {
-                        if (isLastMessage && viewModel.isGenerating) {
+                        val (reasoningContent, _) = ReasoningParser.parse(content)
+                        if (reasoningContent.isNotEmpty() || viewModel.showThinkingTokens) {
                             ThinkingMessage(
                                 message = content,
                                 viewModel = viewModel,
