@@ -28,6 +28,7 @@ import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.ModernChatInput
 import com.nervesparks.iris.ui.components.ModernTopAppBar
 import com.nervesparks.iris.ui.components.PerformanceMonitor
+import com.nervesparks.iris.ui.components.SearchLoadingModal
 import com.nervesparks.iris.ui.navigation.AppDestinations
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.PrimaryButton
@@ -142,6 +143,15 @@ fun MainChatScreen2(
                         .padding(it)
                 ) {
                     ChatMessageList(viewModel = viewModel, scrollState = scrollState)
+                    
+                    // Show search loading modal when searching
+                    if (viewModel.isSearching) {
+                        SearchLoadingModal(
+                            message = viewModel.searchProgress,
+                            searchQuery = viewModel.currentSearchQuery,
+                            onDismiss = { }
+                        )
+                    }
                 }
             },
             bottomBar = {

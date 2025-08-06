@@ -46,6 +46,7 @@ import javax.inject.Inject
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import com.nervesparks.iris.data.WebSearchService
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -197,33 +198,63 @@ class MainViewModel @Inject constructor(
 
     var eot_str = ""
 
+    // Web search service
+    private val webSearchService = WebSearchService()
+
     fun performWebSearch(query: String, summarize: Boolean = true) {
         // Add the search query as a user message
         addMessage("user", "Search the web for: $query")
         
         viewModelScope.launch {
             try {
-                // Create a prompt that asks the model to search and provide information
-                val searchPrompt = """
-                    Please search the web for information about: "$query"
-                    
-                    Provide a comprehensive answer based on current information. Include:
-                    - Key facts and details
-                    - Recent developments if applicable
-                    - Reliable sources and references
-                    
-                    Format your response clearly and be helpful.
-                """.trimIndent()
+                // Update search state
+                isSearching = true
+                currentSearchQuery = query
+                searchProgress = "Initializing search..."
                 
-                // Add the search prompt to messages
-                addMessage("assistant", searchPrompt)
+                // Show search in progress
+                addMessage("assistant", "🔍 Searching the web for \"$query\"...")
                 
-                // Process the search request through the model
-                processWebSearch(searchPrompt)
+                searchProgress = "Querying search engine..."
+                
+                // Perform actual web search
+                val searchResponse = webSearchService.searchWeb(query)
+                
+                searchProgress = "Processing results..."
+                
+                if (searchResponse.success && searchResponse.results != null) {
+                    searchProgress = "Formatting results..."
+                    
+                    // Format and display search results
+                    val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
+                    addMessage("assistant", formattedResults)
+                    
+                    // If summarize is true, ask the model to summarize the results
+                    if (summarize && searchResponse.results.isNotEmpty()) {
+                        searchProgress = "Generating summary..."
+                        
+                        val summaryPrompt = """
+                            Based on the search results above, provide a concise summary of the key information about "$query".
+                            Focus on the most important facts and recent developments.
+                        """.trimIndent()
+                        
+                        addMessage("user", summaryPrompt)
+                        processWebSearch(summaryPrompt)
+                    }
+                } else {
+                    // Handle search error
+                    val errorMessage = searchResponse.error ?: "Unknown search error"
+                    addMessage("assistant", "❌ Search failed: $errorMessage\n\nPlease try rephrasing your search query.")
+                }
                 
             } catch (e: Exception) {
                 Log.e(tag, "Error performing web search", e)
-                addMessage("error", "Failed to perform web search: ${e.message}")
+                addMessage("assistant", "❌ Search error: ${e.message}\n\nPlease try again later.")
+            } finally {
+                // Reset search state
+                isSearching = false
+                currentSearchQuery = ""
+                searchProgress = ""
             }
         }
     }
@@ -408,6 +439,58 @@ class MainViewModel @Inject constructor(
 
     fun handleToolCall(toolCall: com.nervesparks.iris.data.ToolCall) {
         Log.d(tag, "Handling tool call: $toolCall")
+        
+        viewModelScope.launch {
+            try {
+                when (toolCall.name) {
+                    "web_search", "brave_search" -> {
+                        val query = toolCall.args["query"] as? String
+                        if (query != null) {
+                            Log.d(tag, "Executing web search for: $query")
+                            
+                            // Show tool execution in progress
+                            addMessage("assistant", "🔍 Executing web search for \"$query\"...")
+                            
+                            // Perform the search
+                            val searchResponse = webSearchService.searchWeb(query)
+                            
+                            if (searchResponse.success && searchResponse.results != null) {
+                                // Format and display results
+                                val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
+                                addMessage("assistant", formattedResults)
+                            } else {
+                                val errorMessage = searchResponse.error ?: "Unknown search error"
+                                addMessage("assistant", "❌ Web search failed: $errorMessage")
+                            }
+                        } else {
+                            addMessage("assistant", "❌ Invalid search query provided")
+                        }
+                    }
+                    "wolfram_alpha" -> {
+                        val query = toolCall.args["query"] as? String
+                        if (query != null) {
+                            addMessage("assistant", "🧮 Wolfram Alpha calculation for \"$query\"\n\nThis feature is not yet implemented. Please try a different approach.")
+                        } else {
+                            addMessage("assistant", "❌ Invalid Wolfram Alpha query")
+                        }
+                    }
+                    "python", "code_interpreter" -> {
+                        val code = toolCall.args["code"] as? String
+                        if (code != null) {
+                            addMessage("assistant", "🐍 Python code execution:\n\n```python\n$code\n```\n\nThis feature is not yet implemented. Please try a different approach.")
+                        } else {
+                            addMessage("assistant", "❌ Invalid Python code")
+                        }
+                    }
+                    else -> {
+                        addMessage("assistant", "❌ Unknown tool: ${toolCall.name}\n\nAvailable tools: web_search, brave_search, wolfram_alpha, python")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error handling tool call", e)
+                addMessage("assistant", "❌ Tool execution error: ${e.message}")
+            }
+        }
     }
 
     fun sendImage(uri: Uri) {
@@ -1673,6 +1756,14 @@ class MainViewModel @Inject constructor(
             }
         }
     }
+
+    // Search state management
+    var isSearching by mutableStateOf(false)
+        private set
+    var currentSearchQuery by mutableStateOf("")
+        private set
+    var searchProgress by mutableStateOf("")
+        private set
 }
 
 // Add data class for search response with proper structure
