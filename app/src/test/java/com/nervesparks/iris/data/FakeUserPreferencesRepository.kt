@@ -1,6 +1,7 @@
 package com.nervesparks.iris.data
 
 import android.content.Context
+import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.repository.ModelConfiguration
 
 class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepository(context) {
@@ -201,6 +202,15 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         return prefs[KEY_SECURITY_BIOMETRIC_ENABLED] as? Boolean ?: false
     }
 
+    override fun getTemplates(): List<Template> {
+        @Suppress("UNCHECKED_CAST")
+        return prefs[KEY_TEMPLATES] as? List<Template> ?: emptyList()
+    }
+
+    override fun saveTemplates(templates: List<Template>) {
+        prefs[KEY_TEMPLATES] = templates
+    }
+
     override fun clearAll() {
         prefs.clear()
     }
@@ -236,3 +246,4 @@ private const val KEY_UI_ENABLE_HAPTIC_FEEDBACK = "ui_enable_haptic_feedback"
 private const val KEY_PERF_ENABLE_MEMORY_OPTIMIZATION = "perf_enable_memory_optimization"
 private const val KEY_PERF_ENABLE_BACKGROUND_PROCESSING = "perf_enable_background_processing"
 private const val KEY_SECURITY_BIOMETRIC_ENABLED = "security_biometric_enabled"
+private const val KEY_TEMPLATES = "user_templates"

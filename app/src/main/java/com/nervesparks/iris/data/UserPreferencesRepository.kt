@@ -3,7 +3,10 @@ package com.nervesparks.iris.data
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.repository.ModelConfiguration
+import org.json.JSONArray
+import org.json.JSONObject
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
@@ -25,6 +28,9 @@ private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
 // Thinking token settings keys
 private const val KEY_SHOW_THINKING_TOKENS = "show_thinking_tokens"
 private const val KEY_THINKING_TOKEN_STYLE = "thinking_token_style"
+
+// Template storage key
+private const val KEY_TEMPLATES = "user_templates"
 
 // UI settings keys
 private const val KEY_UI_THEME = "ui_theme"
@@ -275,6 +281,36 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     open fun getSecurityBiometricEnabled(): Boolean {
         return sharedPreferences.getBoolean(KEY_SECURITY_BIOMETRIC_ENABLED, false)
+    }
+
+    // Template management
+    open fun getTemplates(): List<Template> {
+        val json = sharedPreferences.getString(KEY_TEMPLATES, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(json)
+            List(array.length()) { i ->
+                val obj = array.getJSONObject(i)
+                Template(
+                    id = obj.getLong("id"),
+                    name = obj.getString("name"),
+                    content = obj.getString("content")
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    open fun saveTemplates(templates: List<Template>) {
+        val array = JSONArray()
+        templates.forEach { t ->
+            val obj = JSONObject()
+            obj.put("id", t.id)
+            obj.put("name", t.name)
+            obj.put("content", t.content)
+            array.put(obj)
+        }
+        sharedPreferences.edit().putString(KEY_TEMPLATES, array.toString()).apply()
     }
 
     // Clear all stored preferences

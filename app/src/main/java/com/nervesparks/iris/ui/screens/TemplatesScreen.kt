@@ -14,6 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.Template
+import com.nervesparks.iris.ui.theme.ComponentStyles
+import com.nervesparks.iris.ui.theme.PrimaryButton
+import com.nervesparks.iris.ui.theme.SecondaryButton
+import com.nervesparks.iris.ui.theme.SurfaceCard
+import com.nervesparks.iris.ui.theme.ModernTextField
+import kotlinx.coroutines.launch
 
 @Composable
 fun TemplatesScreen(
@@ -22,182 +28,184 @@ fun TemplatesScreen(
     val templates = viewModel.templates
     var showDialog by remember { mutableStateOf(false) }
     var editingTemplate by remember { mutableStateOf<Template?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Header
-        Text(
-            text = "Templates",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        
-        // Add Template Button
-        Button(
-            onClick = {
-                editingTemplate = null
-                showDialog = true
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(ComponentStyles.defaultPadding)
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Add Template",
-                modifier = Modifier.padding(end = 8.dp)
+            // Header
+            Text(
+                text = "Templates",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
             )
-            Text("Add Template")
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            // Add Template Button
+            PrimaryButton(
+                onClick = {
+                    editingTemplate = null
+                    showDialog = true
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add Template",
+                    modifier = Modifier.padding(end = ComponentStyles.smallPadding)
+                )
+                Text("Add Template")
+            }
 
-        // Templates List
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(templates) { template ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            Spacer(modifier = Modifier.height(ComponentStyles.defaultSpacing))
+
+            // Templates List
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
+            ) {
+                items(templates) { template ->
+                    SurfaceCard(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(ComponentStyles.defaultPadding),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = template.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (template.content.isNotBlank()) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = template.content.take(100) + if (template.content.length > 100) "..." else "",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    modifier = Modifier.padding(top = 4.dp)
+                                    text = template.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                            }
-                        }
-                        
-                        Row {
-                            IconButton(
-                                onClick = {
-                                    editingTemplate = template
-                                    showDialog = true
+                                if (template.content.isNotBlank()) {
+                                    Text(
+                                        text = template.content.take(100) + if (template.content.length > 100) "..." else "",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        modifier = Modifier.padding(top = ComponentStyles.smallSpacing)
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
                             }
-                            IconButton(
-                                onClick = { viewModel.deleteTemplate(template) }
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+
+                            Row {
+                                IconButton(
+                                    onClick = {
+                                        editingTemplate = template
+                                        showDialog = true
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            val success = viewModel.deleteTemplate(template)
+                                            snackbarHostState.showSnackbar(
+                                                if (success) "Template deleted" else "Error deleting template"
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (showDialog) {
-        var name by remember(editingTemplate) { mutableStateOf(editingTemplate?.name ?: "") }
-        var content by remember(editingTemplate) { mutableStateOf(editingTemplate?.content ?: "") }
+        if (showDialog) {
+            var name by remember(editingTemplate) { mutableStateOf(editingTemplate?.name ?: "") }
+            var content by remember(editingTemplate) { mutableStateOf(editingTemplate?.content ?: "") }
 
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = { 
-                Text(
-                    text = if (editingTemplate == null) "New Template" else "Edit Template",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                ) 
-            },
-            text = {
-                Column {
-                    TextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = {
+                    Text(
+                        text = if (editingTemplate == null) "New Template" else "Edit Template",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TextField(
-                        value = content,
-                        onValueChange = { content = it },
-                        label = { Text("Content") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        maxLines = 6,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                text = {
+                    Column {
+                        ModernTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Name") },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (name.isNotBlank()) {
-                            if (editingTemplate == null) {
-                                viewModel.addTemplate(Template(name = name, content = content))
+                        Spacer(modifier = Modifier.height(ComponentStyles.defaultSpacing))
+                        OutlinedTextField(
+                            value = content,
+                            onValueChange = { content = it },
+                            label = { Text("Content") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = ComponentStyles.textFieldShape,
+                            minLines = 3,
+                            maxLines = 6,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
+                },
+                confirmButton = {
+                    PrimaryButton(
+                        onClick = {
+                            if (name.isNotBlank()) {
+                                scope.launch {
+                                    val success = if (editingTemplate == null) {
+                                        viewModel.addTemplate(Template(name = name, content = content))
+                                    } else {
+                                        viewModel.editTemplate(editingTemplate!!.copy(name = name, content = content))
+                                    }
+                                    if (success) {
+                                        showDialog = false
+                                        snackbarHostState.showSnackbar(
+                                            if (editingTemplate == null) "Template added" else "Template updated"
+                                        )
+                                    } else {
+                                        snackbarHostState.showSnackbar("Error saving template")
+                                    }
+                                }
                             } else {
-                                viewModel.editTemplate(editingTemplate!!.copy(name = name, content = content))
+                                scope.launch { snackbarHostState.showSnackbar("Name cannot be blank") }
                             }
-                            showDialog = false
                         }
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Save")
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    SecondaryButton(onClick = { showDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDialog = false },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
+            )
+        }
     }
 }
