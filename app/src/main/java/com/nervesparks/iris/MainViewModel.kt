@@ -47,6 +47,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -494,7 +497,33 @@ class MainViewModel @Inject constructor(
     }
 
     fun sendImage(uri: Uri) {
-        Log.d(tag, "Sending image: $uri")
+        viewModelScope.launch {
+            try {
+                val context = getApplication<Application>()
+                val image = InputImage.fromFilePath(context, uri)
+                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+                recognizer
+                    .process(image)
+                    .addOnSuccessListener { visionText ->
+                        val extractedText = visionText.text
+                        if (extractedText.isNotBlank()) {
+                            // Index the document for retrieval and summarize for the chat
+                            indexDocument(extractedText)
+                            summarizeDocument(extractedText)
+                        } else {
+                            addMessage("assistant", "❌ No text found in image")
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(tag, "OCR failed", e)
+                        addMessage("assistant", "❌ OCR failed: ${e.message}")
+                    }
+            } catch (e: Exception) {
+                Log.e(tag, "Error processing image", e)
+                addMessage("assistant", "❌ Unable to process image: ${e.message}")
+            }
+        }
     }
 
     var isCodeMode by mutableStateOf(false)
