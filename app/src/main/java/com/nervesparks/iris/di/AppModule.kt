@@ -1,6 +1,5 @@
 package com.nervesparks.iris.di
 
-import android.app.Application
 import android.content.Context
 import android.llama.cpp.LLamaAndroid
 import com.nervesparks.iris.data.UserPreferencesRepository

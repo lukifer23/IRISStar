@@ -1,6 +1,8 @@
 package com.nervesparks.iris.data
 
 import android.content.Context
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import com.nervesparks.iris.data.repository.ModelConfiguration
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
@@ -34,118 +36,139 @@ private const val KEY_UI_ENABLE_HAPTIC_FEEDBACK = "ui_enable_haptic_feedback"
 private const val KEY_PERF_ENABLE_MEMORY_OPTIMIZATION = "perf_enable_memory_optimization"
 private const val KEY_PERF_ENABLE_BACKGROUND_PROCESSING = "perf_enable_background_processing"
 
-class UserPreferencesRepository private constructor(context: Context) {
+// Security settings keys
+private const val KEY_SECURITY_BIOMETRIC_ENABLED = "security_biometric_enabled"
 
-    private val sharedPreferences =
-        context.applicationContext.getSharedPreferences(USER_PREFERENCES_NAME, Context.MODE_PRIVATE)
+open class UserPreferencesRepository protected constructor(context: Context) {
+
+    companion object {
+        @Volatile
+        private var INSTANCE: UserPreferencesRepository? = null
+
+        fun getInstance(context: Context): UserPreferencesRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: UserPreferencesRepository(context).also { INSTANCE = it }
+            }
+        }
+    }
+
+    private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+
+    private val sharedPreferences = EncryptedSharedPreferences.create(
+        USER_PREFERENCES_NAME,
+        masterKeyAlias,
+        context,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
     // Get the default model name, returns empty string if not set
-    fun getDefaultModelName(): String {
+    open fun getDefaultModelName(): String {
         return sharedPreferences.getString(KEY_DEFAULT_MODEL_NAME, "") ?: ""
     }
 
     // Set the default model name
-    fun setDefaultModelName(modelName: String) {
+    open fun setDefaultModelName(modelName: String) {
         sharedPreferences.edit().putString(KEY_DEFAULT_MODEL_NAME, modelName).apply()
     }
 
     // Get HuggingFace token
-    fun getHuggingFaceToken(): String {
+    open fun getHuggingFaceToken(): String {
         return sharedPreferences.getString(KEY_HUGGINGFACE_TOKEN, "") ?: ""
     }
 
     // Set HuggingFace token
-    fun setHuggingFaceToken(token: String) {
+    open fun setHuggingFaceToken(token: String) {
         sharedPreferences.edit().putString(KEY_HUGGINGFACE_TOKEN, token).apply()
     }
 
     // Get HuggingFace username
-    fun getHuggingFaceUsername(): String {
+    open fun getHuggingFaceUsername(): String {
         return sharedPreferences.getString(KEY_HUGGINGFACE_USERNAME, "") ?: ""
     }
 
     // Set HuggingFace username
-    fun setHuggingFaceUsername(username: String) {
+    open fun setHuggingFaceUsername(username: String) {
         sharedPreferences.edit().putString(KEY_HUGGINGFACE_USERNAME, username).apply()
     }
 
     // Check if HuggingFace credentials are set
-    fun hasHuggingFaceCredentials(): Boolean {
+    open fun hasHuggingFaceCredentials(): Boolean {
         return getHuggingFaceToken().isNotEmpty() || getHuggingFaceUsername().isNotEmpty()
     }
 
     // Temporary method for testing - now disabled to prevent committing secrets
-    fun setTestHuggingFaceToken() {
+    open fun setTestHuggingFaceToken() {
         // NO-OP. Obtain token from UI or secure storage.
     }
 
     // Model configuration methods
-    fun setModelTemperature(temperature: Float) {
+    open fun setModelTemperature(temperature: Float) {
         sharedPreferences.edit().putFloat(KEY_MODEL_TEMPERATURE, temperature).apply()
     }
 
-    fun getModelTemperature(): Float {
+    open fun getModelTemperature(): Float {
         return sharedPreferences.getFloat(KEY_MODEL_TEMPERATURE, 0.7f)
     }
 
-    fun setModelTopP(topP: Float) {
+    open fun setModelTopP(topP: Float) {
         sharedPreferences.edit().putFloat(KEY_MODEL_TOP_P, topP).apply()
     }
 
-    fun getModelTopP(): Float {
+    open fun getModelTopP(): Float {
         return sharedPreferences.getFloat(KEY_MODEL_TOP_P, 0.9f)
     }
 
-    fun setModelTopK(topK: Int) {
+    open fun setModelTopK(topK: Int) {
         sharedPreferences.edit().putInt(KEY_MODEL_TOP_K, topK).apply()
     }
 
-    fun getModelTopK(): Int {
+    open fun getModelTopK(): Int {
         return sharedPreferences.getInt(KEY_MODEL_TOP_K, 40)
     }
 
-    fun setModelMaxTokens(maxTokens: Int) {
+    open fun setModelMaxTokens(maxTokens: Int) {
         sharedPreferences.edit().putInt(KEY_MODEL_MAX_TOKENS, maxTokens).apply()
     }
 
-    fun getModelMaxTokens(): Int {
+    open fun getModelMaxTokens(): Int {
         return sharedPreferences.getInt(KEY_MODEL_MAX_TOKENS, 2048)
     }
 
-    fun setModelContextLength(contextLength: Int) {
+    open fun setModelContextLength(contextLength: Int) {
         sharedPreferences.edit().putInt(KEY_MODEL_CONTEXT_LENGTH, contextLength).apply()
     }
 
-    fun getModelContextLength(): Int {
+    open fun getModelContextLength(): Int {
         return sharedPreferences.getInt(KEY_MODEL_CONTEXT_LENGTH, 4096)
     }
 
-    fun setModelSystemPrompt(systemPrompt: String) {
+    open fun setModelSystemPrompt(systemPrompt: String) {
         sharedPreferences.edit().putString(KEY_MODEL_SYSTEM_PROMPT, systemPrompt).apply()
     }
 
-    fun getModelSystemPrompt(): String {
+    open fun getModelSystemPrompt(): String {
         return sharedPreferences.getString(KEY_MODEL_SYSTEM_PROMPT, "You are a helpful AI assistant.") ?: "You are a helpful AI assistant."
     }
 
-    fun setModelChatFormat(chatFormat: String) {
+    open fun setModelChatFormat(chatFormat: String) {
         sharedPreferences.edit().putString(KEY_MODEL_CHAT_FORMAT, chatFormat).apply()
     }
 
-    fun getModelChatFormat(): String {
+    open fun getModelChatFormat(): String {
         return sharedPreferences.getString(KEY_MODEL_CHAT_FORMAT, "CHATML") ?: "CHATML"
     }
 
-    fun setModelThreadCount(threadCount: Int) {
+    open fun setModelThreadCount(threadCount: Int) {
         sharedPreferences.edit().putInt(KEY_MODEL_THREAD_COUNT, threadCount).apply()
     }
 
-    fun getModelThreadCount(): Int {
+    open fun getModelThreadCount(): Int {
         return sharedPreferences.getInt(KEY_MODEL_THREAD_COUNT, 4)
     }
 
     // Per-model configuration
-    fun getModelConfiguration(modelName: String): ModelConfiguration {
+    open fun getModelConfiguration(modelName: String): ModelConfiguration {
         val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
         return ModelConfiguration(
             temperature = sharedPreferences.getFloat(prefix + "temperature", 0.7f),
@@ -157,7 +180,7 @@ class UserPreferencesRepository private constructor(context: Context) {
         )
     }
 
-    fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
+    open fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
         val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
         sharedPreferences.edit().apply {
             putFloat(prefix + "temperature", config.temperature)
@@ -170,88 +193,97 @@ class UserPreferencesRepository private constructor(context: Context) {
         }
     }
 
-    fun getCachedModels(): String {
+    open fun getCachedModels(): String {
         return sharedPreferences.getString(KEY_CACHED_MODELS, "") ?: ""
     }
 
-    fun setCachedModels(json: String) {
+    open fun setCachedModels(json: String) {
         sharedPreferences.edit().putString(KEY_CACHED_MODELS, json).apply()
     }
 
     // Thinking token settings
-    fun setShowThinkingTokens(show: Boolean) {
+    open fun setShowThinkingTokens(show: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_SHOW_THINKING_TOKENS, show).apply()
     }
 
-    fun getShowThinkingTokens(): Boolean {
+    open fun getShowThinkingTokens(): Boolean {
         return sharedPreferences.getBoolean(KEY_SHOW_THINKING_TOKENS, true)
     }
 
-    fun setThinkingTokenStyle(style: String) {
+    open fun setThinkingTokenStyle(style: String) {
         sharedPreferences.edit().putString(KEY_THINKING_TOKEN_STYLE, style).apply()
     }
 
-    fun getThinkingTokenStyle(): String {
+    open fun getThinkingTokenStyle(): String {
         return sharedPreferences.getString(KEY_THINKING_TOKEN_STYLE, "COLLAPSIBLE") ?: "COLLAPSIBLE"
     }
 
     // UI settings
-    fun setUITheme(theme: String) {
+    open fun setUITheme(theme: String) {
         sharedPreferences.edit().putString(KEY_UI_THEME, theme).apply()
     }
 
-    fun getUITheme(): String {
+    open fun getUITheme(): String {
         return sharedPreferences.getString(KEY_UI_THEME, "DARK") ?: "DARK"
     }
 
-    fun setUIFontSize(fontSize: Float) {
+    open fun setUIFontSize(fontSize: Float) {
         sharedPreferences.edit().putFloat(KEY_UI_FONT_SIZE, fontSize).apply()
     }
 
-    fun getUIFontSize(): Float {
+    open fun getUIFontSize(): Float {
         return sharedPreferences.getFloat(KEY_UI_FONT_SIZE, 1.0f)
     }
 
-    fun setUIEnableAnimations(enable: Boolean) {
+    open fun setUIEnableAnimations(enable: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_UI_ENABLE_ANIMATIONS, enable).apply()
     }
 
-    fun getUIEnableAnimations(): Boolean {
+    open fun getUIEnableAnimations(): Boolean {
         return sharedPreferences.getBoolean(KEY_UI_ENABLE_ANIMATIONS, true)
     }
 
-    fun setUIEnableHapticFeedback(enable: Boolean) {
+    open fun setUIEnableHapticFeedback(enable: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_UI_ENABLE_HAPTIC_FEEDBACK, enable).apply()
     }
 
-    fun getUIEnableHapticFeedback(): Boolean {
+    open fun getUIEnableHapticFeedback(): Boolean {
         return sharedPreferences.getBoolean(KEY_UI_ENABLE_HAPTIC_FEEDBACK, true)
     }
 
     // Performance settings
-    fun setPerfEnableMemoryOptimization(enable: Boolean) {
+    open fun setPerfEnableMemoryOptimization(enable: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, enable).apply()
     }
 
-    fun getPerfEnableMemoryOptimization(): Boolean {
+    open fun getPerfEnableMemoryOptimization(): Boolean {
         return sharedPreferences.getBoolean(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, true)
     }
 
-    fun setPerfEnableBackgroundProcessing(enable: Boolean) {
+    open fun setPerfEnableBackgroundProcessing(enable: Boolean) {
         sharedPreferences.edit().putBoolean(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, enable).apply()
     }
 
-    fun getPerfEnableBackgroundProcessing(): Boolean {
+    open fun getPerfEnableBackgroundProcessing(): Boolean {
         return sharedPreferences.getBoolean(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, true)
     }
 
+    // Security settings
+    open fun setSecurityBiometricEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_SECURITY_BIOMETRIC_ENABLED, enabled).apply()
+    }
+
+    open fun getSecurityBiometricEnabled(): Boolean {
+        return sharedPreferences.getBoolean(KEY_SECURITY_BIOMETRIC_ENABLED, false)
+    }
+
     // Clear all stored preferences
-    fun clearAll() {
+    open fun clearAll() {
         sharedPreferences.edit().clear().apply()
     }
 
     // Export all configuration to JSON
-    fun exportConfiguration(): String {
+    open fun exportConfiguration(): String {
         val jsonObject = org.json.JSONObject()
         
         // Global settings
@@ -279,7 +311,7 @@ class UserPreferencesRepository private constructor(context: Context) {
     }
     
     // Import configuration from JSON
-    fun importConfiguration(jsonString: String): Boolean {
+    open fun importConfiguration(jsonString: String): Boolean {
         return try {
             val json = org.json.JSONObject(jsonString)
             val editor = sharedPreferences.edit()
@@ -313,14 +345,4 @@ class UserPreferencesRepository private constructor(context: Context) {
         }
     }
 
-    companion object {
-        @Volatile
-        private var INSTANCE: UserPreferencesRepository? = null
-
-        fun getInstance(context: Context): UserPreferencesRepository {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: UserPreferencesRepository(context).also { INSTANCE = it }
-            }
-        }
-    }
 } 

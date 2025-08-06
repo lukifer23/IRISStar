@@ -63,28 +63,25 @@ import androidx.compose.foundation.BorderStroke
 import android.app.Application
 import androidx.compose.foundation.border
 import androidx.activity.viewModels
+import androidx.fragment.app.FragmentActivity
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.nervesparks.iris.data.UserPreferencesRepository
-
+import com.nervesparks.iris.security.BiometricAuthenticator
 import com.nervesparks.iris.ui.theme.IrisStarTheme
-import com.nervesparks.iris.ui.ChatListScreen
-
-import com.nervesparks.iris.ui.SettingsScreen
-import com.nervesparks.iris.ui.ModelsScreen
-import com.nervesparks.iris.ui.ParametersScreen
-import com.nervesparks.iris.ui.AboutScreen
-import com.nervesparks.iris.ui.BenchMarkScreen
-import com.nervesparks.iris.ui.components.ModelSelectionModal
 import com.nervesparks.iris.ui.navigation.AppNavigation
+import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
-
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity(
-    downloadManager: DownloadManager? = null,
-    clipboardManager: ClipboardManager? = null,
-): ComponentActivity() {
-    private val downloadManager by lazy { downloadManager ?: getSystemService<DownloadManager>()!! }
-    private val clipboardManager by lazy { clipboardManager ?: getSystemService<ClipboardManager>()!! }
+class MainActivity : FragmentActivity() {
+    @Inject
+    lateinit var preferencesRepository: UserPreferencesRepository
+
+    private val downloadManager by lazy { getSystemService<DownloadManager>()!! }
+    private val clipboardManager by lazy { getSystemService<ClipboardManager>()!! }
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -132,15 +129,37 @@ class MainActivity(
             viewModel.loadExistingModels(extFilesDir)
         }
 
-        setContent {
-            IrisStarTheme {
-                AppNavigation(
-                    viewModel = viewModel,
-                    clipboardManager = clipboardManager,
-                    downloadManager = downloadManager,
-                    models = models,
-                    extFilesDir = extFilesDir
-                )
+        val workRequest = PeriodicWorkRequestBuilder<ModelUpdateWorker>(1, TimeUnit.DAYS).build()
+        WorkManager.getInstance(this).enqueue(workRequest)
+
+        if (preferencesRepository.getSecurityBiometricEnabled()) {
+            val biometricAuthenticator = BiometricAuthenticator(this)
+            biometricAuthenticator.authenticate(this) {
+                setContent {
+                    IrisStarTheme {
+                        AppNavigation(
+                            viewModel = viewModel,
+                            clipboardManager = clipboardManager,
+                            downloadManager = downloadManager,
+                            models = models,
+                            extFilesDir = extFilesDir,
+                            preferencesRepository = preferencesRepository
+                        )
+                    }
+                }
+            }
+        } else {
+            setContent {
+                IrisStarTheme {
+                    AppNavigation(
+                        viewModel = viewModel,
+                        clipboardManager = clipboardManager,
+                        downloadManager = downloadManager,
+                        models = models,
+                        extFilesDir = extFilesDir,
+                        preferencesRepository = preferencesRepository
+                    )
+                }
             }
         }
     }
