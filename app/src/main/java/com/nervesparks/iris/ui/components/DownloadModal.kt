@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.MainViewModel
-import com.nervesparks.iris.data.HuggingFaceApiService
-import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.util.InputSanitizer
 import kotlinx.coroutines.launch
 
 @Composable
@@ -39,11 +38,6 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
     
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    
-    // Set test token for development
-    LaunchedEffect(Unit) {
-        viewModel.setTestHuggingFaceToken()
-    }
 
     Dialog(onDismissRequest = {}) {
         Surface(
@@ -169,7 +163,8 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                     isSearching = true
                                     searchError = null
                                     try {
-                                        val response = viewModel.searchModels(searchQuery)
+                                        val sanitizedQuery = InputSanitizer.sanitize(searchQuery)
+                                        val response = viewModel.searchModels(sanitizedQuery)
                                         if (response.success && response.data != null) {
                                             val detailedModels = mutableListOf<Map<String, String>>()
                                             for (model in response.data.take(3)) {

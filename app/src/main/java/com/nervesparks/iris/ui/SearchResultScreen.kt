@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.nervesparks.iris.util.InputSanitizer
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -188,7 +189,8 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
 
                     try {
                         // Use searchModelsAsync for proper async search
-                        val response = viewModel.searchModelsAsync(UserGivenModel.text)
+                        val sanitizedQuery = InputSanitizer.sanitize(UserGivenModel.text)
+                        val response = viewModel.searchModelsAsync(sanitizedQuery)
                         
                         if (response.success && response.data != null) {
                             // Convert search results to the expected format

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.nervesparks.iris.data.repository.ModelConfiguration
+import com.nervesparks.iris.util.InputSanitizer
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
@@ -69,7 +70,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     // Set the default model name
     open fun setDefaultModelName(modelName: String) {
-        sharedPreferences.edit().putString(KEY_DEFAULT_MODEL_NAME, modelName).apply()
+        val sanitized = InputSanitizer.sanitize(modelName)
+        sharedPreferences.edit().putString(KEY_DEFAULT_MODEL_NAME, sanitized).apply()
     }
 
     // Get HuggingFace token
@@ -79,7 +81,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     // Set HuggingFace token
     open fun setHuggingFaceToken(token: String) {
-        sharedPreferences.edit().putString(KEY_HUGGINGFACE_TOKEN, token).apply()
+        val sanitized = InputSanitizer.sanitize(token)
+        sharedPreferences.edit().putString(KEY_HUGGINGFACE_TOKEN, sanitized).apply()
     }
 
     // Get HuggingFace username
@@ -89,7 +92,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     // Set HuggingFace username
     open fun setHuggingFaceUsername(username: String) {
-        sharedPreferences.edit().putString(KEY_HUGGINGFACE_USERNAME, username).apply()
+        val sanitized = InputSanitizer.sanitize(username)
+        sharedPreferences.edit().putString(KEY_HUGGINGFACE_USERNAME, sanitized).apply()
     }
 
     // Check if HuggingFace credentials are set
@@ -97,10 +101,6 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         return getHuggingFaceToken().isNotEmpty() || getHuggingFaceUsername().isNotEmpty()
     }
 
-    // Temporary method for testing - now disabled to prevent committing secrets
-    open fun setTestHuggingFaceToken() {
-        // NO-OP. Obtain token from UI or secure storage.
-    }
 
     // Model configuration methods
     open fun setModelTemperature(temperature: Float) {
@@ -144,7 +144,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
     }
 
     open fun setModelSystemPrompt(systemPrompt: String) {
-        sharedPreferences.edit().putString(KEY_MODEL_SYSTEM_PROMPT, systemPrompt).apply()
+        val sanitized = InputSanitizer.sanitize(systemPrompt)
+        sharedPreferences.edit().putString(KEY_MODEL_SYSTEM_PROMPT, sanitized).apply()
     }
 
     open fun getModelSystemPrompt(): String {
@@ -169,7 +170,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     // Per-model configuration
     open fun getModelConfiguration(modelName: String): ModelConfiguration {
-        val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
+        val sanitizedModelName = InputSanitizer.sanitize(modelName)
+        val prefix = "${KEY_MODEL_CONFIG_PREFIX}${sanitizedModelName}_"
         return ModelConfiguration(
             temperature = sharedPreferences.getFloat(prefix + "temperature", 0.7f),
             topP = sharedPreferences.getFloat(prefix + "top_p", 0.9f),
@@ -181,14 +183,15 @@ open class UserPreferencesRepository protected constructor(context: Context) {
     }
 
     open fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
-        val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
+        val sanitizedModelName = InputSanitizer.sanitize(modelName)
+        val prefix = "${KEY_MODEL_CONFIG_PREFIX}${sanitizedModelName}_"
         sharedPreferences.edit().apply {
             putFloat(prefix + "temperature", config.temperature)
             putFloat(prefix + "top_p", config.topP)
             putInt(prefix + "top_k", config.topK)
             putInt(prefix + "thread_count", config.threadCount)
             putInt(prefix + "context_length", config.contextLength)
-            putString(prefix + "system_prompt", config.systemPrompt)
+            putString(prefix + "system_prompt", InputSanitizer.sanitize(config.systemPrompt))
             apply()
         }
     }

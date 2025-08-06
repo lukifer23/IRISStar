@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.catch
 import java.io.File
 import java.util.Locale
 import java.util.UUID
+import com.nervesparks.iris.util.InputSanitizer
 
 import android.app.Application
 import com.nervesparks.iris.data.ChatRepository
@@ -51,8 +52,9 @@ class MainViewModel @Inject constructor(
     val chats = chatRepository.observeChats()
 
     fun renameChat(chat: Chat, title: String) {
+        val sanitizedTitle = InputSanitizer.sanitize(title)
         viewModelScope.launch {
-            chatRepository.renameChat(chat, title)
+            chatRepository.renameChat(chat, sanitizedTitle)
         }
     }
 
@@ -109,11 +111,6 @@ class MainViewModel @Inject constructor(
         loadModelSettings()
         loadThinkingTokenSettings()
         
-        // Set a default Hugging Face token if none exists
-        if (userPreferencesRepository.getHuggingFaceToken().isEmpty()) {
-            setTestHuggingFaceToken()
-        }
-        
         viewModelScope.launch {
             try {
                 allModels = modelRepository.refreshAvailableModels()
@@ -141,8 +138,9 @@ class MainViewModel @Inject constructor(
     }
 
     fun setDefaultModelName(modelName: String){
-        userPreferencesRepository.setDefaultModelName(modelName)
-        _defaultModelName.value = modelName
+        val sanitized = InputSanitizer.sanitize(modelName)
+        userPreferencesRepository.setDefaultModelName(sanitized)
+        _defaultModelName.value = sanitized
     }
 
     lateinit var selectedModel: String
@@ -183,9 +181,10 @@ class MainViewModel @Inject constructor(
     var eot_str = ""
 
     fun performWebSearch(query: String) {
+        val sanitizedQuery = InputSanitizer.sanitize(query)
         val context = getApplication<Application>()
         val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
-            putExtra(SearchManager.QUERY, query)
+            putExtra(SearchManager.QUERY, sanitizedQuery)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(intent)
@@ -1154,6 +1153,8 @@ class MainViewModel @Inject constructor(
 
     // Add missing methods for compilation fixes
     fun searchModels(query: String): SearchResponse {
+        // Sanitize the query even though this is a stub implementation
+        InputSanitizer.sanitize(query)
         // This is now a synchronous wrapper for the async search
         // The actual search should be called from a coroutine scope
         return SearchResponse(
@@ -1165,10 +1166,11 @@ class MainViewModel @Inject constructor(
 
     suspend fun searchModelsAsync(query: String): SearchResponse {
         return try {
+            val sanitizedQuery = InputSanitizer.sanitize(query)
             val token = userPreferencesRepository.getHuggingFaceToken()
             val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
-            
-            val models = huggingFaceApiService.searchModels(query, authHeader)
+
+            val models = huggingFaceApiService.searchModels(sanitizedQuery, authHeader)
             
             val searchResults = models.map { model ->
                 ModelSearchResult(
@@ -1243,12 +1245,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun setTestHuggingFaceToken() {
-        // Set a test token for development purposes
-        // In production, this should be obtained from secure storage
-        val testToken = "hf_test_token_for_development"
-        userPreferencesRepository.setHuggingFaceToken(testToken)
-        Log.d(tag, "Test HuggingFace token set for development")
+    fun updateHuggingFaceToken(token: String) {
+        val sanitized = InputSanitizer.sanitize(token)
+        userPreferencesRepository.setHuggingFaceToken(sanitized)
+        Log.d(tag, "HuggingFace token updated")
     }
 
     // Memory management functions
