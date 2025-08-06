@@ -210,20 +210,20 @@ class MainViewModel @Inject constructor(
                 // Update search state
                 isSearching = true
                 currentSearchQuery = query
-                searchProgress = "Initializing search..."
+                searchProgress = "🔍 Initializing web search..."
                 
                 // Show search in progress
                 addMessage("assistant", "🔍 Searching the web for \"$query\"...")
                 
-                searchProgress = "Querying search engine..."
+                searchProgress = "🌐 Querying search engine..."
                 
                 // Perform actual web search
                 val searchResponse = webSearchService.searchWeb(query)
                 
-                searchProgress = "Processing results..."
+                searchProgress = "📊 Processing search results..."
                 
                 if (searchResponse.success && searchResponse.results != null) {
-                    searchProgress = "Formatting results..."
+                    searchProgress = "📝 Formatting results for display..."
                     
                     // Format and display search results
                     val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
@@ -231,7 +231,7 @@ class MainViewModel @Inject constructor(
                     
                     // If summarize is true, ask the model to summarize the results
                     if (summarize && searchResponse.results.isNotEmpty()) {
-                        searchProgress = "Generating summary..."
+                        searchProgress = "🤖 Generating AI summary..."
                         
                         val summaryPrompt = """
                             Based on the search results above, provide a concise summary of the key information about "$query".

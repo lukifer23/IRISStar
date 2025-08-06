@@ -28,6 +28,18 @@ fun SearchLoadingModal(
     searchQuery: String = "",
     onDismiss: () -> Unit
 ) {
+    // Add a minimum display time to ensure users can read the feedback
+    var showModal by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(Unit) {
+        // Show modal for at least 2 seconds to ensure users can read the feedback
+        delay(2000)
+        showModal = false
+        onDismiss()
+    }
+    
+    if (!showModal) return
+    
     val infiniteTransition = rememberInfiniteTransition(label = "search_loading")
     
     // Pulsing animation for the search icon
@@ -62,7 +74,10 @@ fun SearchLoadingModal(
         label = "search_bounce"
     )
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = { 
+        showModal = false
+        onDismiss()
+    }) {
         ThemedModalSurface(
             modifier = Modifier
                 .fillMaxWidth()
