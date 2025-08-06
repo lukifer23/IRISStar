@@ -47,6 +47,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
+import com.nervesparks.iris.data.AndroidSearchService
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -200,6 +201,7 @@ class MainViewModel @Inject constructor(
 
     // Web search service
     private val webSearchService = WebSearchService()
+    private val androidSearchService = AndroidSearchService(application)
 
     fun performWebSearch(query: String, summarize: Boolean = true) {
         // Add the search query as a user message
@@ -217,12 +219,12 @@ class MainViewModel @Inject constructor(
                 
                 searchProgress = "🌐 Querying search engine..."
                 
-                // Perform actual web search
+                // Try API-based search first
                 val searchResponse = webSearchService.searchWeb(query)
                 
                 searchProgress = "📊 Processing search results..."
                 
-                if (searchResponse.success && searchResponse.results != null) {
+                if (searchResponse.success && searchResponse.results != null && searchResponse.results.isNotEmpty()) {
                     searchProgress = "📝 Formatting results for display..."
                     
                     // Format and display search results
@@ -242,9 +244,19 @@ class MainViewModel @Inject constructor(
                         processWebSearch(summaryPrompt)
                     }
                 } else {
-                    // Handle search error
-                    val errorMessage = searchResponse.error ?: "Unknown search error"
-                    addMessage("assistant", "❌ Search failed: $errorMessage\n\nPlease try rephrasing your search query.")
+                    // If API search fails, try Android system search
+                    searchProgress = "📱 Launching browser search..."
+                    
+                    val androidSearchResponse = androidSearchService.launchBrowserSearch(query)
+                    
+                    if (androidSearchResponse.success) {
+                        val formattedResults = androidSearchService.formatSearchResults(androidSearchResponse.results ?: emptyList(), query)
+                        addMessage("assistant", formattedResults)
+                    } else {
+                        // Handle search error
+                        val errorMessage = searchResponse.error ?: "Unknown search error"
+                        addMessage("assistant", "❌ Search failed: $errorMessage\n\nI've tried both API search and browser search. Please try rephrasing your search query.")
+                    }
                 }
                 
             } catch (e: Exception) {
