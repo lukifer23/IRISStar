@@ -6,9 +6,7 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="user_preferences.xml"/>
-        <exclude domain="sharedpref" path="device.xml"/>
         <include domain="database" path="iris_chats.db"/>
-        <exclude domain="database" path="debug.db"/>
     </cloud-backup>
     <!--
     <device-transfer>

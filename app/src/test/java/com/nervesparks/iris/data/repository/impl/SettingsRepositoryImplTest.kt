@@ -2,7 +2,7 @@ package com.nervesparks.iris.data.repository.impl
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.data.FakeUserPreferencesRepository
 import com.nervesparks.iris.data.repository.PerformanceSettings
 import com.nervesparks.iris.data.repository.ThinkingTokenSettings
 import com.nervesparks.iris.data.repository.UISettings
@@ -24,7 +24,7 @@ class SettingsRepositoryImplTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        userPrefs = UserPreferencesRepository(context)
+        userPrefs = FakeUserPreferencesRepository(context)
         userPrefs.clearAll()
         repository = SettingsRepositoryImpl(userPrefs)
     }
