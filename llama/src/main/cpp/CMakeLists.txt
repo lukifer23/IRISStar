@@ -43,12 +43,14 @@ if(ANDROID)
     if(OpenCL_LIBRARY)
         message(STATUS "Found system OpenCL: ${OpenCL_LIBRARY}")
         set(OpenCL_LIBRARIES ${OpenCL_LIBRARY})
+        set(OpenCL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../llama.cpp/ggml/src/ggml-opencl")
     else()
         message(WARNING "System OpenCL not found, will build without GPU acceleration")
         set(OpenCL_LIBRARIES "")
+        set(OpenCL_INCLUDE_DIRS "")
+        # Disable OpenCL compilation entirely
+        set(GGML_OPENCL OFF)
     endif()
-    
-    set(OpenCL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../llama.cpp/ggml/src/ggml-opencl")
 endif()
 
 #load local llama.cpp

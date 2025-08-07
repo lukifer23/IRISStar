@@ -136,6 +136,8 @@ class MainViewModel @Inject constructor(
         // Detect hardware capabilities at startup - moved to after library loads
         // detectHardwareCapabilities()
 
+
+
         viewModelScope.launch {
             // Always start with our curated default models
             val defaultModels = listOf(
@@ -2076,16 +2078,29 @@ class MainViewModel @Inject constructor(
             try {
                 Log.d(tag, "Starting hardware detection...")
 
+                // Force initialization of native library by using the dispatcher
+                try {
+                    Log.d(tag, "Forcing native library initialization...")
+                    withContext(llamaAndroid.runLoop) {
+                        Log.d(tag, "Native library initialization triggered")
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error during native library initialization: ${e.message}")
+                }
+
                 // Check if native library is loaded before calling native functions
                 if (!llamaAndroid.isNativeLibraryLoaded()) {
-                    Log.w(tag, "Native library not loaded, using CPU-only mode")
-                    availableBackends = "CPU"
-                    currentBackend = "CPU"
-                    optimalBackend = "CPU"
-                    gpuInfo = "CPU Only - Native library not loaded"
-                    isAdrenoGpu = false
-                    backendError = "Native library not available"
-                    return@launch
+                    Log.w(tag, "Native library not loaded, attempting synchronous load...")
+                    if (!llamaAndroid.ensureLibraryLoaded()) {
+                        Log.w(tag, "Synchronous library load failed, using CPU-only mode")
+                        availableBackends = "CPU"
+                        currentBackend = "CPU"
+                        optimalBackend = "CPU"
+                        gpuInfo = "CPU Only - Native library not loaded"
+                        isAdrenoGpu = false
+                        backendError = "Native library not available"
+                        return@launch
+                    }
                 }
 
                 // Try to detect real hardware capabilities

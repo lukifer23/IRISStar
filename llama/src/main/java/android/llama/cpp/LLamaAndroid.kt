@@ -52,6 +52,29 @@ class LLamaAndroid {
         return nativeLibraryLoaded
     }
 
+    // Synchronous library loading check
+    fun ensureLibraryLoaded(): Boolean {
+        if (nativeLibraryLoaded) {
+            return true
+        }
+        
+        try {
+            Log.d(tag, "Attempting synchronous library load...")
+            System.loadLibrary("llama-android")
+            Log.d(tag, "Synchronously loaded llama-android library")
+            nativeLibraryLoaded = true
+            return true
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(tag, "Synchronous library load failed: ${e.message}")
+            Log.e(tag, "Stack trace: ${e.stackTraceToString()}")
+            return false
+        } catch (e: Exception) {
+            Log.e(tag, "Synchronous library load error: ${e.message}")
+            Log.e(tag, "Stack trace: ${e.stackTraceToString()}")
+            return false
+        }
+    }
+
     fun stopTextGeneration() {
         _isSending.value = false
 
@@ -60,12 +83,13 @@ class LLamaAndroid {
     }
 
 
-    private val runLoop: CoroutineDispatcher = Executors.newSingleThreadExecutor {
+    val runLoop: CoroutineDispatcher = Executors.newSingleThreadExecutor {
         thread(start = false, name = "Llm-RunLoop") {
             Log.d(tag, "Dedicated thread for native code: ${Thread.currentThread().name}")
 
             try {
                 // Load the native library
+                Log.d(tag, "Attempting to load llama-android library...")
                 System.loadLibrary("llama-android")
                 Log.d(tag, "Successfully loaded llama-android library")
                 nativeLibraryLoaded = true
@@ -77,11 +101,13 @@ class LLamaAndroid {
                 Log.d(tag, system_info())
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(tag, "Failed to load native library: ${e.message}")
+                Log.e(tag, "Stack trace: ${e.stackTraceToString()}")
                 // Continue without native functionality
                 // The app will work in CPU-only mode
                 nativeLibraryLoaded = false
             } catch (e: Exception) {
                 Log.e(tag, "Error initializing native code: ${e.message}")
+                Log.e(tag, "Stack trace: ${e.stackTraceToString()}")
                 // Continue without native functionality
                 nativeLibraryLoaded = false
             }
@@ -89,7 +115,8 @@ class LLamaAndroid {
             it.run()
         }.apply {
             uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, exception: Throwable ->
-                Log.e(tag, "Unhandled exception", exception)
+                Log.e(tag, "Unhandled exception in Llm-RunLoop", exception)
+                Log.e(tag, "Stack trace: ${exception.stackTraceToString()}")
             }
         }
     }.asCoroutineDispatcher()
