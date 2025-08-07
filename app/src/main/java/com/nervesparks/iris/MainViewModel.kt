@@ -2080,10 +2080,16 @@ class MainViewModel @Inject constructor(
     fun selectBackend(backend: String) {
         viewModelScope.launch {
             try {
-                llamaAndroid.setBackend(backend.lowercase())
-                currentBackend = backend
-                backendError = null
-                Log.d(tag, "Backend changed to: $backend")
+                val success = llamaAndroid.setBackend(backend.lowercase())
+                if (success) {
+                    currentBackend = backend
+                    backendError = null
+                    Log.d(tag, "Backend changed to: $backend")
+                } else {
+                    backendError = "Failed to switch backend to $backend"
+                    currentBackend = "CPU"
+                    Log.e(tag, "Backend switch failed, reverted to CPU")
+                }
             } catch (e: Exception) {
                 Log.e(tag, "Failed to set backend to $backend: ${e.message}")
                 backendError = "Failed to switch backend to $backend: ${e.message}"

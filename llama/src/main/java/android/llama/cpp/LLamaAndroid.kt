@@ -131,7 +131,7 @@ class LLamaAndroid {
     private external fun free_context(context: Long)
     private external fun backend_init(numa: Boolean)
     private external fun backend_free()
-    private external fun set_backend(backend: String)
+    private external fun set_backend(backend: String): Boolean
     private external fun new_batch(nTokens: Int, embd: Int, nSeqMax: Int): Long
     private external fun free_batch(batch: Long)
     private external fun new_sampler(top_p: Float, top_k: Int, temp: Float): Long
@@ -276,10 +276,12 @@ class LLamaAndroid {
         return res
     }
     
-    suspend fun setBackend(backend: String) {
+    suspend fun setBackend(backend: String): Boolean {
+        var success = false
         withContext(runLoop) {
-                            set_backend(backend)
+            success = set_backend(backend)
         }
+        return success
     }
     
     suspend fun getMemoryUsage(): Long {

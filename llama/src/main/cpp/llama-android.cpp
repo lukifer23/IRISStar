@@ -479,10 +479,12 @@ Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
     llama_backend_init();
 }
 
-JNIEXPORT void JNICALL
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_android_llama_cpp_LLamaAndroid_set_1backend(JNIEnv *env, jobject, jstring jbackend) {
     const char *backend = env->GetStringUTFChars(jbackend, 0);
-    
+    bool success = true;
+
     if (strcmp(backend, "opencl") == 0) {
         setenv("GGML_OPENCL_PLATFORM", "0", 1);
         setenv("GGML_OPENCL_DEVICE", "0", 1);
@@ -492,8 +494,21 @@ Java_android_llama_cpp_LLamaAndroid_set_1backend(JNIEnv *env, jobject, jstring j
         unsetenv("GGML_OPENCL_DEVICE");
         LOGi("Set backend to CPU");
     }
-    
+
+    llama_backend_free();
+    llama_backend_init();
+
+    if (strcmp(backend, "opencl") == 0 && !llama_supports_gpu_offload()) {
+        LOGe("OpenCL init failed, falling back to CPU");
+        unsetenv("GGML_OPENCL_PLATFORM");
+        unsetenv("GGML_OPENCL_DEVICE");
+        llama_backend_free();
+        llama_backend_init();
+        success = false;
+    }
+
     env->ReleaseStringUTFChars(jbackend, backend);
+    return success ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C"
