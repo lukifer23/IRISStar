@@ -266,6 +266,7 @@ class MainViewModel @Inject constructor(
 
     fun performWebSearch(query: String, summarize: Boolean = true) {
         // Add the search query as a user message
+        pruneForNewTokens(llamaAndroid.countTokens("Search the web for: $query"))
         addMessage("user", "Search the web for: $query")
         
         viewModelScope.launch {
@@ -302,6 +303,7 @@ class MainViewModel @Inject constructor(
                         """.trimIndent()
 
                         try {
+                            pruneForNewTokens(llamaAndroid.countTokens(summaryPrompt))
                             addMessage("user", summaryPrompt)
                             processWebSearch(summaryPrompt)
                             searchProgress = "Search complete"
@@ -381,6 +383,10 @@ class MainViewModel @Inject constructor(
 
                 if (workingMessages.size != messages.size) {
                     messages = workingMessages
+                    addMessage(
+                        "system",
+                        "⚠️ Earlier messages were removed to stay within the model's context limit."
+                    )
                 }
 
                 contextLimit = llamaAndroid.countTokens(finalPrompt)
@@ -517,6 +523,7 @@ class MainViewModel @Inject constructor(
     fun summarizeDocument(text: String) {
         viewModelScope.launch {
             val prompt = "Summarize the following text:\n\n$text"
+            pruneForNewTokens(llamaAndroid.countTokens(prompt))
             addMessage("user", prompt)
             send()
         }
@@ -617,6 +624,7 @@ class MainViewModel @Inject constructor(
 
     fun sendCode(code: String) {
         val prompt = "Analyze the following code:\n\n```\n$code\n```"
+        pruneForNewTokens(llamaAndroid.countTokens(prompt))
         addMessage("user", prompt)
         // Don't call send() to avoid infinite recursion
         // Instead, directly process the code analysis
@@ -660,6 +668,10 @@ class MainViewModel @Inject constructor(
 
                 if (workingMessages.size != messages.size) {
                     messages = workingMessages
+                    addMessage(
+                        "system",
+                        "⚠️ Earlier messages were removed to stay within the model's context limit."
+                    )
                 }
 
                 contextLimit = llamaAndroid.countTokens(finalPrompt)
@@ -696,6 +708,7 @@ class MainViewModel @Inject constructor(
 
     fun translate(text: String, targetLanguage: String) {
         val prompt = "Translate the following text to $targetLanguage:\n\n$text"
+        pruneForNewTokens(llamaAndroid.countTokens(prompt))
         addMessage("user", prompt)
         processTranslation(prompt)
     }
@@ -769,6 +782,10 @@ class MainViewModel @Inject constructor(
 
                 if (workingMessages.size != messages.size) {
                     messages = workingMessages
+                    addMessage(
+                        "system",
+                        "⚠️ Earlier messages were removed to stay within the model's context limit."
+                    )
                 }
 
                 contextLimit = llamaAndroid.countTokens(finalPrompt)
@@ -1414,6 +1431,56 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    private fun pruneForNewTokens(additionalTokens: Int) {
+        if (contextLimit + additionalTokens <= modelContextLength) return
+
+        var workingMessages = messages.toMutableList()
+        var pruned = false
+        while (contextLimit + additionalTokens > modelContextLength && workingMessages.size > 1) {
+            val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
+            if (removeIdx >= 0) {
+                workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
+                val prompt = if (template.isNotBlank()) {
+                    val jinjava = com.hubspot.jinjava.Jinjava()
+                    val context = mapOf("messages" to workingMessages)
+                    jinjava.render(template, context)
+                } else {
+                    com.nervesparks.iris.llm.TemplateRegistry.render(
+                        modelChatFormat,
+                        workingMessages,
+                        modelSystemPrompt,
+                        includeThinkingTags = true
+                    )
+                }
+                contextLimit = llamaAndroid.countTokens(prompt)
+                pruned = true
+            } else {
+                break
+            }
+        }
+
+        if (pruned) {
+            messages = workingMessages
+            addMessage(
+                "system",
+                "⚠️ Earlier messages were removed to stay within the model's context limit."
+            )
+            val prompt = if (template.isNotBlank()) {
+                val jinjava = com.hubspot.jinjava.Jinjava()
+                val context = mapOf("messages" to messages)
+                jinjava.render(template, context)
+            } else {
+                com.nervesparks.iris.llm.TemplateRegistry.render(
+                    modelChatFormat,
+                    messages,
+                    modelSystemPrompt,
+                    includeThinkingTags = true
+                )
+            }
+            contextLimit = llamaAndroid.countTokens(prompt)
+        }
+    }
+
     fun send() {
         Log.d(tag, "Send button clicked")
         val reserveTokens = 256
@@ -1435,6 +1502,7 @@ class MainViewModel @Inject constructor(
                 first = false
             }
 
+            pruneForNewTokens(llamaAndroid.countTokens(userMessage))
             addMessage("user", userMessage)
             persistChat()
 
@@ -1484,6 +1552,10 @@ class MainViewModel @Inject constructor(
 
                     if (workingMessages.size != messages.size) {
                         messages = workingMessages
+                        addMessage(
+                            "system",
+                            "⚠️ Earlier messages were removed to stay within the model's context limit."
+                        )
                     }
 
                     contextLimit = llamaAndroid.countTokens(prompt)
