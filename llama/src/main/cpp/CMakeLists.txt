@@ -31,13 +31,11 @@ project("llama-android")
 # is preferred for the same purpose.
 #
 
-# OpenCL disabled to avoid libcutils.so dependency issues
 # Configure OpenCL for Android
 if(ANDROID)
-    message(STATUS "OpenCL disabled to avoid dependency issues")
-    set(OpenCL_LIBRARIES "")
-    set(OpenCL_INCLUDE_DIRS "")
-    set(GGML_OPENCL OFF)
+    find_package(OpenCL REQUIRED)
+    set(GGML_OPENCL ON)
+    include_directories(${OpenCL_INCLUDE_DIRS})
 endif()
 
 #load local llama.cpp
@@ -61,6 +59,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         llama
         common
+        ${OpenCL_LIBRARIES}
         android
         log)
 
