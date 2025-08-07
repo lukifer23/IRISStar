@@ -21,6 +21,7 @@ import kotlin.time.Duration.Companion.seconds
 class LLamaAndroid {
     private val tag: String? = this::class.simpleName
     private var stopGeneration: Boolean = false
+    private var nativeLibraryLoaded: Boolean = false
     //private var model_eot_str: String = ""
 
     private val threadLocalState: ThreadLocal<State> = ThreadLocal.withInitial { State.Idle }
@@ -47,6 +48,10 @@ class LLamaAndroid {
         return isCompleteEOT
     }
 
+    fun isNativeLibraryLoaded(): Boolean {
+        return nativeLibraryLoaded
+    }
+
     fun stopTextGeneration() {
         _isSending.value = false
 
@@ -59,14 +64,27 @@ class LLamaAndroid {
         thread(start = false, name = "Llm-RunLoop") {
             Log.d(tag, "Dedicated thread for native code: ${Thread.currentThread().name}")
 
-            // No-op if called more than once.
-            System.loadLibrary("llama-android")
+            try {
+                // Load the native library
+                System.loadLibrary("llama-android")
+                Log.d(tag, "Successfully loaded llama-android library")
+                nativeLibraryLoaded = true
 
-            // Set llama log handler to Android
-            log_to_android()
-            backend_init(false)
+                // Set llama log handler to Android
+                log_to_android()
+                backend_init(false)
 
-            Log.d(tag, system_info())
+                Log.d(tag, system_info())
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(tag, "Failed to load native library: ${e.message}")
+                // Continue without native functionality
+                // The app will work in CPU-only mode
+                nativeLibraryLoaded = false
+            } catch (e: Exception) {
+                Log.e(tag, "Error initializing native code: ${e.message}")
+                // Continue without native functionality
+                nativeLibraryLoaded = false
+            }
 
             it.run()
         }.apply {

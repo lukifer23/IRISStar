@@ -2076,6 +2076,18 @@ class MainViewModel @Inject constructor(
             try {
                 Log.d(tag, "Starting hardware detection...")
 
+                // Check if native library is loaded before calling native functions
+                if (!llamaAndroid.isNativeLibraryLoaded()) {
+                    Log.w(tag, "Native library not loaded, using CPU-only mode")
+                    availableBackends = "CPU"
+                    currentBackend = "CPU"
+                    optimalBackend = "CPU"
+                    gpuInfo = "CPU Only - Native library not loaded"
+                    isAdrenoGpu = false
+                    backendError = "Native library not available"
+                    return@launch
+                }
+
                 // Try to detect real hardware capabilities
                 val backends = llamaAndroid.getAvailableBackends().split(",").map { it.trim() }
                 availableBackends = backends.joinToString(",")
