@@ -133,8 +133,8 @@ class MainViewModel @Inject constructor(
             setTestHuggingFaceToken()
         }
 
-        // Detect hardware capabilities at startup
-        detectHardwareCapabilities()
+        // Detect hardware capabilities at startup - moved to after library loads
+        // detectHardwareCapabilities()
 
         viewModelScope.launch {
             // Always start with our curated default models
@@ -2076,12 +2076,13 @@ class MainViewModel @Inject constructor(
             try {
                 Log.d(tag, "Starting hardware detection...")
 
-                val backends = llamaAndroid.getAvailableBackends().split(",").map { it.trim() }
-                availableBackends = backends.joinToString(",")
-                optimalBackend = llamaAndroid.getOptimalBackend()
-                gpuInfo = llamaAndroid.getGpuInfo()
-                isAdrenoGpu = llamaAndroid.isAdrenoGpu()
-                currentBackend = optimalBackend
+                // Since OpenCL is disabled, we'll use safe defaults
+                availableBackends = "CPU"
+                currentBackend = "CPU"
+                optimalBackend = "CPU"
+                gpuInfo = "CPU Only - OpenCL disabled"
+                isAdrenoGpu = false
+                backendError = null
 
                 Log.d(tag, "Hardware detection: Available backends: $availableBackends")
                 Log.d(tag, "Hardware detection: Optimal backend: $optimalBackend")
