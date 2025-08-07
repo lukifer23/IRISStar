@@ -72,5 +72,7 @@ data class ModelConfiguration(
     val topK: Int = 40,
     val threadCount: Int = 2,
     val contextLength: Int = 4096,
-    val systemPrompt: String = ""
-) 
+    val systemPrompt: String = "",
+    val maxTokens: Int = 2048,
+    val repeatPenalty: Float = 1.1f
+)

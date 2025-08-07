@@ -387,7 +387,13 @@ class MainViewModel @Inject constructor(
                 maxContextLimit = modelContextLength
 
                 var generatedTokens = 0
-                llamaAndroid.send(finalPrompt)
+                llamaAndroid.send(
+                    finalPrompt,
+                    maxTokens = modelMaxTokens,
+                    contextLength = modelContextLength,
+                    systemPrompt = modelSystemPrompt,
+                    repeatPenalty = modelRepeatPenalty
+                )
                     .catch {
                         Log.e(tag, "processWebSearch() failed", it)
                         addMessage("error", it.message ?: "")
@@ -666,7 +672,13 @@ class MainViewModel @Inject constructor(
                 maxContextLimit = modelContextLength
 
                 var generatedTokens = 0
-                llamaAndroid.send(finalPrompt)
+                llamaAndroid.send(
+                    finalPrompt,
+                    maxTokens = modelMaxTokens,
+                    contextLength = modelContextLength,
+                    systemPrompt = modelSystemPrompt,
+                    repeatPenalty = modelRepeatPenalty
+                )
                     .catch {
                         Log.e(tag, "processCodeAnalysis() failed", it)
                         addMessage("error", it.message ?: "")
@@ -775,7 +787,13 @@ class MainViewModel @Inject constructor(
                 maxContextLimit = modelContextLength
 
                 var generatedTokens = 0
-                llamaAndroid.send(finalPrompt)
+                llamaAndroid.send(
+                    finalPrompt,
+                    maxTokens = modelMaxTokens,
+                    contextLength = modelContextLength,
+                    systemPrompt = modelSystemPrompt,
+                    repeatPenalty = modelRepeatPenalty
+                )
                     .catch {
                         Log.e(tag, "processTranslation() failed", it)
                         addMessage("error", it.message ?: "")
@@ -1003,7 +1021,12 @@ class MainViewModel @Inject constructor(
     var modelSystemPrompt: String
         get() = _modelSystemPrompt.value
         set(value) { _modelSystemPrompt.value = value }
-    
+
+    private var _modelRepeatPenalty = mutableStateOf(1.1f)
+    var modelRepeatPenalty: Float
+        get() = _modelRepeatPenalty.value
+        set(value) { _modelRepeatPenalty.value = value }
+
     private var _modelChatFormat = mutableStateOf("QWEN3")
     var modelChatFormat: String
         get() = _modelChatFormat.value
@@ -1025,7 +1048,8 @@ class MainViewModel @Inject constructor(
         contextLength: Int = modelContextLength,
         systemPrompt: String = modelSystemPrompt,
         chatFormat: String = modelChatFormat,
-        threadCount: Int = modelThreadCount
+        threadCount: Int = modelThreadCount,
+        repeatPenalty: Float = modelRepeatPenalty
     ) {
         modelTemperature = temperature
         modelTopP = topP
@@ -1035,6 +1059,7 @@ class MainViewModel @Inject constructor(
         modelSystemPrompt = systemPrompt
         modelChatFormat = chatFormat
         modelThreadCount = threadCount
+        modelRepeatPenalty = repeatPenalty
         
         // Save to preferences
         userPreferencesRepository.setModelTemperature(temperature)
@@ -1045,6 +1070,7 @@ class MainViewModel @Inject constructor(
         userPreferencesRepository.setModelSystemPrompt(systemPrompt)
         userPreferencesRepository.setModelChatFormat(chatFormat)
         userPreferencesRepository.setModelThreadCount(threadCount)
+        userPreferencesRepository.setModelRepeatPenalty(repeatPenalty)
     }
 
     fun loadModelSettings() {
@@ -1092,7 +1118,15 @@ class MainViewModel @Inject constructor(
                 modelContextLength = 32768  // Increased for Qwen3 support
             }
             maxContextLimit = modelContextLength
-            
+
+            try {
+                modelRepeatPenalty = userPreferencesRepository.getModelRepeatPenalty()
+                Log.d("MainViewModel", "Loaded repeatPenalty: $modelRepeatPenalty")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading repeatPenalty, using default", e)
+                modelRepeatPenalty = 1.1f
+            }
+
             try {
                 modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
                 Log.d("MainViewModel", "Loaded systemPrompt: $modelSystemPrompt")
@@ -1490,7 +1524,13 @@ class MainViewModel @Inject constructor(
                     maxContextLimit = modelContextLength
 
                     var generatedTokens = 0
-                    llamaAndroid.send(prompt)
+                    llamaAndroid.send(
+                        prompt,
+                        maxTokens = modelMaxTokens,
+                        contextLength = modelContextLength,
+                        systemPrompt = modelSystemPrompt,
+                        repeatPenalty = modelRepeatPenalty
+                    )
                         .catch {
                             Log.e(tag, "send() failed", it)
                             addMessage("error", it.message ?: "")
@@ -1818,15 +1858,19 @@ class MainViewModel @Inject constructor(
                 showModal = false
                 showAlert = true
                 
-                Log.d(tag, "Loading model with settings: threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
-                
+                Log.d(tag, "Loading model with settings: threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature, maxTokens=$modelMaxTokens, contextLength=$modelContextLength, repeatPenalty=$modelRepeatPenalty")
+
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
-                    pathToModel, 
-                    userThreads = modelThreadCount, 
-                    topK = modelTopK, 
-                    topP = modelTopP, 
-                    temp = modelTemperature
+                    pathToModel,
+                    userThreads = modelThreadCount,
+                    topK = modelTopK,
+                    topP = modelTopP,
+                    temp = modelTemperature,
+                    maxTokens = modelMaxTokens,
+                    contextLength = modelContextLength,
+                    systemPrompt = modelSystemPrompt,
+                    repeatPenalty = modelRepeatPenalty
                 )
                 
                 Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")

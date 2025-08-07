@@ -22,6 +22,7 @@ private const val KEY_MODEL_CONTEXT_LENGTH = "model_context_length"
 private const val KEY_MODEL_SYSTEM_PROMPT = "model_system_prompt"
 private const val KEY_MODEL_CHAT_FORMAT = "model_chat_format"
 private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
+private const val KEY_MODEL_REPEAT_PENALTY = "model_repeat_penalty"
 private const val KEY_CACHED_MODELS = "cached_models"
 private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
 
@@ -157,6 +158,14 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         return sharedPreferences.getString(KEY_MODEL_SYSTEM_PROMPT, "You are a helpful AI assistant.") ?: "You are a helpful AI assistant."
     }
 
+    open fun setModelRepeatPenalty(repeatPenalty: Float) {
+        sharedPreferences.edit().putFloat(KEY_MODEL_REPEAT_PENALTY, repeatPenalty).apply()
+    }
+
+    open fun getModelRepeatPenalty(): Float {
+        return sharedPreferences.getFloat(KEY_MODEL_REPEAT_PENALTY, 1.1f)
+    }
+
     open fun setModelChatFormat(chatFormat: String) {
         sharedPreferences.edit().putString(KEY_MODEL_CHAT_FORMAT, chatFormat).apply()
     }
@@ -182,7 +191,9 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             topK = sharedPreferences.getInt(prefix + "top_k", 40),
             threadCount = sharedPreferences.getInt(prefix + "thread_count", 2),
             contextLength = sharedPreferences.getInt(prefix + "context_length", 4096),
-            systemPrompt = sharedPreferences.getString(prefix + "system_prompt", "") ?: ""
+            systemPrompt = sharedPreferences.getString(prefix + "system_prompt", "") ?: "",
+            maxTokens = sharedPreferences.getInt(prefix + "max_tokens", 2048),
+            repeatPenalty = sharedPreferences.getFloat(prefix + "repeat_penalty", 1.1f)
         )
     }
 
@@ -195,6 +206,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             putInt(prefix + "thread_count", config.threadCount)
             putInt(prefix + "context_length", config.contextLength)
             putString(prefix + "system_prompt", config.systemPrompt)
+            putInt(prefix + "max_tokens", config.maxTokens)
+            putFloat(prefix + "repeat_penalty", config.repeatPenalty)
             apply()
         }
     }
@@ -332,6 +345,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         jsonObject.put("modelMaxTokens", getModelMaxTokens())
         jsonObject.put("modelContextLength", getModelContextLength())
         jsonObject.put("modelSystemPrompt", getModelSystemPrompt())
+        jsonObject.put("modelRepeatPenalty", getModelRepeatPenalty())
         jsonObject.put("modelChatFormat", getModelChatFormat())
         jsonObject.put("modelThreadCount", getModelThreadCount())
         jsonObject.put("showThinkingTokens", getShowThinkingTokens())
@@ -362,6 +376,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             if (json.has("modelMaxTokens")) editor.putInt(KEY_MODEL_MAX_TOKENS, json.getInt("modelMaxTokens"))
             if (json.has("modelContextLength")) editor.putInt(KEY_MODEL_CONTEXT_LENGTH, json.getInt("modelContextLength"))
             if (json.has("modelSystemPrompt")) editor.putString(KEY_MODEL_SYSTEM_PROMPT, json.getString("modelSystemPrompt"))
+            if (json.has("modelRepeatPenalty")) editor.putFloat(KEY_MODEL_REPEAT_PENALTY, json.getDouble("modelRepeatPenalty").toFloat())
             if (json.has("modelChatFormat")) editor.putString(KEY_MODEL_CHAT_FORMAT, json.getString("modelChatFormat"))
             if (json.has("modelThreadCount")) editor.putInt(KEY_MODEL_THREAD_COUNT, json.getInt("modelThreadCount"))
             if (json.has("showThinkingTokens")) editor.putBoolean(KEY_SHOW_THINKING_TOKENS, json.getBoolean("showThinkingTokens"))

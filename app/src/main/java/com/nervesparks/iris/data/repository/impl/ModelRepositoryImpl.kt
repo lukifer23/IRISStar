@@ -176,12 +176,28 @@ class ModelRepositoryImpl @Inject constructor(
             }
             
             Log.d(tag, "Loading model: $modelPath")
+
+            val threadCount = userPreferencesRepository.getModelThreadCount()
+            val topK = userPreferencesRepository.getModelTopK()
+            val topP = userPreferencesRepository.getModelTopP()
+            val temp = userPreferencesRepository.getModelTemperature()
+            val maxTokens = userPreferencesRepository.getModelMaxTokens()
+            val contextLength = userPreferencesRepository.getModelContextLength()
+            val systemPrompt = userPreferencesRepository.getModelSystemPrompt()
+            val repeatPenalty = userPreferencesRepository.getModelRepeatPenalty()
+
+            Log.d(tag, "Applied settings: threads=$threadCount, topK=$topK, topP=$topP, temp=$temp, maxTokens=$maxTokens, contextLength=$contextLength, repeatPenalty=$repeatPenalty")
+
             llamaAndroid.load(
                 modelPath,
-                userThreads = 2, // Default thread count
-                topK = 40, // Default top-k
-                topP = 0.9f, // Default top-p
-                temp = 0.7f // Default temperature
+                userThreads = threadCount,
+                topK = topK,
+                topP = topP,
+                temp = temp,
+                maxTokens = maxTokens,
+                contextLength = contextLength,
+                systemPrompt = systemPrompt,
+                repeatPenalty = repeatPenalty
             )
             currentLoadedModel = modelFile.name
             Log.i(tag, "Successfully loaded model: $currentLoadedModel")

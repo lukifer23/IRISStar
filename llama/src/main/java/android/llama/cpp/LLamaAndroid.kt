@@ -76,8 +76,30 @@ class LLamaAndroid {
         }
     }.asCoroutineDispatcher()
 
-    private val nlen: Int = 1024
-    private val context_size: Int = 32768  // Increased to match Qwen3 context length
+    private var maxTokens: Int = 1024
+    private var contextLength: Int = 32768  // Increased to match Qwen3 context length
+    private var systemPrompt: String = ""
+    private var repeatPenalty: Float = 1.1f
+
+    fun setMaxTokens(value: Int) {
+        maxTokens = value
+        Log.d(tag, "Max tokens set to $maxTokens")
+    }
+
+    fun setContextLength(value: Int) {
+        contextLength = value
+        Log.d(tag, "Context length set to $contextLength")
+    }
+
+    fun setSystemPrompt(prompt: String) {
+        systemPrompt = prompt
+        Log.d(tag, "System prompt set")
+    }
+
+    fun setRepeatPenalty(value: Float) {
+        repeatPenalty = value
+        Log.d(tag, "Repeat penalty set to $repeatPenalty")
+    }
 
     private external fun log_to_android()
     private external fun load_model(filename: String): Long
@@ -148,7 +170,17 @@ class LLamaAndroid {
         }
     }
 
-    suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float){
+    suspend fun load(
+        pathToModel: String,
+        userThreads: Int,
+        topK: Int,
+        topP: Float,
+        temp: Float,
+        maxTokens: Int,
+        contextLength: Int,
+        systemPrompt: String,
+        repeatPenalty: Float
+    ) {
         withContext(runLoop) {
             when (threadLocalState.get()) {
                 is State.Idle -> {
@@ -164,6 +196,11 @@ class LLamaAndroid {
                     val sampler = new_sampler(top_k = topK, top_p = topP, temp = temp)
                     if (sampler == 0L) throw IllegalStateException("new_sampler() failed")
 
+                    setMaxTokens(maxTokens)
+                    setContextLength(contextLength)
+                    setSystemPrompt(systemPrompt)
+                    setRepeatPenalty(repeatPenalty)
+                    Log.d(tag, "Applied params: maxTokens=$maxTokens, contextLength=$contextLength, repeatPenalty=$repeatPenalty")
 
                     val modelEotStr = get_eot_str(model)
                     if (modelEotStr == "") throw IllegalStateException("eot_fetch() failed")
@@ -250,17 +287,29 @@ class LLamaAndroid {
         return res
     }
 
-    suspend fun send(message: String): Flow<String> = flow {
+    suspend fun send(
+        message: String,
+        maxTokens: Int = this.maxTokens,
+        contextLength: Int = this.contextLength,
+        systemPrompt: String = this.systemPrompt,
+        repeatPenalty: Float = this.repeatPenalty
+    ): Flow<String> = flow {
         stopGeneration = false
         _isSending.value = true
+        setMaxTokens(maxTokens)
+        setContextLength(contextLength)
+        setSystemPrompt(systemPrompt)
+        setRepeatPenalty(repeatPenalty)
+        Log.d(tag, "Generating with maxTokens=$maxTokens, contextLength=$contextLength, repeatPenalty=$repeatPenalty")
         when (val state = threadLocalState.get()) {
             is State.Loaded -> {
-                val ncur = IntVar(completion_init(state.context, state.batch, message, nlen))
+                val prompt = if (systemPrompt.isNotBlank()) "$systemPrompt\n$message" else message
+                val ncur = IntVar(completion_init(state.context, state.batch, prompt, maxTokens))
                 var end_token_store = ""
                 var chat_len = 0
-                while (chat_len <= nlen && ncur.value < context_size && !stopGeneration) {
+                while (chat_len <= maxTokens && ncur.value < contextLength && !stopGeneration) {
                     _isSending.value = true
-                    val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
+                    val str = completion_loop(state.context, state.batch, state.sampler, maxTokens, ncur)
                     chat_len += 1
                     if (str == "```" || str == "``") {
                         _isMarked.value = !_isMarked.value
@@ -310,9 +359,9 @@ class LLamaAndroid {
             withTimeout(30.seconds) { // Set timeout to 2 minutes
                 when (val state = threadLocalState.get()) {
                     is State.Loaded -> {
-                        val ncur = IntVar(completion_init(state.context, state.batch, "Write an article on global warming in 1000 words", nlen))
-                        while (ncur.value <= nlen) {
-                            val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
+                        val ncur = IntVar(completion_init(state.context, state.batch, "Write an article on global warming in 1000 words", maxTokens))
+                        while (ncur.value <= maxTokens) {
+                            val str = completion_loop(state.context, state.batch, state.sampler, maxTokens, ncur)
                             if (str == null) {
                                 _isSending.value = false
                                 _isCompleteEOT.value = true

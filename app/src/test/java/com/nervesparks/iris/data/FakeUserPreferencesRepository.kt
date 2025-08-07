@@ -84,6 +84,14 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         return prefs[KEY_MODEL_SYSTEM_PROMPT] as? String ?: "You are a helpful AI assistant."
     }
 
+    override fun setModelRepeatPenalty(repeatPenalty: Float) {
+        prefs[KEY_MODEL_REPEAT_PENALTY] = repeatPenalty
+    }
+
+    override fun getModelRepeatPenalty(): Float {
+        return prefs[KEY_MODEL_REPEAT_PENALTY] as? Float ?: 1.1f
+    }
+
     override fun setModelChatFormat(chatFormat: String) {
         prefs[KEY_MODEL_CHAT_FORMAT] = chatFormat
     }
@@ -108,7 +116,9 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
             topK = prefs[prefix + "top_k"] as? Int ?: 40,
             threadCount = prefs[prefix + "thread_count"] as? Int ?: 2,
             contextLength = prefs[prefix + "context_length"] as? Int ?: 4096,
-            systemPrompt = prefs[prefix + "system_prompt"] as? String ?: ""
+            systemPrompt = prefs[prefix + "system_prompt"] as? String ?: "",
+            maxTokens = prefs[prefix + "max_tokens"] as? Int ?: 2048,
+            repeatPenalty = prefs[prefix + "repeat_penalty"] as? Float ?: 1.1f
         )
     }
 
@@ -120,6 +130,8 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         prefs[prefix + "thread_count"] = config.threadCount
         prefs[prefix + "context_length"] = config.contextLength
         prefs[prefix + "system_prompt"] = config.systemPrompt
+        prefs[prefix + "max_tokens"] = config.maxTokens
+        prefs[prefix + "repeat_penalty"] = config.repeatPenalty
     }
 
     override fun getCachedModels(): String {
@@ -237,6 +249,7 @@ private const val KEY_MODEL_CHAT_FORMAT = "model_chat_format"
 private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
 private const val KEY_CACHED_MODELS = "cached_models"
 private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
+private const val KEY_MODEL_REPEAT_PENALTY = "model_repeat_penalty"
 private const val KEY_SHOW_THINKING_TOKENS = "show_thinking_tokens"
 private const val KEY_THINKING_TOKEN_STYLE = "thinking_token_style"
 private const val KEY_UI_THEME = "ui_theme"

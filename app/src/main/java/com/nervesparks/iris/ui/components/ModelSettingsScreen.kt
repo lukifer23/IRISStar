@@ -23,6 +23,7 @@ fun ModelSettingsScreen(
     var temperature by remember { mutableStateOf(0.7f) }
     var topP by remember { mutableStateOf(0.9f) }
     var topK by remember { mutableStateOf(40) }
+    var repeatPenalty by remember { mutableStateOf(viewModel.modelRepeatPenalty) }
     var maxTokens by remember { mutableStateOf(2048) }
     var contextLength by remember { mutableStateOf(4096) }
     var systemPrompt by remember { mutableStateOf("You are a helpful AI assistant.") }
@@ -148,9 +149,44 @@ fun ModelSettingsScreen(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
+        // Repeat Penalty Control
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Repeat Penalty: ${String.format("%.2f", repeatPenalty)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondary
+                )
+                Text(
+                    text = "Penalize repeated tokens (1.0 = off)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
+                )
+                Slider(
+                    value = repeatPenalty,
+                    onValueChange = { repeatPenalty = it },
+                    valueRange = 0.5f..2.0f,
+                    steps = 15,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.tertiary,
+                        activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Max Tokens Control
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -352,7 +388,8 @@ fun ModelSettingsScreen(
                     contextLength = contextLength,
                     systemPrompt = systemPrompt,
                     chatFormat = selectedChatFormat,
-                    threadCount = threadCount
+                    threadCount = threadCount,
+                    repeatPenalty = repeatPenalty
                 )
                 onBackPressed()
             },
