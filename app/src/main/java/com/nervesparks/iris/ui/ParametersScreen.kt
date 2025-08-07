@@ -20,12 +20,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -181,6 +182,31 @@ fun ParametersScreen(viewModel: MainViewModel) {
 
                 item {
                     SettingSection(
+                        title = "Max Tokens",
+                        description = "Maximum tokens to generate (1 - 8192)"
+                    ) {
+                        Text(
+                            text = "${viewModel.modelMaxTokens}",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Slider(
+                            value = viewModel.modelMaxTokens.toFloat(),
+                            onValueChange = { viewModel.modelMaxTokens = it.toInt() },
+                            valueRange = 1f..8192f,
+                            steps = 8190,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    }
+                }
+
+                item { SectionDivider() }
+
+                item {
+                    SettingSection(
                         title = "Context Length",
                         description = "Maximum context window size (512 - 32768)"
                     ) {
@@ -197,6 +223,28 @@ fun ParametersScreen(viewModel: MainViewModel) {
                                 thumbColor = MaterialTheme.colorScheme.primary,
                                 activeTrackColor = MaterialTheme.colorScheme.primary,
                                 inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    }
+                }
+
+
+                item { SectionDivider() }
+
+                item {
+                    SettingSection(
+                        title = "System Prompt",
+                        description = "Initial system message for the model"
+                    ) {
+                        OutlinedTextField(
+                            value = viewModel.modelSystemPrompt,
+                            onValueChange = { viewModel.modelSystemPrompt = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
@@ -261,7 +309,11 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     if(viewModel.loadedModelName.value == "") {
                         Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
                     } else {
-                        viewModel.updateModelSettings(contextLength = viewModel.modelContextLength)
+                        viewModel.updateModelSettings(
+                            contextLength = viewModel.modelContextLength,
+                            maxTokens = viewModel.modelMaxTokens,
+                            systemPrompt = viewModel.modelSystemPrompt
+                        )
                         viewModel.currentDownloadable?.destination?.path?.let {
                             viewModel.load(it, viewModel.user_thread.toInt())
                             Toast.makeText(context, "Changes have been saved", Toast.LENGTH_SHORT).show()
