@@ -20,14 +20,14 @@ fun ModelSettingsScreen(
     viewModel: MainViewModel,
     onBackPressed: () -> Unit
 ) {
-    var temperature by remember { mutableStateOf(0.7f) }
-    var topP by remember { mutableStateOf(0.9f) }
-    var topK by remember { mutableStateOf(40) }
-    var maxTokens by remember { mutableStateOf(2048) }
-    var contextLength by remember { mutableStateOf(4096) }
-    var systemPrompt by remember { mutableStateOf("You are a helpful AI assistant.") }
-    var selectedChatFormat by remember { mutableStateOf(viewModel.modelChatFormat) }
-    var threadCount by remember { mutableStateOf(4) }
+    var temperature by remember(viewModel.modelTemperature) { mutableStateOf(viewModel.modelTemperature) }
+    var topP by remember(viewModel.modelTopP) { mutableStateOf(viewModel.modelTopP) }
+    var topK by remember(viewModel.modelTopK) { mutableStateOf(viewModel.modelTopK) }
+    var maxTokens by remember(viewModel.modelMaxTokens) { mutableStateOf(viewModel.modelMaxTokens) }
+    var contextLength by remember(viewModel.modelContextLength) { mutableStateOf(viewModel.modelContextLength) }
+    var systemPrompt by remember(viewModel.modelSystemPrompt) { mutableStateOf(viewModel.modelSystemPrompt) }
+    var selectedChatFormat by remember(viewModel.modelChatFormat) { mutableStateOf(viewModel.modelChatFormat) }
+    var threadCount by remember(viewModel.modelThreadCount) { mutableStateOf(viewModel.modelThreadCount) }
 
     Column(
         modifier = Modifier
