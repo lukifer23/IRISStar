@@ -31,26 +31,13 @@ project("llama-android")
 # is preferred for the same purpose.
 #
 
+# OpenCL disabled to avoid libcutils.so dependency issues
 # Configure OpenCL for Android
 if(ANDROID)
-    # Try to find system OpenCL libraries
-    find_library(OpenCL_LIBRARY 
-        NAMES OpenCL
-        PATHS /vendor/lib64 /system/lib64 /vendor/lib /system/lib
-        NO_DEFAULT_PATH
-    )
-    
-    if(OpenCL_LIBRARY)
-        message(STATUS "Found system OpenCL: ${OpenCL_LIBRARY}")
-        set(OpenCL_LIBRARIES ${OpenCL_LIBRARY})
-        set(OpenCL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../llama.cpp/ggml/src/ggml-opencl")
-    else()
-        message(WARNING "System OpenCL not found, will build without GPU acceleration")
-        set(OpenCL_LIBRARIES "")
-        set(OpenCL_INCLUDE_DIRS "")
-        # Disable OpenCL compilation entirely
-        set(GGML_OPENCL OFF)
-    endif()
+    message(STATUS "OpenCL disabled to avoid dependency issues")
+    set(OpenCL_LIBRARIES "")
+    set(OpenCL_INCLUDE_DIRS "")
+    set(GGML_OPENCL OFF)
 endif()
 
 #load local llama.cpp
