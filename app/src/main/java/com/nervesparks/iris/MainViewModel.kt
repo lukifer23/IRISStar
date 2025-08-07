@@ -266,7 +266,9 @@ class MainViewModel @Inject constructor(
 
     fun performWebSearch(query: String, summarize: Boolean = true) {
         // Add the search query as a user message
-        pruneForNewTokens(llamaAndroid.countTokens("Search the web for: $query"))
+        viewModelScope.launch {
+            pruneForNewTokens(llamaAndroid.countTokens("Search the web for: $query"))
+        }
         addMessage("user", "Search the web for: $query")
         
         viewModelScope.launch {
@@ -303,7 +305,9 @@ class MainViewModel @Inject constructor(
                         """.trimIndent()
 
                         try {
-                            pruneForNewTokens(llamaAndroid.countTokens(summaryPrompt))
+                            viewModelScope.launch {
+                                pruneForNewTokens(llamaAndroid.countTokens(summaryPrompt))
+                            }
                             addMessage("user", summaryPrompt)
                             processWebSearch(summaryPrompt)
                             searchProgress = "Search complete"
@@ -624,7 +628,9 @@ class MainViewModel @Inject constructor(
 
     fun sendCode(code: String) {
         val prompt = "Analyze the following code:\n\n```\n$code\n```"
-        pruneForNewTokens(llamaAndroid.countTokens(prompt))
+        viewModelScope.launch {
+            pruneForNewTokens(llamaAndroid.countTokens(prompt))
+        }
         addMessage("user", prompt)
         // Don't call send() to avoid infinite recursion
         // Instead, directly process the code analysis
@@ -708,7 +714,9 @@ class MainViewModel @Inject constructor(
 
     fun translate(text: String, targetLanguage: String) {
         val prompt = "Translate the following text to $targetLanguage:\n\n$text"
-        pruneForNewTokens(llamaAndroid.countTokens(prompt))
+        viewModelScope.launch {
+            pruneForNewTokens(llamaAndroid.countTokens(prompt))
+        }
         addMessage("user", prompt)
         processTranslation(prompt)
     }
@@ -1431,7 +1439,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun pruneForNewTokens(additionalTokens: Int) {
+    private suspend fun pruneForNewTokens(additionalTokens: Int) {
         if (contextLimit + additionalTokens <= modelContextLength) return
 
         var workingMessages = messages.toMutableList()
@@ -1502,7 +1510,9 @@ class MainViewModel @Inject constructor(
                 first = false
             }
 
-            pruneForNewTokens(llamaAndroid.countTokens(userMessage))
+            viewModelScope.launch {
+                pruneForNewTokens(llamaAndroid.countTokens(userMessage))
+            }
             addMessage("user", userMessage)
             persistChat()
 
