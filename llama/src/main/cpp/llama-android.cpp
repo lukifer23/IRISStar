@@ -1246,7 +1246,7 @@ Java_android_llama_cpp_LLamaAndroid_get_1embeddings(JNIEnv *env, jobject, jlong 
 
 // Hardware detection functions for Android GPU acceleration
 extern "C" JNIEXPORT jstring JNICALL
-Java_android_llama_cpp_LLamaAndroid_get_1available_1backends(JNIEnv *env, jobject) {
+Java_android_llama_cpp_LLamaAndroid_getAvailableBackends(JNIEnv *env, jobject) {
     std::string backends = "CPU"; // CPU is always available
     
     // OpenCL for Adreno GPUs - now properly configured
@@ -1258,7 +1258,7 @@ Java_android_llama_cpp_LLamaAndroid_get_1available_1backends(JNIEnv *env, jobjec
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_android_llama_cpp_LLamaAndroid_get_1optimal_1backend(JNIEnv *env, jobject) {
+Java_android_llama_cpp_LLamaAndroid_getOptimalBackend(JNIEnv *env, jobject) {
     // For Android, prioritize OpenCL for Adreno GPUs, then CPU
     std::string optimal = "CPU";
     
@@ -1271,7 +1271,7 @@ Java_android_llama_cpp_LLamaAndroid_get_1optimal_1backend(JNIEnv *env, jobject) 
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_android_llama_cpp_LLamaAndroid_get_1gpu_1info(JNIEnv *env, jobject) {
+Java_android_llama_cpp_LLamaAndroid_getGpuInfo(JNIEnv *env, jobject) {
     std::string gpu_info = "OpenCL for Adreno GPUs is now available!";
     
     #ifdef GGML_USE_OPENCL
@@ -1284,7 +1284,7 @@ Java_android_llama_cpp_LLamaAndroid_get_1gpu_1info(JNIEnv *env, jobject) {
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_android_llama_cpp_LLamaAndroid_is_1adreno_1gpu(JNIEnv *, jobject) {
+Java_android_llama_cpp_LLamaAndroid_isAdrenoGpu(JNIEnv *, jobject) {
     // OpenCL is now available, so we can detect Adreno GPUs
     #ifdef GGML_USE_OPENCL
     return JNI_TRUE;
@@ -1295,7 +1295,7 @@ Java_android_llama_cpp_LLamaAndroid_is_1adreno_1gpu(JNIEnv *, jobject) {
 
 // Real benchmark function that tests CPU vs GPU performance
 extern "C" JNIEXPORT jstring JNICALL
-Java_android_llama_cpp_LLamaAndroid_run_1comparative_1benchmark(
+Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
     JNIEnv *env, jobject, jlong jmodel, jlong jcontext, jlong jbatch, jlong jsampler) {
     
     json results;

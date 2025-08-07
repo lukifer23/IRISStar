@@ -278,7 +278,7 @@ class LLamaAndroid {
     
     suspend fun setBackend(backend: String) {
         withContext(runLoop) {
-            set_backend(backend)
+                            set_backend(backend)
         }
     }
     
