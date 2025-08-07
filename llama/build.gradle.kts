@@ -20,10 +20,9 @@ android {
                 arguments += "-DLLAMA_BUILD_COMMON=ON"
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
                 arguments += "-DLLAMA_CURL=OFF"
-                                    // OpenCL for Adreno GPUs - temporarily disabled to fix libcutils.so dependency
-                    arguments += "-DGGML_OPENCL=OFF"
-                    // arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
-                    // arguments += "-DGGML_OPENCL_EMBED_KERNELS=ON"
+                // Enable OpenCL with embedded kernels to avoid missing runtime dependencies
+                // arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
+                arguments += "-DGGML_OPENCL_EMBED_KERNELS=ON"
                 cppFlags += listOf()
                 arguments += listOf()
 
