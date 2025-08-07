@@ -6,6 +6,9 @@
 #include <vector>
 #include <unistd.h>
 #include <chrono>
+#include <CL/cl.h>
+#include <algorithm>
+#include <cctype>
 #include "llama.h"
 #include "common.h"
 #include "chat.h"
@@ -1245,52 +1248,101 @@ Java_android_llama_cpp_LLamaAndroid_get_1embeddings(JNIEnv *env, jobject, jlong 
 }
 
 // Hardware detection functions for Android GPU acceleration
+struct OpenCLDeviceInfo {
+    bool has_gpu = false;
+    bool is_adreno = false;
+    std::string vendor;
+    std::string name;
+};
+
+static OpenCLDeviceInfo detect_opencl_device() {
+    OpenCLDeviceInfo info;
+
+    cl_uint num_platforms = 0;
+    if (clGetPlatformIDs(0, nullptr, &num_platforms) != CL_SUCCESS || num_platforms == 0) {
+        return info;
+    }
+
+    std::vector<cl_platform_id> platforms(num_platforms);
+    if (clGetPlatformIDs(num_platforms, platforms.data(), nullptr) != CL_SUCCESS) {
+        return info;
+    }
+
+    for (cl_platform_id platform : platforms) {
+        cl_uint num_devices = 0;
+        if (clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, nullptr, &num_devices) != CL_SUCCESS || num_devices == 0) {
+            continue;
+        }
+
+        std::vector<cl_device_id> devices(num_devices);
+        if (clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices.data(), nullptr) != CL_SUCCESS) {
+            continue;
+        }
+
+        for (cl_device_id device : devices) {
+            char vendor[256] = {0};
+            char name[256]   = {0};
+
+            clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(vendor), vendor, nullptr);
+            clGetDeviceInfo(device, CL_DEVICE_NAME,   sizeof(name),   name,   nullptr);
+
+            info.has_gpu = true;
+            info.vendor = vendor;
+            info.name   = name;
+
+            std::string vendor_lower = info.vendor;
+            std::string name_lower   = info.name;
+            std::transform(vendor_lower.begin(), vendor_lower.end(), vendor_lower.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+            std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+
+            if (vendor_lower.find("qualcomm") != std::string::npos ||
+                vendor_lower.find("adreno")   != std::string::npos ||
+                name_lower.find("adreno")     != std::string::npos) {
+                info.is_adreno = true;
+            }
+
+            return info; // Return first GPU device found
+        }
+    }
+
+    return info;
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_getAvailableBackends(JNIEnv *env, jobject) {
+    OpenCLDeviceInfo info = detect_opencl_device();
     std::string backends = "CPU"; // CPU is always available
-    
-    // OpenCL for Adreno GPUs - now properly configured
-    #ifdef GGML_USE_OPENCL
-    backends += ",OpenCL";
-    #endif
-    
+    if (info.has_gpu) {
+        backends += ",OpenCL";
+    }
     return env->NewStringUTF(backends.c_str());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_getOptimalBackend(JNIEnv *env, jobject) {
-    // For Android, prioritize OpenCL for Adreno GPUs, then CPU
-    std::string optimal = "CPU";
-    
-    // OpenCL for Adreno GPUs - now properly configured
-    #ifdef GGML_USE_OPENCL
-    optimal = "OpenCL";
-    #endif
-    
+    OpenCLDeviceInfo info = detect_opencl_device();
+    std::string optimal = info.has_gpu ? "OpenCL" : "CPU";
     return env->NewStringUTF(optimal.c_str());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_getGpuInfo(JNIEnv *env, jobject) {
-    std::string gpu_info = "OpenCL for Adreno GPUs is now available!";
-    
-    #ifdef GGML_USE_OPENCL
-    gpu_info += " OpenCL backend is compiled and ready.";
-    #else
-    gpu_info += " OpenCL backend is not compiled.";
-    #endif
-    
+    OpenCLDeviceInfo info = detect_opencl_device();
+    std::string gpu_info;
+    if (info.has_gpu) {
+        gpu_info = "OpenCL backend is available. Vendor: " + info.vendor + ", Device: " + info.name;
+    } else {
+        gpu_info = "OpenCL backend is not available.";
+    }
     return env->NewStringUTF(gpu_info.c_str());
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_android_llama_cpp_LLamaAndroid_isAdrenoGpu(JNIEnv *, jobject) {
-    // OpenCL is now available, so we can detect Adreno GPUs
-    #ifdef GGML_USE_OPENCL
-    return JNI_TRUE;
-    #else
-    return JNI_FALSE;
-    #endif
+    OpenCLDeviceInfo info = detect_opencl_device();
+    return info.is_adreno ? JNI_TRUE : JNI_FALSE;
 }
 
 // Real benchmark function that tests CPU vs GPU performance
@@ -1301,17 +1353,17 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
     json results;
     results["cpu"] = json::object();
     results["gpu"] = json::object();
-    
+
     // Get current backend information
+    OpenCLDeviceInfo cl_info = detect_opencl_device();
     std::string available_backends = "CPU";
     std::string optimal_backend = "CPU";
     bool gpu_available = false;
-    
-    #ifdef GGML_USE_OPENCL
-    available_backends += ",OpenCL";
-    optimal_backend = "OpenCL";
-    gpu_available = true;
-    #endif
+    if (cl_info.has_gpu) {
+        available_backends += ",OpenCL";
+        optimal_backend = "OpenCL";
+        gpu_available = true;
+    }
     
     // Real CPU benchmark with timing
     auto cpu_start = std::chrono::high_resolution_clock::now();
