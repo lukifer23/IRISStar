@@ -6,6 +6,8 @@
 #include <vector>
 #include <unistd.h>
 #include <chrono>
+#include <algorithm>
+#include <cstdlib>
 #include "llama.h"
 #include "common.h"
 #include "chat.h"
@@ -1293,132 +1295,124 @@ Java_android_llama_cpp_LLamaAndroid_isAdrenoGpu(JNIEnv *, jobject) {
     #endif
 }
 
+// Simple structure to hold benchmark results
+struct bench_metrics {
+    double tokens_per_sec = 0.0;
+    int    duration_ms    = 0;
+    int    tokens_generated = 0;
+};
+
+// Run the standard llama.cpp benchmark loop and collect metrics
+static bench_metrics run_bench_loop(llama_context * ctx, llama_batch * batch) {
+    bench_metrics out;
+
+    if (!ctx || !batch) {
+        return out;
+    }
+
+    const int pp = 512;  // prompt processing tokens
+    const int tg = 128;  // text generation steps
+    const int pl = 1;    // tokens generated per step
+
+    int i, j;
+
+    // prompt processing
+    common_batch_clear(*batch);
+    for (i = 0; i < pp; ++i) {
+        common_batch_add(*batch, 0, i, { 0 }, false);
+    }
+    batch->logits[batch->n_tokens - 1] = true;
+    llama_memory_clear(llama_get_memory(ctx), true);
+    if (llama_decode(ctx, *batch) != 0) {
+        return out;
+    }
+
+    // text generation
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const auto t_start = ggml_time_us();
+    for (i = 0; i < tg; ++i) {
+        common_batch_clear(*batch);
+        for (j = 0; j < pl; ++j) {
+            common_batch_add(*batch, 0, i, { j }, true);
+        }
+        if (llama_decode(ctx, *batch) != 0) {
+            break;
+        }
+    }
+    const auto t_end = ggml_time_us();
+
+    const double t_s = (t_end - t_start) / 1e6;
+    out.tokens_generated = i * pl;
+    out.duration_ms = (int) (t_s * 1000.0);
+    out.tokens_per_sec = t_s > 0.0 ? out.tokens_generated / t_s : 0.0;
+
+    return out;
+}
+
 // Real benchmark function that tests CPU vs GPU performance
 extern "C" JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
-    JNIEnv *env, jobject, jlong jmodel, jlong jcontext, jlong jbatch, jlong jsampler) {
-    
+    JNIEnv *env, jobject, jlong jmodel, jlong jcontext, jlong jbatch, jlong) {
+
     json results;
     results["cpu"] = json::object();
     results["gpu"] = json::object();
-    
-    // Get current backend information
+
     std::string available_backends = "CPU";
-    std::string optimal_backend = "CPU";
-    bool gpu_available = false;
-    
-    #ifdef GGML_USE_OPENCL
+    std::string optimal_backend   = "CPU";
+
+#ifdef GGML_USE_OPENCL
     available_backends += ",OpenCL";
     optimal_backend = "OpenCL";
-    gpu_available = true;
-    #endif
-    
-    // Real CPU benchmark with timing
-    auto cpu_start = std::chrono::high_resolution_clock::now();
-    
-    // Test CPU performance with timing
-    double cpu_tokens_per_sec = 0.0;
-    int cpu_duration_ms = 0;
-    int cpu_tokens_generated = 0;
-    
-    if (jmodel != 0 && jcontext != 0) {
-        // Use actual model and context for timing
-        struct llama_model *model = (struct llama_model *)jmodel;
-        struct llama_context *ctx = (struct llama_context *)jcontext;
-        
-        // Validate model and context pointers
-        if (!model || !ctx) {
-            LOGi("Benchmark: Invalid model or context pointer");
-            cpu_tokens_per_sec = 2.5;
-            cpu_duration_ms = 1000;
-            cpu_tokens_generated = 25;
-        } else {
-            // Simple timing test without complex API calls
-            auto inference_start = std::chrono::high_resolution_clock::now();
-            
-            // Simulate some work based on model size
-            size_t model_size = 0;
-            try {
-                // Get model size for realistic timing
-                model_size = llama_model_size(model);
-                LOGi("Benchmark: Model size = %zu bytes", model_size);
-            } catch (...) {
-                LOGi("Benchmark: Failed to get model size, using fallback");
-                model_size = 1024 * 1024 * 1024; // 1GB fallback
-            }
-            
-            // Simulate inference time based on model size
-            int simulated_tokens = 25;
-            int simulated_ms = 1000 + (model_size / (1024 * 1024)); // Base 1s + 1ms per MB
-            
-            auto inference_end = std::chrono::high_resolution_clock::now();
-            auto inference_duration = std::chrono::duration_cast<std::chrono::milliseconds>(inference_end - inference_start);
-            
-            cpu_duration_ms = simulated_ms;
-            cpu_tokens_generated = simulated_tokens;
-            cpu_tokens_per_sec = (cpu_duration_ms > 0) ? (cpu_tokens_generated * 1000.0 / cpu_duration_ms) : 0.0;
-            
-            LOGi("CPU benchmark: model_size=%zu, tokens=%d, duration=%dms, tps=%.2f", 
-                 model_size, cpu_tokens_generated, cpu_duration_ms, cpu_tokens_per_sec);
-        }
-    } else {
-        // Fallback to simulated CPU performance
-        cpu_tokens_per_sec = 2.5;
-        cpu_duration_ms = 1000;
-        cpu_tokens_generated = 25;
-    }
-    
-    results["cpu"]["tokens_generated"] = cpu_tokens_generated;
-    results["cpu"]["duration_ms"] = cpu_duration_ms;
-    results["cpu"]["tokens_per_sec"] = cpu_tokens_per_sec;
-    
-    if (gpu_available) {
-        // Test GPU performance with OpenCL backend
-        double gpu_tokens_per_sec = 0.0;
-        int gpu_duration_ms = 0;
-        int gpu_tokens_generated = 0;
-        
-        #ifdef GGML_USE_OPENCL
-        // Try to use OpenCL backend for GPU testing
-        if (jmodel != 0 && jcontext != 0) {
-            // Switch to OpenCL backend temporarily
-            // Note: This would require proper backend switching in llama.cpp
-            // For now, we'll simulate GPU performance based on CPU results
-            gpu_tokens_per_sec = cpu_tokens_per_sec * 1.5; // Realistic GPU improvement
-            gpu_duration_ms = (int)(cpu_duration_ms / 1.5);
-            gpu_tokens_generated = cpu_tokens_generated;
-        } else {
-            gpu_tokens_per_sec = 3.75; // Simulated GPU baseline
-            gpu_duration_ms = 667;
-            gpu_tokens_generated = 25;
-        }
-        #else
-        gpu_tokens_per_sec = 0.0;
-        gpu_duration_ms = 0;
-        gpu_tokens_generated = 0;
-        #endif
-        
-        if (gpu_tokens_per_sec > 0) {
-            results["gpu"]["tokens_generated"] = gpu_tokens_generated;
-            results["gpu"]["duration_ms"] = gpu_duration_ms;
-            results["gpu"]["tokens_per_sec"] = gpu_tokens_per_sec;
-            results["gpu"]["available"] = true;
-            
-            // Calculate speedup
-            results["speedup"] = gpu_tokens_per_sec / cpu_tokens_per_sec;
-        } else {
-            results["gpu"]["available"] = false;
-            results["gpu"]["error"] = "OpenCL backend not available";
-            results["speedup"] = 0.0;
-        }
-    } else {
-        results["gpu"]["available"] = false;
-        results["gpu"]["error"] = "OpenCL not compiled";
-        results["speedup"] = 0.0;
-    }
-    
+#endif
+
+    struct llama_model  * model = (struct llama_model *) jmodel;
+    struct llama_context* ctx_cpu = (struct llama_context *) jcontext;
+    struct llama_batch  * batch = (struct llama_batch *) jbatch;
+
+    bench_metrics cpu = run_bench_loop(ctx_cpu, batch);
+
+    results["cpu"]["tokens_generated"] = cpu.tokens_generated;
+    results["cpu"]["duration_ms"]     = cpu.duration_ms;
+    results["cpu"]["tokens_per_sec"]  = cpu.tokens_per_sec;
+
+#ifdef GGML_USE_OPENCL
+    // prepare OpenCL backend
+    setenv("GGML_OPENCL_PLATFORM", "0", 1);
+    setenv("GGML_OPENCL_DEVICE",   "0", 1);
+    llama_backend_init();
+
+    // create temporary context for GPU
+    llama_context_params ctx_params = llama_context_default_params();
+    ctx_params.n_ctx = 32768;
+    int n_threads = std::max(1, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2);
+    ctx_params.n_threads = n_threads;
+    ctx_params.n_threads_batch = n_threads;
+
+    struct llama_context * ctx_gpu = llama_init_from_model(model, ctx_params);
+
+    bench_metrics gpu = run_bench_loop(ctx_gpu, batch);
+
+    results["gpu"]["tokens_generated"] = gpu.tokens_generated;
+    results["gpu"]["duration_ms"]     = gpu.duration_ms;
+    results["gpu"]["tokens_per_sec"]  = gpu.tokens_per_sec;
+    results["gpu"]["available"]       = true;
+    results["speedup"] = cpu.tokens_per_sec > 0 ? gpu.tokens_per_sec / cpu.tokens_per_sec : 0.0;
+
+    llama_free(ctx_gpu);
+
+    // restore CPU backend
+    unsetenv("GGML_OPENCL_PLATFORM");
+    unsetenv("GGML_OPENCL_DEVICE");
+    llama_backend_init();
+#else
+    results["gpu"]["available"] = false;
+    results["gpu"]["error"]     = "OpenCL not compiled";
+    results["speedup"]           = 0.0;
+#endif
+
     results["available_backends"] = available_backends;
-    results["optimal_backend"] = optimal_backend;
-    
+    results["optimal_backend"]   = optimal_backend;
+
     return env->NewStringUTF(results.dump().c_str());
 }
