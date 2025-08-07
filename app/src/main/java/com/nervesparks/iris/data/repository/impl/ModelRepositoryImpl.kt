@@ -181,7 +181,8 @@ class ModelRepositoryImpl @Inject constructor(
                 userThreads = 2, // Default thread count
                 topK = 40, // Default top-k
                 topP = 0.9f, // Default top-p
-                temp = 0.7f // Default temperature
+                temp = 0.7f, // Default temperature
+                repeatPenalty = 1.1f
             )
             currentLoadedModel = modelFile.name
             Log.i(tag, "Successfully loaded model: $currentLoadedModel")

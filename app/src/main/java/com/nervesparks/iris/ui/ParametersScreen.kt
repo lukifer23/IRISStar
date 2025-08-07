@@ -181,6 +181,31 @@ fun ParametersScreen(viewModel: MainViewModel) {
 
                 item {
                     SettingSection(
+                        title = "Repeat Penalty",
+                        description = "Penalize repeated tokens (1.0 = disabled)"
+                    ) {
+                        Text(
+                            text = String.format("%.2f", viewModel.repeatPenalty),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Slider(
+                            value = viewModel.repeatPenalty,
+                            onValueChange = { viewModel.repeatPenalty = it },
+                            valueRange = 0f..2f,
+                            steps = 19,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    }
+                }
+
+                item { SectionDivider() }
+
+                item {
+                    SettingSection(
                         title = "Context Length",
                         description = "Maximum context window size (512 - 32768)"
                     ) {
@@ -261,7 +286,10 @@ fun ParametersScreen(viewModel: MainViewModel) {
                     if(viewModel.loadedModelName.value == "") {
                         Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
                     } else {
-                        viewModel.updateModelSettings(contextLength = viewModel.modelContextLength)
+                        viewModel.updateModelSettings(
+                            contextLength = viewModel.modelContextLength,
+                            repeatPenalty = viewModel.repeatPenalty
+                        )
                         viewModel.currentDownloadable?.destination?.path?.let {
                             viewModel.load(it, viewModel.user_thread.toInt())
                             Toast.makeText(context, "Changes have been saved", Toast.LENGTH_SHORT).show()

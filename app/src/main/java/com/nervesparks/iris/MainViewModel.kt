@@ -225,6 +225,7 @@ class MainViewModel @Inject constructor(
     var topP by mutableStateOf(0.9f)
     var topK by mutableStateOf(40)
     var temp by mutableStateOf(0.7f)
+    var repeatPenalty by mutableStateOf(1.1f)
 
     var allModels by mutableStateOf<List<Map<String, String>>>(emptyList())
 
@@ -988,6 +989,12 @@ class MainViewModel @Inject constructor(
     var modelTopK: Int
         get() = _modelTopK.value
         set(value) { _modelTopK.value = value }
+
+    private var _modelRepeatPenalty = mutableStateOf(1.1f)
+    var modelRepeatPenalty: Float
+        get() = _modelRepeatPenalty.value
+        set(value) { _modelRepeatPenalty.value = value }
+
     
     private var _modelMaxTokens = mutableStateOf(2048)
     var modelMaxTokens: Int
@@ -1021,6 +1028,7 @@ class MainViewModel @Inject constructor(
         temperature: Float = modelTemperature,
         topP: Float = modelTopP,
         topK: Int = modelTopK,
+        repeatPenalty: Float = modelRepeatPenalty,
         maxTokens: Int = modelMaxTokens,
         contextLength: Int = modelContextLength,
         systemPrompt: String = modelSystemPrompt,
@@ -1030,6 +1038,8 @@ class MainViewModel @Inject constructor(
         modelTemperature = temperature
         modelTopP = topP
         modelTopK = topK
+        modelRepeatPenalty = repeatPenalty
+        this.repeatPenalty = repeatPenalty
         modelMaxTokens = maxTokens
         modelContextLength = contextLength
         modelSystemPrompt = systemPrompt
@@ -1040,6 +1050,7 @@ class MainViewModel @Inject constructor(
         userPreferencesRepository.setModelTemperature(temperature)
         userPreferencesRepository.setModelTopP(topP)
         userPreferencesRepository.setModelTopK(topK)
+        userPreferencesRepository.setModelRepeatPenalty(repeatPenalty)
         userPreferencesRepository.setModelMaxTokens(maxTokens)
         userPreferencesRepository.setModelContextLength(contextLength)
         userPreferencesRepository.setModelSystemPrompt(systemPrompt)
@@ -1075,7 +1086,17 @@ class MainViewModel @Inject constructor(
                 Log.e("MainViewModel", "Error loading topK, using default", e)
                 modelTopK = 40
             }
-            
+
+            try {
+                modelRepeatPenalty = userPreferencesRepository.getModelRepeatPenalty()
+                repeatPenalty = modelRepeatPenalty
+                Log.d("MainViewModel", "Loaded repeatPenalty: $modelRepeatPenalty")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading repeatPenalty, using default", e)
+                modelRepeatPenalty = 1.1f
+                repeatPenalty = 1.1f
+            }
+
             try {
                 modelMaxTokens = userPreferencesRepository.getModelMaxTokens()
                 Log.d("MainViewModel", "Loaded maxTokens: $modelMaxTokens")
@@ -1822,11 +1843,12 @@ class MainViewModel @Inject constructor(
                 
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
-                    pathToModel, 
-                    userThreads = modelThreadCount, 
-                    topK = modelTopK, 
-                    topP = modelTopP, 
-                    temp = modelTemperature
+                    pathToModel,
+                    userThreads = modelThreadCount,
+                    topK = modelTopK,
+                    topP = modelTopP,
+                    temp = modelTemperature,
+                    repeatPenalty = modelRepeatPenalty
                 )
                 
                 Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")

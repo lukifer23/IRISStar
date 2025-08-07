@@ -89,7 +89,7 @@ class LLamaAndroid {
     private external fun set_backend(backend: String)
     private external fun new_batch(nTokens: Int, embd: Int, nSeqMax: Int): Long
     private external fun free_batch(batch: Long)
-    private external fun new_sampler(top_p: Float, top_k: Int, temp: Float): Long
+    private external fun new_sampler(top_p: Float, top_k: Int, temp: Float, repeatPenalty: Float): Long
     private external fun free_sampler(sampler: Long)
     private external fun bench_model(
         context: Long,
@@ -148,7 +148,7 @@ class LLamaAndroid {
         }
     }
 
-    suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float){
+    suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float, repeatPenalty: Float){
         withContext(runLoop) {
             when (threadLocalState.get()) {
                 is State.Idle -> {
@@ -161,7 +161,7 @@ class LLamaAndroid {
                     val batch = new_batch(4096, 0, 1)
                     if (batch == 0L) throw IllegalStateException("new_batch() failed")
 
-                    val sampler = new_sampler(top_k = topK, top_p = topP, temp = temp)
+                    val sampler = new_sampler(top_k = topK, top_p = topP, temp = temp, repeatPenalty = repeatPenalty)
                     if (sampler == 0L) throw IllegalStateException("new_sampler() failed")
 
 

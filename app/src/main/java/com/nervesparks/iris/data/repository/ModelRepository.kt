@@ -70,6 +70,7 @@ data class ModelConfiguration(
     val temperature: Float = 0.7f,
     val topP: Float = 0.9f,
     val topK: Int = 40,
+    val repeatPenalty: Float = 1.1f,
     val threadCount: Int = 2,
     val contextLength: Int = 4096,
     val systemPrompt: String = ""

@@ -4,6 +4,8 @@ import android.content.Context
 import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.repository.ModelConfiguration
 
+private const val KEY_MODEL_REPEAT_PENALTY = "model_repeat_penalty"
+
 class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepository(context) {
 
     private val prefs = mutableMapOf<String, Any>()
@@ -100,12 +102,21 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         return prefs[KEY_MODEL_THREAD_COUNT] as? Int ?: 4
     }
 
+    override fun setModelRepeatPenalty(repeatPenalty: Float) {
+        prefs[KEY_MODEL_REPEAT_PENALTY] = repeatPenalty
+    }
+
+    override fun getModelRepeatPenalty(): Float {
+        return prefs[KEY_MODEL_REPEAT_PENALTY] as? Float ?: 1.1f
+    }
+
     override fun getModelConfiguration(modelName: String): ModelConfiguration {
         val prefix = "model_config_${modelName}_"
         return ModelConfiguration(
             temperature = prefs[prefix + "temperature"] as? Float ?: 0.7f,
             topP = prefs[prefix + "top_p"] as? Float ?: 0.9f,
             topK = prefs[prefix + "top_k"] as? Int ?: 40,
+            repeatPenalty = prefs[prefix + "repeat_penalty"] as? Float ?: 1.1f,
             threadCount = prefs[prefix + "thread_count"] as? Int ?: 2,
             contextLength = prefs[prefix + "context_length"] as? Int ?: 4096,
             systemPrompt = prefs[prefix + "system_prompt"] as? String ?: ""
@@ -117,6 +128,7 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         prefs[prefix + "temperature"] = config.temperature
         prefs[prefix + "top_p"] = config.topP
         prefs[prefix + "top_k"] = config.topK
+        prefs[prefix + "repeat_penalty"] = config.repeatPenalty
         prefs[prefix + "thread_count"] = config.threadCount
         prefs[prefix + "context_length"] = config.contextLength
         prefs[prefix + "system_prompt"] = config.systemPrompt

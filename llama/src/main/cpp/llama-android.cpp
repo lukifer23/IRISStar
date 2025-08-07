@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <unistd.h>
 #include <chrono>
 #include "llama.h"
@@ -431,8 +432,8 @@ Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv *, jobject, jlong batch_p
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv *, jobject, jfloat top_p, jint top_k, jfloat temp) {
-    LOGi("my params temp=%.1f, top_p=%.1f, top_k=%d", temp, top_p, top_k);
+Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv *, jobject, jfloat top_p, jint top_k, jfloat temp, jfloat repeat_penalty) {
+    LOGi("my params temp=%.1f, top_p=%.1f, top_k=%d, repeat_penalty=%.2f", temp, top_p, top_k, repeat_penalty);
     auto sparams = llama_sampler_chain_default_params();
     sparams.no_perf = true;
     llama_sampler *smpl = llama_sampler_chain_init(sparams);
@@ -459,6 +460,14 @@ Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv *, jobject, jfloat top_p
     } else {
         float adjusted_temp = roundf(temp * 10) / 10;
         llama_sampler_chain_add(smpl, llama_sampler_init_temp(adjusted_temp));
+    }
+
+    // Repeat penalty handling
+    if (repeat_penalty <= 0.0f) {
+        llama_sampler_chain_add(smpl, llama_sampler_init_penalties(64, 1.1f, 0.0f, 0.0f));
+    } else {
+        float adjusted_penalty = fmaxf(repeat_penalty, 1.0f);
+        llama_sampler_chain_add(smpl, llama_sampler_init_penalties(64, adjusted_penalty, 0.0f, 0.0f));
     }
 
     // Always add dist sampler
