@@ -1314,9 +1314,14 @@ class MainViewModel @Inject constructor(
                     destinationPath
                 )
                 
-                // Load the new model with CPU backend to avoid OpenCL issues
-                Log.d(tag, "Loading model with CPU backend to avoid OpenCL issues")
-                load(destinationPath.path, modelThreadCount, backend = "cpu")
+                val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
+                try {
+                    load(destinationPath.path, modelThreadCount, backend = backend)
+                } catch (e: Exception) {
+                    Log.e(tag, "Failed to load model with backend $backend, falling back to CPU", e)
+                    currentBackend = "CPU"
+                    load(destinationPath.path, modelThreadCount, backend = "cpu")
+                }
                 
                 // Update default model name
                 setDefaultModelName(modelName)
@@ -1879,25 +1884,24 @@ class MainViewModel @Inject constructor(
             } catch (exc: IllegalStateException){
                 Log.e(tag, "load() failed", exc)
             }
-                            try {
-                    // Use CPU backend since OpenCL is disabled
-                    Log.d(tag, "Using CPU backend (OpenCL disabled)")
-                
+            try {
+                llamaAndroid.setBackend(backend.lowercase())
+
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
-                
+
                 // Add reasoning support detection here
                 Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
                 Log.d(tag, "Loading model: ${loadedModelName.value}")
                 Log.d(tag, "All models count: ${allModels.size}")
                 Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
-                
+
                 val foundModel = allModels.find { it["name"] == loadedModelName.value }
                 Log.d(tag, "Found model in allModels: $foundModel")
-                
+
                 val reasoningSupport = foundModel?.get("supportsReasoning")
                 Log.d(tag, "Raw reasoning support value: $reasoningSupport")
-                
+
                 // Fallback logic: if model not found, check if it's a known reasoning model
                 supportsReasoning = if (reasoningSupport == "true") {
                     true
@@ -1912,40 +1916,56 @@ class MainViewModel @Inject constructor(
                 } else {
                     false
                 }
-                
+
                 // TEMPORARY FIX: Force reasoning support for Qwen model
                 if (loadedModelName.value.contains("Qwen")) {
                     Log.d(tag, "TEMPORARY FIX: Forcing reasoning support for Qwen model")
                     supportsReasoning = true
                 }
-                
+
                 Log.d(tag, "Final supportsReasoning: $supportsReasoning")
                 Log.d(tag, "=== END REASONING DEBUG ===")
-                
+
                 showModal = false
                 showAlert = true
-                
+
                 Log.d(tag, "Loading model with settings: threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
-                
+
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
-                    pathToModel, 
-                    userThreads = modelThreadCount, 
-                    topK = modelTopK, 
-                    topP = modelTopP, 
+                    pathToModel,
+                    userThreads = modelThreadCount,
+                    topK = modelTopK,
+                    topP = modelTopP,
                     temp = modelTemperature
                 )
-                
+
                 Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
                 showAlert = false
 
-            } catch (exc: IllegalStateException) {
-                Log.e(tag, "load() failed", exc)
-                // Since OpenCL is disabled, just report the error
-                addMessage("error", "Failed to load model: ${exc.message}")
             } catch (exc: Exception) {
-                Log.e(tag, "load() failed with exception", exc)
-                addMessage("error", "Failed to load model: ${exc.message}")
+                Log.e(tag, "load() failed", exc)
+                if (!backend.equals("cpu", true)) {
+                    try {
+                        Log.w(tag, "Falling back to CPU backend")
+                        llamaAndroid.setBackend("cpu")
+                        currentBackend = "CPU"
+                        llamaAndroid.load(
+                            pathToModel,
+                            userThreads = modelThreadCount,
+                            topK = modelTopK,
+                            topP = modelTopP,
+                            temp = modelTemperature
+                        )
+                        Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
+                        showAlert = false
+                    } catch (cpuExc: Exception) {
+                        Log.e(tag, "CPU fallback failed", cpuExc)
+                        addMessage("error", "Failed to load model: ${cpuExc.message}")
+                    }
+                } else {
+                    addMessage("error", "Failed to load model: ${exc.message}")
+                }
             }
             showModal = false
             showAlert = false
@@ -1996,9 +2016,14 @@ class MainViewModel @Inject constructor(
         
         Log.d(tag, "=== END REASONING DEBUG ===")
         
-        // Use OpenCL backend if available, otherwise fallback to CPU
-        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
-        load(modelPath, modelThreadCount, backend = backend)
+        val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
+        try {
+            load(modelPath, modelThreadCount, backend = backend)
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to load model with backend $backend, falling back to CPU", e)
+            currentBackend = "CPU"
+            load(modelPath, modelThreadCount, backend = "cpu")
+        }
     }
     
     /**
@@ -2053,9 +2078,14 @@ class MainViewModel @Inject constructor(
             if (model != null) {
                 val destinationPath = File(directory, model["destination"].toString())
                 if (destinationPath.exists()) {
-                    // Use the currently selected backend
                     val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
-                    load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
+                    try {
+                        load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Failed to load model with backend $backend, falling back to CPU", e)
+                        currentBackend = "CPU"
+                        load(destinationPath.path, userThreads = modelThreadCount, backend = "cpu")
+                    }
                     true
                 } else {
                     val msg = "Model file not found: ${destinationPath.path}"
@@ -2083,6 +2113,7 @@ class MainViewModel @Inject constructor(
                 llamaAndroid.setBackend(backend.lowercase())
                 currentBackend = backend
                 backendError = null
+                availableBackends = llamaAndroid.getAvailableBackends()
                 Log.d(tag, "Backend changed to: $backend")
             } catch (e: Exception) {
                 Log.e(tag, "Failed to set backend to $backend: ${e.message}")
@@ -2091,6 +2122,7 @@ class MainViewModel @Inject constructor(
                 try {
                     llamaAndroid.setBackend("cpu")
                 } catch (_: Exception) {}
+                availableBackends = llamaAndroid.getAvailableBackends()
             }
         }
     }
@@ -2135,6 +2167,9 @@ class MainViewModel @Inject constructor(
                 currentBackend = optimalBackend
                 backendError = null
 
+                // Refresh available backends after applying optimal backend
+                availableBackends = llamaAndroid.getAvailableBackends()
+
                 Log.d(tag, "Hardware detection: Available backends: $availableBackends")
                 Log.d(tag, "Hardware detection: Optimal backend: $optimalBackend")
                 Log.d(tag, "Hardware detection: GPU info: $gpuInfo")
@@ -2148,6 +2183,9 @@ class MainViewModel @Inject constructor(
                 gpuInfo = "CPU Only - Detection failed"
                 isAdrenoGpu = false
                 backendError = "Hardware detection failed: ${e.message}"
+                try {
+                    availableBackends = llamaAndroid.getAvailableBackends()
+                } catch (_: Exception) {}
             }
         }
     }
