@@ -33,13 +33,18 @@ project("llama-android")
 
 # Configure OpenCL for Android
 if(ANDROID)
-    # Use bundled OpenCL libraries
-    set(OpenCL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../app/src/main/jniLibs/${ANDROID_ABI}/libOpenCL.so")
+    # Try to find system OpenCL libraries
+    find_library(OpenCL_LIBRARY 
+        NAMES OpenCL
+        PATHS /vendor/lib64 /system/lib64 /vendor/lib /system/lib
+        NO_DEFAULT_PATH
+    )
     
-    if(EXISTS ${OpenCL_LIBRARIES})
-        message(STATUS "Found bundled OpenCL: ${OpenCL_LIBRARIES}")
+    if(OpenCL_LIBRARY)
+        message(STATUS "Found system OpenCL: ${OpenCL_LIBRARY}")
+        set(OpenCL_LIBRARIES ${OpenCL_LIBRARY})
     else()
-        message(WARNING "Bundled OpenCL not found at ${OpenCL_LIBRARIES}, will build without GPU acceleration")
+        message(WARNING "System OpenCL not found, will build without GPU acceleration")
         set(OpenCL_LIBRARIES "")
     endif()
     
