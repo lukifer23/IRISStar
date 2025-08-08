@@ -31,12 +31,12 @@ project("llama-android")
 # is preferred for the same purpose.
 #
 
-# Configure OpenCL for Android
-if(ANDROID)
-    find_package(OpenCL REQUIRED)
-    set(GGML_OPENCL ON)
-    include_directories(${OpenCL_INCLUDE_DIRS})
-endif()
+# Force-disable GGML OpenCL for core lib to avoid DT_NEEDED on libOpenCL when loading libllama-android
+set(GGML_OPENCL OFF CACHE BOOL "Disable GGML OpenCL for core build" FORCE)
+set(GGML_CUDA OFF CACHE BOOL "Disable CUDA" FORCE)
+set(GGML_METAL OFF CACHE BOOL "Disable Metal" FORCE)
+set(GGML_OPENCL_EMBED_KERNELS OFF CACHE BOOL "Disable embedded kernels" FORCE)
+set(GGML_BACKEND_SHARED ON CACHE BOOL "Build backends as shared (optional)" FORCE)
 
 #load local llama.cpp
 add_subdirectory(../../../../llama.cpp build-llama)
@@ -59,7 +59,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         llama
         common
-        ${OpenCL_LIBRARIES}
         android
         log)
 

@@ -53,6 +53,30 @@
 - Speech To Text: Support for Speech-to-Text functionality.
 - Default Model Selection: Set a default model to load automatically on startup.
 
+## GPU Backends (Vulkan/OpenCL) on Android
+
+IrisStar integrates llama.cpp GPU backends via dynamic loading:
+
+- Vulkan: Preferred on modern Android (Adreno). Loaded at runtime from system `libvulkan.so` and packaged `libggml-vulkan.so` plugin.
+- OpenCL: Loaded if vendor `libOpenCL.so` is available; the ggml OpenCL plugin is loaded dynamically when present.
+
+How to enable and verify:
+
+1. Settings → Detect Hardware to populate available backends (e.g., `CPU,Vulkan`).
+2. Select Backend (Vulkan/OpenCL/CPU). The app will unload and reload the model so the change takes effect.
+3. Run CPU vs GPU Test on the Benchmark screen to compare throughput.
+
+Notes and recommendations for mobile GPUs:
+
+- Context length: 4k–8k recommended on GPU to avoid excessive memory pressure. CPU can use higher context lengths.
+- Internal batching: The app caps GPU contexts to `n_batch=512`, `n_ubatch=128` to improve latency and stability.
+- If you see `failed to find ggml_backend_init in libggml-vulkan.so` during startup but Vulkan is reported as present, it is benign; the backend registry still succeeds.
+
+Troubleshooting:
+
+- Switching backends but still seeing the previous one: the app now forcefully unloads/reloads the model on backend change; reselect your backend and reload the model.
+- GPU latency too high: try a smaller model and/or reduce context length in Settings; Vulkan backends on mobile benefit from smaller ctx and micro-batching.
+
 ## Optimizing Your Experience with Iris
 
 The performance of Iris is directly influenced by the size, speed, and compute requirements of the models you use. These factors also impact the overall user experience. For a faster and smoother experience, consider downloading smaller models.
@@ -89,6 +113,11 @@ On opening the app, users can download suggested models to optimize performance 
 ```bash
  git clone https://github.com/ggerganov/llama.cpp
 ```
+
+### Building with GPU backends
+
+- Vulkan: no extra steps on device; ensure you have `vulkan-headers` on host for cross-compilation (e.g., Homebrew `vulkan-headers`).
+- OpenCL: requires a vendor `libOpenCL.so` on the device. The app loads ggml OpenCL backend at runtime when available.
 - Open developer options on the Android mobile phone.
 - Enable developer options.
 - Click on developer options and enable wireless debugging.

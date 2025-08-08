@@ -20,10 +20,23 @@ android {
                 arguments += "-DLLAMA_BUILD_COMMON=ON"
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
                 arguments += "-DLLAMA_CURL=OFF"
-                // Enable OpenCL with embedded kernels to avoid missing runtime dependencies
-                // arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
+                // Enable GPU backends as shared libs for runtime loading
+                arguments += "-DGGML_BACKEND_SHARED=ON"
+                // Enable Vulkan backend (we link against NDK libvulkan stubs at API 33)
+                arguments += "-DGGML_VULKAN=ON"
+                arguments += "-DGGML_OPENCL=ON"
                 arguments += "-DGGML_OPENCL_EMBED_KERNELS=ON"
-                cppFlags += listOf()
+                arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
+                // Point Vulkan shaders to host glslc
+                val glslcPath = System.getenv("GLSLC") ?: "/opt/homebrew/bin/glslc"
+                arguments += "-DVulkan_GLSLC_EXECUTABLE=${glslcPath}"
+                // Point Vulkan headers include dir (Homebrew Vulkan-Headers)
+                arguments += "-DVulkan_INCLUDE_DIR=/opt/homebrew/include"
+                arguments += "-DVulkan_INCLUDE_DIRS=/opt/homebrew/include"
+                // Use a modern Android platform so NDK Vulkan stubs export 1.2 symbols
+                arguments += "-DANDROID_PLATFORM=android-33"
+                // Ensure Vulkan-Headers are visible to the cross-compiler
+                cppFlags += listOf("-I/opt/homebrew/include")
                 arguments += listOf()
 
                 cppFlags("")

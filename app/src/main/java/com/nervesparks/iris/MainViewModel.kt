@@ -123,6 +123,47 @@ class MainViewModel @Inject constructor(
     private val _defaultModelName = mutableStateOf("")
     val defaultModelName: State<String> = _defaultModelName
 
+    // Model configuration variables - must be initialized BEFORE init {}
+    private var _modelTemperature = mutableStateOf(0.7f)
+    var modelTemperature: Float
+        get() = _modelTemperature.value
+        set(value) { _modelTemperature.value = value }
+
+    private var _modelTopP = mutableStateOf(0.9f)
+    var modelTopP: Float
+        get() = _modelTopP.value
+        set(value) { _modelTopP.value = value }
+
+    private var _modelTopK = mutableStateOf(40)
+    var modelTopK: Int
+        get() = _modelTopK.value
+        set(value) { _modelTopK.value = value }
+
+    private var _modelMaxTokens = mutableStateOf(2048)
+    var modelMaxTokens: Int
+        get() = _modelMaxTokens.value
+        set(value) { _modelMaxTokens.value = value }
+
+    private var _modelContextLength = mutableStateOf(32768) // Increased for Qwen3 support
+    var modelContextLength: Int
+        get() = _modelContextLength.value
+        set(value) { _modelContextLength.value = value }
+
+    private var _modelSystemPrompt = mutableStateOf("You are a helpful AI assistant.")
+    var modelSystemPrompt: String
+        get() = _modelSystemPrompt.value
+        set(value) { _modelSystemPrompt.value = value }
+
+    private var _modelChatFormat = mutableStateOf("QWEN3")
+    var modelChatFormat: String
+        get() = _modelChatFormat.value
+        set(value) { _modelChatFormat.value = value }
+
+    private var _modelThreadCount = mutableStateOf(4)
+    var modelThreadCount: Int
+        get() = _modelThreadCount.value
+        set(value) { _modelThreadCount.value = value }
+
     init {
         loadDefaultModelName()
         loadModelSettings() // Re-enabled model settings loading
@@ -1000,47 +1041,6 @@ class MainViewModel @Inject constructor(
         isGenerating = false
     }
 
-    // Model configuration variables - Initialize with default values
-    private var _modelTemperature = mutableStateOf(0.7f)
-    var modelTemperature: Float
-        get() = _modelTemperature.value
-        set(value) { _modelTemperature.value = value }
-    
-    private var _modelTopP = mutableStateOf(0.9f)
-    var modelTopP: Float
-        get() = _modelTopP.value
-        set(value) { _modelTopP.value = value }
-    
-    private var _modelTopK = mutableStateOf(40)
-    var modelTopK: Int
-        get() = _modelTopK.value
-        set(value) { _modelTopK.value = value }
-    
-    private var _modelMaxTokens = mutableStateOf(2048)
-    var modelMaxTokens: Int
-        get() = _modelMaxTokens.value
-        set(value) { _modelMaxTokens.value = value }
-    
-    private var _modelContextLength = mutableStateOf(32768) // Increased for Qwen3 support
-    var modelContextLength: Int
-        get() = _modelContextLength.value
-        set(value) { _modelContextLength.value = value }
-    
-    private var _modelSystemPrompt = mutableStateOf("You are a helpful AI assistant.")
-    var modelSystemPrompt: String
-        get() = _modelSystemPrompt.value
-        set(value) { _modelSystemPrompt.value = value }
-    
-    private var _modelChatFormat = mutableStateOf("QWEN3")
-    var modelChatFormat: String
-        get() = _modelChatFormat.value
-        set(value) { _modelChatFormat.value = value }
-    
-    private var _modelThreadCount = mutableStateOf(4)
-    var modelThreadCount: Int
-        get() = _modelThreadCount.value
-        set(value) { _modelThreadCount.value = value }
-    
     var showModelSettings by mutableStateOf(false)
 
     // Model configuration functions
@@ -1734,7 +1734,7 @@ class MainViewModel @Inject constructor(
 
                     // Ensure we're on the correct thread where the library is loaded
                     val resultsJson = try {
-                        withContext(Dispatchers.IO) {
+                        withContext(llamaAndroid.runLoop) {
                             llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
                         }
                     } catch (e: IllegalStateException) {
@@ -1880,8 +1880,21 @@ class MainViewModel @Inject constructor(
                 Log.e(tag, "load() failed", exc)
             }
                             try {
-                    // Use CPU backend since OpenCL is disabled
-                    Log.d(tag, "Using CPU backend (OpenCL disabled)")
+                // Set desired backend prior to loading model/context
+                try {
+                    val requested = backend.lowercase()
+                    val success = llamaAndroid.setBackend(requested)
+                    if (success) {
+                        currentBackend = if (requested == "vulkan") "Vulkan" else if (requested == "opencl") "OpenCL" else "CPU"
+                        Log.d(tag, "Backend set OK: $currentBackend")
+                    } else {
+                        currentBackend = "CPU"
+                        Log.e(tag, "Backend set failed for '$requested', falling back to CPU")
+                    }
+                } catch (be: Exception) {
+                    currentBackend = "CPU"
+                    Log.e(tag, "Exception when setting backend to $backend: ${be.message}")
+                }
                 
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
@@ -1925,7 +1938,12 @@ class MainViewModel @Inject constructor(
                 showModal = false
                 showAlert = true
                 
-                Log.d(tag, "Loading model with settings: threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
+                Log.d(tag, "Loading model with settings: backend=$currentBackend, threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
+                // Ensure native library is loaded before first JNI call
+                if (!llamaAndroid.isNativeLibraryLoaded()) {
+                    Log.w(tag, "Native lib not yet loaded; attempting sync load")
+                    llamaAndroid.ensureLibraryLoaded()
+                }
                 
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
@@ -1996,8 +2014,12 @@ class MainViewModel @Inject constructor(
         
         Log.d(tag, "=== END REASONING DEBUG ===")
         
-        // Use OpenCL backend if available, otherwise fallback to CPU
-        val backend = if (availableBackends.contains("OpenCL")) "opencl" else "cpu"
+        // Prefer Vulkan, then OpenCL, else CPU
+        val backend = when {
+            availableBackends.contains("Vulkan") -> "vulkan"
+            availableBackends.contains("OpenCL") -> "opencl"
+            else -> "cpu"
+        }
         load(modelPath, modelThreadCount, backend = backend)
     }
     
@@ -2006,6 +2028,14 @@ class MainViewModel @Inject constructor(
      */
     fun loadModelByName(modelName: String, directory: File): Boolean {
         Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
+        // Hint native where to scan for ggml backends (directory that contains libggml-*.so)
+        try {
+            val nativeLibDir = getApplication<Application>().applicationInfo.nativeLibraryDir
+            LLamaAndroid.instance().setBackendSearchDir(nativeLibDir)
+            Log.d(tag, "Set backend search dir to $nativeLibDir")
+        } catch (e: Exception) {
+            Log.w(tag, "Failed to set backend search dir: ${e.message}")
+        }
         Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
         Log.d(tag, "All models count: ${allModels.size}")
         Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
@@ -2053,8 +2083,12 @@ class MainViewModel @Inject constructor(
             if (model != null) {
                 val destinationPath = File(directory, model["destination"].toString())
                 if (destinationPath.exists()) {
-                    // Use the currently selected backend
-                    val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
+                    // Use the currently selected backend (support Vulkan/OpenCL/CPU)
+                    val backend = when {
+                        currentBackend.equals("Vulkan", true) -> "vulkan"
+                        currentBackend.equals("OpenCL", true) -> "opencl"
+                        else -> "cpu"
+                    }
                     load(destinationPath.path, userThreads = modelThreadCount, backend = backend)
                     true
                 } else {
@@ -2085,6 +2119,23 @@ class MainViewModel @Inject constructor(
                     currentBackend = backend
                     backendError = null
                     Log.d(tag, "Backend changed to: $backend")
+
+                    // If a model is already loaded, recreate with the new backend
+                    if (llamaAndroid.getModel() != 0L) {
+                        Log.d(tag, "Recreating model/context for backend=$backend")
+                        try { llamaAndroid.unload() } catch (_: Exception) {}
+                        // Ensure backend search dir remains set
+                        try {
+                            val nativeLibDir = getApplication<Application>().applicationInfo.nativeLibraryDir
+                            LLamaAndroid.instance().setBackendSearchDir(nativeLibDir)
+                        } catch (_: Exception) {}
+                        // Reload previously selected model name if any
+                        val name = loadedModelName.value
+                        if (name.isNotBlank()) {
+                            val extDir = getApplication<Application>().getExternalFilesDir(null) ?: return@launch
+                            loadModelByName(name, extDir)
+                        }
+                    }
                 } else {
                     backendError = "Failed to switch backend to $backend"
                     currentBackend = "CPU"

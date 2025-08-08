@@ -26,6 +26,11 @@ class LLamaAndroid {
 
     private val threadLocalState: ThreadLocal<State> = ThreadLocal.withInitial { State.Idle }
 
+    @Volatile private var modelHandleCache: Long = 0L
+    @Volatile private var contextHandleCache: Long = 0L
+    @Volatile private var batchHandleCache: Long = 0L
+    @Volatile private var samplerHandleCache: Long = 0L
+
     private val _isSending = mutableStateOf(false)
     private val isSending: Boolean by _isSending
 
@@ -147,6 +152,7 @@ class LLamaAndroid {
     ): String
 
     private external fun system_info(): String
+    private external fun set_backend_search_dir(dir: String)
 
     private external fun completion_init(
         context: Long,
@@ -194,6 +200,10 @@ class LLamaAndroid {
     }
 
     suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float){
+        if (!nativeLibraryLoaded) {
+            // Best-effort synchronous load to avoid UnsatisfiedLinkError on first JNI call
+            ensureLibraryLoaded()
+        }
         withContext(runLoop) {
             when (threadLocalState.get()) {
                 is State.Idle -> {
@@ -215,12 +225,24 @@ class LLamaAndroid {
 
                     Log.i(tag, "Loaded model $pathToModel")
                     threadLocalState.set(State.Loaded(model, context, batch, sampler, modelEotStr))
+                    modelHandleCache = model
+                    contextHandleCache = context
+                    batchHandleCache = batch
+                    samplerHandleCache = sampler
                 }
                 else -> {
                     throw IllegalStateException("Model already loaded")
                 }
             }
         }
+    }
+
+    fun setBackendSearchDir(dir: String) {
+        if (!nativeLibraryLoaded) {
+            ensureLibraryLoaded()
+        }
+        // No need to hop to runLoop; setting a static path is cheap
+        set_backend_search_dir(dir)
     }
 
 
@@ -406,6 +428,10 @@ class LLamaAndroid {
                     free_batch(state.batch)
 
                     threadLocalState.set(State.Idle)
+                    modelHandleCache = 0L
+                    contextHandleCache = 0L
+                    batchHandleCache = 0L
+                    samplerHandleCache = 0L
                 }
                 else -> {}
             }
@@ -436,25 +462,13 @@ class LLamaAndroid {
     external fun runComparativeBenchmark(model: Long, context: Long, batch: Long, sampler: Long): String
     
     // Getter functions for current model state
-    fun getModel(): Long = when (val state = threadLocalState.get()) {
-        is State.Loaded -> state.model
-        else -> 0L
-    }
+    fun getModel(): Long = modelHandleCache
     
-    fun getContext(): Long = when (val state = threadLocalState.get()) {
-        is State.Loaded -> state.context
-        else -> 0L
-    }
+    fun getContext(): Long = contextHandleCache
     
-    fun getBatch(): Long = when (val state = threadLocalState.get()) {
-        is State.Loaded -> state.batch
-        else -> 0L
-    }
+    fun getBatch(): Long = batchHandleCache
     
-    fun getSampler(): Long = when (val state = threadLocalState.get()) {
-        is State.Loaded -> state.sampler
-        else -> 0L
-    }
+    fun getSampler(): Long = samplerHandleCache
 
     companion object {
         private class IntVar(value: Int) {

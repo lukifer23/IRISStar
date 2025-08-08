@@ -30,6 +30,7 @@ data class BenchmarkState(
     val error: String? = null
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BenchMarkScreen(viewModel: MainViewModel) {
     val scope = rememberCoroutineScope()
@@ -40,13 +41,26 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
 
     val deviceInfo = buildDeviceInfo(viewModel)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(ComponentStyles.defaultPadding)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Benchmark", style = MaterialTheme.typography.titleLarge) }
+            )
+        }
+    ) { innerPadding ->
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(ComponentStyles.defaultPadding)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
         // Header
         Text(
             "Benchmark Information",
@@ -168,32 +182,39 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
                         modifier = Modifier.padding(bottom = ComponentStyles.smallPadding)
                     )
                     
-                    // CPU Results
+                    // CPU Results (safe extraction)
                     Text(
                         "CPU Performance:",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = ComponentStyles.smallPadding)
                     )
-                    Text("Tokens/sec: %.2f".format(results["cpu_tokens_per_sec"] as Double))
-                    Text("Duration: ${results["cpu_duration_ms"]}ms")
-                    Text("Tokens generated: ${results["cpu_tokens_generated"]}")
-                    
-                    // GPU Results
-                    if (results["gpu_available"] as Boolean) {
+                    val cpuTps = (results["cpu_tokens_per_sec"] as? Number)?.toDouble() ?: 0.0
+                    val cpuDurMs = (results["cpu_duration_ms"] as? Number)?.toLong() ?: 0L
+                    val cpuTokens = (results["cpu_tokens_generated"] as? Number)?.toLong() ?: 0L
+                    Text("Tokens/sec: %.2f".format(cpuTps))
+                    Text("Duration: ${cpuDurMs}ms")
+                    Text("Tokens generated: $cpuTokens")
+
+                    // GPU Results (safe extraction)
+                    val gpuAvailable = (results["gpu_available"] as? Boolean) == true
+                    if (gpuAvailable) {
                         Text(
                             "GPU Performance:",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
                         )
-                        Text("Tokens/sec: %.2f".format(results["gpu_tokens_per_sec"] as Double))
-                        Text("Duration: ${results["gpu_duration_ms"]}ms")
-                        Text("Tokens generated: ${results["gpu_tokens_generated"]}")
-                        
-                        // Speedup
-                        val speedup = results["speedup"] as Double
-                        val speedupPercentage = results["speedup_percentage"] as Double
+                        val gpuTps = (results["gpu_tokens_per_sec"] as? Number)?.toDouble() ?: 0.0
+                        val gpuDurMs = (results["gpu_duration_ms"] as? Number)?.toLong() ?: 0L
+                        val gpuTokens = (results["gpu_tokens_generated"] as? Number)?.toLong() ?: 0L
+                        Text("Tokens/sec: %.2f".format(gpuTps))
+                        Text("Duration: ${gpuDurMs}ms")
+                        Text("Tokens generated: $gpuTokens")
+
+                        // Speedup (safe extraction)
+                        val speedup = (results["speedup"] as? Number)?.toDouble() ?: 0.0
+                        val speedupPercentage = (results["speedup_percentage"] as? Number)?.toDouble() ?: 0.0
                         Text(
                             "Performance Improvement:",
                             style = MaterialTheme.typography.titleMedium,
@@ -205,8 +226,9 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
                             color = if (speedup > 1.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
                     } else {
+                        val gpuError = results["gpu_error"]?.toString() ?: "Unknown"
                         Text(
-                            "GPU not available: ${results["gpu_error"]}",
+                            "GPU not available: $gpuError",
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
                         )
@@ -222,6 +244,8 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(ComponentStyles.defaultPadding)
             )
+        }
+            }
         }
     }
 
