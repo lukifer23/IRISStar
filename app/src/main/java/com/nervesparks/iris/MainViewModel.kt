@@ -154,7 +154,7 @@ class MainViewModel @Inject constructor(
         get() = _modelSystemPrompt.value
         set(value) { _modelSystemPrompt.value = value }
 
-    private var _modelChatFormat = mutableStateOf("QWEN3")
+    private var _modelChatFormat = mutableStateOf("CHATML")
     var modelChatFormat: String
         get() = _modelChatFormat.value
         set(value) { _modelChatFormat.value = value }
@@ -163,6 +163,12 @@ class MainViewModel @Inject constructor(
     var modelThreadCount: Int
         get() = _modelThreadCount.value
         set(value) { _modelThreadCount.value = value }
+
+    // GPU layers to offload (-1 = Auto)
+    private var _modelGpuLayers = mutableStateOf(-1)
+    var modelGpuLayers: Int
+        get() = _modelGpuLayers.value
+        set(value) { _modelGpuLayers.value = value }
 
     init {
         loadDefaultModelName()
@@ -413,7 +419,7 @@ class MainViewModel @Inject constructor(
                             modelChatFormat,
                             workingMessages,
                             modelSystemPrompt,
-                            includeThinkingTags = true
+                            includeThinkingTags = supportsReasoning
                         )
                     }
                     val promptTokens = llamaAndroid.countTokens(finalPrompt)
@@ -700,7 +706,7 @@ class MainViewModel @Inject constructor(
                             modelChatFormat,
                             workingMessages,
                             modelSystemPrompt,
-                            includeThinkingTags = true
+                            includeThinkingTags = supportsReasoning
                         )
                     }
                     val promptTokens = llamaAndroid.countTokens(finalPrompt)
@@ -816,7 +822,7 @@ class MainViewModel @Inject constructor(
                             modelChatFormat,
                             workingMessages,
                             modelSystemPrompt,
-                            includeThinkingTags = true
+                            includeThinkingTags = supportsReasoning
                         )
                     }
                     val promptTokens = llamaAndroid.countTokens(finalPrompt)
@@ -869,6 +875,14 @@ class MainViewModel @Inject constructor(
                 endGeneration()
             }
         }
+    }
+
+    private fun stripThinking(input: String): String {
+        // Remove <think>...</think> segments and any stray tags for display-only purposes
+        var out = input
+        out = out.replace(Regex("(?is)<think>.*?</think>"), "")
+        out = out.replace("<think>", "").replace("</think>", "")
+        return out
     }
 
     suspend fun quantizeModel(model: String, quantizeType: String): Int {
@@ -1052,7 +1066,8 @@ class MainViewModel @Inject constructor(
         contextLength: Int = modelContextLength,
         systemPrompt: String = modelSystemPrompt,
         chatFormat: String = modelChatFormat,
-        threadCount: Int = modelThreadCount
+        threadCount: Int = modelThreadCount,
+        gpuLayers: Int = -1
     ) {
         modelTemperature = temperature
         modelTopP = topP
@@ -1062,6 +1077,13 @@ class MainViewModel @Inject constructor(
         modelSystemPrompt = systemPrompt
         modelChatFormat = chatFormat
         modelThreadCount = threadCount
+        // only set if provided
+        if (gpuLayers != -2) {
+            try {
+                val v = gpuLayers
+                // store in a backing pref via repository if available later in file
+            } catch (_: Exception) {}
+        }
         
         // Save to preferences
         userPreferencesRepository.setModelTemperature(temperature)
@@ -1072,6 +1094,7 @@ class MainViewModel @Inject constructor(
         userPreferencesRepository.setModelSystemPrompt(systemPrompt)
         userPreferencesRepository.setModelChatFormat(chatFormat)
         userPreferencesRepository.setModelThreadCount(threadCount)
+        userPreferencesRepository.setModelGpuLayers(gpuLayers)
     }
 
     fun loadModelSettings() {
@@ -1142,6 +1165,14 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading threadCount, using default", e)
                 modelThreadCount = 4
+            }
+
+            try {
+                modelGpuLayers = userPreferencesRepository.getModelGpuLayers()
+                Log.d("MainViewModel", "Loaded gpuLayers: $modelGpuLayers")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading gpuLayers, using default", e)
+                modelGpuLayers = -1
             }
             
             Log.d("MainViewModel", "Model settings loaded successfully")
@@ -1459,7 +1490,7 @@ class MainViewModel @Inject constructor(
                         modelChatFormat,
                         workingMessages,
                         modelSystemPrompt,
-                        includeThinkingTags = true
+                        includeThinkingTags = supportsReasoning
                     )
                 }
                 contextLimit = llamaAndroid.countTokens(prompt)
@@ -1484,7 +1515,7 @@ class MainViewModel @Inject constructor(
                     modelChatFormat,
                     messages,
                     modelSystemPrompt,
-                    includeThinkingTags = true
+                    includeThinkingTags = supportsReasoning
                 )
             }
             contextLimit = llamaAndroid.countTokens(prompt)
@@ -1532,7 +1563,7 @@ class MainViewModel @Inject constructor(
                         userMessage
                     }
 
-                    var workingMessages = messages.toMutableList()
+            var workingMessages = messages.toMutableList()
                     val reserve = reserveTokens
 
                     // Trim history until it fits within the context window
@@ -1547,10 +1578,12 @@ class MainViewModel @Inject constructor(
                                 modelChatFormat,
                                 workingMessages,
                                 modelSystemPrompt,
-                                includeThinkingTags = true
+                                includeThinkingTags = supportsReasoning
                             )
                         }
-                        val promptTokens = llamaAndroid.countTokens(prompt)
+                        // Count on stripped template if thinking is disabled
+                        val countPrompt = if (supportsReasoning && showThinkingTokens) prompt else stripThinking(prompt)
+                        val promptTokens = llamaAndroid.countTokens(countPrompt)
                         if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
                             break
                         }
@@ -1570,7 +1603,8 @@ class MainViewModel @Inject constructor(
                         )
                     }
 
-                    contextLimit = llamaAndroid.countTokens(prompt)
+                    val countPrompt2 = if (supportsReasoning && showThinkingTokens) prompt else stripThinking(prompt)
+                    contextLimit = llamaAndroid.countTokens(countPrompt2)
                     maxContextLimit = modelContextLength
 
                     var generatedTokens = 0
@@ -1598,12 +1632,12 @@ class MainViewModel @Inject constructor(
                                         }
                                         handleToolCall(com.nervesparks.iris.data.ToolCall(tool, argsMap))
                                     } else {
-                                        // Store the full response (including thinking) in conversation history
-                                        addMessage("assistant", it)
+                                        val display = if (showThinkingTokens && supportsReasoning) it else stripThinking(it)
+                                        addMessage("assistant", display)
                                     }
                                 } catch (e: org.json.JSONException) {
-                                    // Store the full response (including thinking) in conversation history
-                                    addMessage("assistant", it)
+                                    val display = if (showThinkingTokens && supportsReasoning) it else stripThinking(it)
+                                    addMessage("assistant", display)
                                 }
                             }
                         }
@@ -1926,11 +1960,7 @@ class MainViewModel @Inject constructor(
                     false
                 }
                 
-                // TEMPORARY FIX: Force reasoning support for Qwen model
-                if (loadedModelName.value.contains("Qwen")) {
-                    Log.d(tag, "TEMPORARY FIX: Forcing reasoning support for Qwen model")
-                    supportsReasoning = true
-                }
+                // Remove forced reasoning; trust metadata / keyword fallback only
                 
                 Log.d(tag, "Final supportsReasoning: $supportsReasoning")
                 Log.d(tag, "=== END REASONING DEBUG ===")
@@ -1938,7 +1968,7 @@ class MainViewModel @Inject constructor(
                 showModal = false
                 showAlert = true
                 
-                Log.d(tag, "Loading model with settings: backend=$currentBackend, threads=$modelThreadCount, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
+                Log.d(tag, "Loading model with settings: backend=$currentBackend, threads=$modelThreadCount, ngl=${modelGpuLayers}, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
                 // Ensure native library is loaded before first JNI call
                 if (!llamaAndroid.isNativeLibraryLoaded()) {
                     Log.w(tag, "Native lib not yet loaded; attempting sync load")
@@ -1947,11 +1977,12 @@ class MainViewModel @Inject constructor(
                 
                 // Use model settings instead of default parameters
                 llamaAndroid.load(
-                    pathToModel, 
-                    userThreads = modelThreadCount, 
-                    topK = modelTopK, 
-                    topP = modelTopP, 
-                    temp = modelTemperature
+                    pathToModel,
+                    userThreads = modelThreadCount,
+                    topK = modelTopK,
+                    topP = modelTopP,
+                    temp = modelTemperature,
+                    gpuLayers = modelGpuLayers
                 )
                 
                 Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
@@ -2072,11 +2103,7 @@ class MainViewModel @Inject constructor(
 
         Log.d(tag, "=== END REASONING DEBUG ===")
 
-        // TEMPORARY FIX: Force reasoning support for Qwen model
-        if (modelName.contains("Qwen")) {
-            Log.d(tag, "TEMPORARY FIX: Forcing reasoning support for Qwen model in loadModelByName")
-            supportsReasoning = true
-        }
+        // Remove forced reasoning; trust metadata / keyword fallback only
 
         return try {
             val model = allModels.find { it["name"] == modelName }

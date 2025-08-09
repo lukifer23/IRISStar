@@ -142,6 +142,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         ModelCard(
                             model["name"].toString(),
                             supportsReasoning = model["supportsReasoning"] == "true",
+                            supportsVision = model["supportsVision"] == "true",
                             viewModel = viewModel,
                             dm = dm,
                             extFilesDir = extFileDir,
@@ -177,6 +178,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                         ModelCard(
                             model["name"].toString(),
                             supportsReasoning = model["supportsReasoning"] == "true",
+                            supportsVision = model["supportsVision"] == "true",
                             viewModel = viewModel,
                             dm = dm,
                             extFilesDir = extFileDir,

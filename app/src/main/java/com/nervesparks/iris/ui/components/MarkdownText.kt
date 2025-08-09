@@ -57,14 +57,22 @@ fun MarkdownTextComponent(markdown: String) {
                         ),
                         shape = ComponentStyles.smallCardShape
                     ) {
-                        Text(
-                            text = codeContent,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = FontFamily.Monospace
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(ComponentStyles.defaultPadding)
-                        )
+                        Row(Modifier.fillMaxWidth()) {
+                            Text(
+                                text = codeContent,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(ComponentStyles.defaultPadding)
+                            )
+                            val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                            TextButton(onClick = {
+                                clipboard.setText(androidx.compose.ui.text.AnnotatedString(codeContent))
+                            }) { Text("Copy") }
+                        }
                     }
                 }
                 line.startsWith("- ") -> {

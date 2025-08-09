@@ -126,8 +126,8 @@ class LLamaAndroid {
         }
     }.asCoroutineDispatcher()
 
-    private val nlen: Int = 1024
-    private val context_size: Int = 32768  // Increased to match Qwen3 context length
+    private val nlen: Int = 256
+    private val context_size: Int = 2048
 
     private external fun log_to_android()
     private external fun load_model(filename: String): Long
@@ -153,6 +153,9 @@ class LLamaAndroid {
 
     private external fun system_info(): String
     private external fun set_backend_search_dir(dir: String)
+    private external fun set_gpu_layers(ngl: Int)
+    private external fun is_offload_zero(): Boolean
+    private external fun set_strip_think(enable: Boolean)
 
     private external fun completion_init(
         context: Long,
@@ -199,7 +202,7 @@ class LLamaAndroid {
         }
     }
 
-    suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float){
+    suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float, gpuLayers: Int = -1){
         if (!nativeLibraryLoaded) {
             // Best-effort synchronous load to avoid UnsatisfiedLinkError on first JNI call
             ensureLibraryLoaded()
@@ -207,13 +210,18 @@ class LLamaAndroid {
         withContext(runLoop) {
             when (threadLocalState.get()) {
                 is State.Idle -> {
+                    // Configure GPU offload preference before loading the model
+                    set_gpu_layers(gpuLayers)
                     val model = load_model(pathToModel)
                     if (model == 0L)  throw IllegalStateException("load_model() failed")
+
+                    // Configure native stream filtering (default on). UI can still collapse/hide thinking tokens.
+                    set_strip_think(true)
 
                     val context = new_context(model, userThreads)
                     if (context == 0L) throw IllegalStateException("new_context() failed")
 
-                    val batch = new_batch(4096, 0, 1)
+                    val batch = new_batch(1024, 0, 1)
                     if (batch == 0L) throw IllegalStateException("new_batch() failed")
 
                     val sampler = new_sampler(top_k = topK, top_p = topP, temp = temp)

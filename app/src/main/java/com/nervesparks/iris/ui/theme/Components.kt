@@ -16,57 +16,57 @@ import androidx.compose.ui.unit.dp
 object ComponentStyles {
     
     // Card styles
-    val defaultCardShape = RoundedCornerShape(12.dp)
-    val smallCardShape = RoundedCornerShape(8.dp)
-    val largeCardShape = RoundedCornerShape(16.dp)
-    val extraLargeCardShape = RoundedCornerShape(20.dp)
-    val pillShape = RoundedCornerShape(20.dp)
+    val defaultCardShape = Shapes.radiusSm
+    val smallCardShape = Shapes.radiusXs
+    val largeCardShape = Shapes.radiusMd
+    val extraLargeCardShape = Shapes.radiusLg
+    val pillShape = Shapes.pill
     
     // Button styles
-    val primaryButtonShape = RoundedCornerShape(8.dp)
-    val secondaryButtonShape = RoundedCornerShape(8.dp)
-    val iconButtonShape = RoundedCornerShape(8.dp)
-    val pillButtonShape = RoundedCornerShape(20.dp)
+    val primaryButtonShape = Shapes.radiusXs
+    val secondaryButtonShape = Shapes.radiusXs
+    val iconButtonShape = Shapes.radiusXs
+    val pillButtonShape = Shapes.pill
     
     // Text field styles
-    val textFieldShape = RoundedCornerShape(8.dp)
-    val chatInputShape = RoundedCornerShape(20.dp)
+    val textFieldShape = Shapes.radiusXs
+    val chatInputShape = Shapes.pill
     
     // Modal and dialog styles
-    val modalShape = RoundedCornerShape(16.dp)
-    val dialogShape = RoundedCornerShape(12.dp)
+    val modalShape = Shapes.radiusMd
+    val dialogShape = Shapes.radiusSm
     
     // Spacing system
-    val defaultPadding = 16.dp
-    val smallPadding = 8.dp
-    val largePadding = 24.dp
-    val extraLargePadding = 32.dp
+    val defaultPadding = Dimens.spaceLg
+    val smallPadding = Dimens.spaceSm
+    val largePadding = Dimens.spaceXl
+    val extraLargePadding = Dimens.spaceXxl
     
-    val defaultSpacing = 12.dp
-    val smallSpacing = 6.dp
-    val largeSpacing = 20.dp
-    val extraLargeSpacing = 32.dp
+    val defaultSpacing = Dimens.spaceMd
+    val smallSpacing = Dimens.spaceXs
+    val largeSpacing = Dimens.spaceLg
+    val extraLargeSpacing = Dimens.spaceXxl
     
     // Elevation system
-    val defaultElevation = 2.dp
-    val smallElevation = 1.dp
-    val largeElevation = 4.dp
-    val modalElevation = 8.dp
+    val defaultElevation = Elevation.level2
+    val smallElevation = Elevation.level1
+    val largeElevation = Elevation.level3
+    val modalElevation = Elevation.level4
     
     // Border system
-    val defaultBorderWidth = 1.dp
-    val thickBorderWidth = 2.dp
+    val defaultBorderWidth = Dimens.strokeThin
+    val thickBorderWidth = Dimens.strokeThick
     
     // Animation durations
-    val shortAnimationDuration = 150
-    val defaultAnimationDuration = 300
+    val shortAnimationDuration = Motion.fast
+    val defaultAnimationDuration = Motion.normal
     val longAnimationDuration = 500
     
     // Icon sizes
-    val smallIconSize = 16.dp
-    val defaultIconSize = 24.dp
-    val largeIconSize = 32.dp
-    val extraLargeIconSize = 48.dp
+    val smallIconSize = Dimens.iconSm
+    val defaultIconSize = Dimens.iconMd
+    val largeIconSize = Dimens.iconLg
+    val extraLargeIconSize = Dimens.iconXl
 }
 
 @Composable

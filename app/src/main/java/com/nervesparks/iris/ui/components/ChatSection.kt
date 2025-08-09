@@ -39,7 +39,7 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
     val context = LocalContext.current
 
     LazyColumn(state = scrollState) {
-        itemsIndexed(messages.drop(3)) { _, messageMap ->
+        itemsIndexed(messages.drop(3), key = { idx, _ -> idx }) { idx, messageMap ->
             val role = messageMap["role"] ?: ""
             val content = (messageMap["content"] ?: "").trimEnd()
             if (role != "system") {
@@ -65,9 +65,15 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                                 }
                             )
                         } else {
-                            UserOrAssistantMessage(
-                                role = role,
+                            val prevRole = messages.getOrNull(idx + 2)?.get("role")
+                            val nextRole = messages.getOrNull(idx + 4)?.get("role")
+                            val groupedPrev = prevRole == role
+                            val groupedNext = nextRole == role
+                            MessageBubble(
                                 message = content,
+                                isUser = false,
+                                isGroupedPrev = groupedPrev,
+                                isGroupedNext = groupedNext,
                                 onLongClick = {
                                     if (viewModel.getIsSending()) {
                                         Toast.makeText(
@@ -82,10 +88,17 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                             )
                         }
                     }
-                    else -> UserOrAssistantMessage(
-                        role = role,
-                        message = content,
-                        onLongClick = {
+                    else -> {
+                        val prevRole = messages.getOrNull(idx + 2)?.get("role")
+                        val nextRole = messages.getOrNull(idx + 4)?.get("role")
+                        val groupedPrev = prevRole == role
+                        val groupedNext = nextRole == role
+                        MessageBubble(
+                            message = content,
+                            isUser = true,
+                            isGroupedPrev = groupedPrev,
+                            isGroupedNext = groupedNext,
+                            onLongClick = {
                             if (viewModel.getIsSending()) {
                                 Toast.makeText(
                                     context,
@@ -96,7 +109,8 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                                 viewModel.toggler = true
                             }
                         }
-                    )
+                        )
+                    }
                 }
             }
         }

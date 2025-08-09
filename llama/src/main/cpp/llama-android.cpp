@@ -55,12 +55,18 @@ static T json_value(const json & body, const std::string & key, const T & defaul
 #define LOGe(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
 
 #include <dlfcn.h>
+#include <climits>
 
 jclass la_int_var;
 jmethodID la_int_var_value;
 jmethodID la_int_var_inc;
 
 std::string cached_token_chars;
+
+// user-configured GPU layer offload. INT_MIN == unspecified (auto)
+static int  g_user_gpu_layers     = INT_MIN;
+static bool g_force_cpu_session   = false;    // set true when offload 0/N detected
+static bool g_strip_think_default = false;    // native stream filtering toggle
 
 bool is_valid_utf8(const char * string) {
     if (!string) {
@@ -161,11 +167,18 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
     return jsonArray.dump();
 }
 
-static void log_callback(ggml_log_level level, const char * fmt, void * data) {
-    if (level == GGML_LOG_LEVEL_ERROR)     __android_log_print(ANDROID_LOG_ERROR, TAG, fmt, data);
-    else if (level == GGML_LOG_LEVEL_INFO) __android_log_print(ANDROID_LOG_INFO, TAG, fmt, data);
-    else if (level == GGML_LOG_LEVEL_WARN) __android_log_print(ANDROID_LOG_WARN, TAG, fmt, data);
-    else __android_log_print(ANDROID_LOG_DEFAULT, TAG, fmt, data);
+static void log_callback(ggml_log_level level, const char * fmt, void * /*data*/) {
+    if (fmt == nullptr) return;
+    if (level == GGML_LOG_LEVEL_ERROR)     __android_log_print(ANDROID_LOG_ERROR, TAG, "%s", fmt);
+    else if (level == GGML_LOG_LEVEL_INFO) __android_log_print(ANDROID_LOG_INFO,  TAG, "%s", fmt);
+    else if (level == GGML_LOG_LEVEL_WARN) __android_log_print(ANDROID_LOG_WARN,  TAG, "%s", fmt);
+    else                                   __android_log_print(ANDROID_LOG_DEFAULT, TAG, "%s", fmt);
+
+    // Detect zero-offload informational line from llama.cpp
+    if (strstr(fmt, "offloaded 0/") != nullptr) {
+        g_force_cpu_session = true;
+        __android_log_print(ANDROID_LOG_INFO, TAG, "Detected zero GPU offload; forcing CPU context for this session");
+    }
 }
 
 extern "C"
@@ -221,6 +234,21 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
         backend_inited = true;
     }
     llama_model_params model_params = llama_model_default_params();
+    g_force_cpu_session = false; // reset session flag for new model
+
+    // configure GPU offload preference if GPU backend present
+    const bool has_vulkan = ggml_backend_reg_by_name("Vulkan") != nullptr;
+    const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
+    if (has_vulkan || has_opencl) {
+        if (g_user_gpu_layers == INT_MIN || g_user_gpu_layers < 0) {
+            // Auto: request full offload; loader will cap to supported layers
+            model_params.n_gpu_layers = 999;
+        } else {
+            model_params.n_gpu_layers = g_user_gpu_layers;
+        }
+    } else {
+        model_params.n_gpu_layers = 0; // CPU only
+    }
 
     auto path_to_model = env->GetStringUTFChars(filename, 0);
     LOGi("Loading model from %s", path_to_model);
@@ -234,7 +262,28 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
         return 0;
     }
 
+    // If zero-offload was detected during loading, we keep the flag; context creation uses CPU settings then
+
     return reinterpret_cast<jlong>(model);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_android_llama_cpp_LLamaAndroid_set_1gpu_1layers(JNIEnv *, jobject, jint ngl) {
+    // ngl < 0 => Auto
+    g_user_gpu_layers = (int) ngl;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_android_llama_cpp_LLamaAndroid_is_1offload_1zero(JNIEnv *, jobject) {
+    return g_force_cpu_session ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_android_llama_cpp_LLamaAndroid_set_1strip_1think(JNIEnv *, jobject, jboolean enable) {
+    g_strip_think_default = enable == JNI_TRUE;
 }
 
 extern "C"
@@ -254,27 +303,29 @@ Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject, jlong jmo
         return 0;
     }
 
-    int n_threads = std::max(1, std::min(8, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2));
+    int n_threads = std::max(4, std::min(8, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2));
     LOGi("Using %d threads", n_threads);
-    int userSpecifiedThreads = (userThreads > 0) ? std::min(9, std::max(1, userThreads))
-                                                 : std::max(1, std::min(8, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2));
+    int userSpecifiedThreads = (userThreads > 0) ? std::min(9, std::max(4, userThreads))
+                                                 : std::max(4, std::min(8, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2));
     LOGi("Using %d threads for computation", userSpecifiedThreads);
     llama_context_params ctx_params = llama_context_default_params();
 
     // Favor stability on mobile GPUs: cap context if GPU backend is present
     const bool has_vulkan = ggml_backend_reg_by_name("Vulkan") != nullptr;
     const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
-    if (has_vulkan || has_opencl) {
-        ctx_params.n_ctx = 8192; // cap for GPU
+    if (!g_force_cpu_session && (has_vulkan || has_opencl)) {
+        ctx_params.n_ctx = 2048; // leaner default for chat on mobile GPUs
         ctx_params.offload_kqv = true;
         ctx_params.op_offload  = true;
-        ctx_params.n_batch = 512;
-        ctx_params.n_ubatch = 128;
+        ctx_params.n_batch = 256;
+        ctx_params.n_ubatch = 64;
         ctx_params.kv_unified = true;
     } else {
-        // 0 = from model (may be large; CPU can handle large KV better than mobile GPUs)
-        ctx_params.n_ctx = 0;
+        // keep CPU memory reasonable for chat as well
+        ctx_params.n_ctx = 2048;
         ctx_params.kv_unified = true;
+        ctx_params.n_batch = 256;
+        ctx_params.n_ubatch = 64;
     }
     ctx_params.n_threads       = userSpecifiedThreads;
     ctx_params.n_threads_batch = n_threads;
@@ -623,6 +674,14 @@ Java_android_llama_cpp_LLamaAndroid_system_1info(JNIEnv *env, jobject) {
 
 extern "C"
 JNIEXPORT jint JNICALL
+Java_android_llama_cpp_LLamaAndroid_get_1n_1ctx(JNIEnv *, jobject, jlong context_pointer) {
+    const auto context = reinterpret_cast<llama_context *>(context_pointer);
+    if (!context) return 0;
+    return (jint) llama_n_ctx(context);
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
 Java_android_llama_cpp_LLamaAndroid_completion_1init(
         JNIEnv *env,
         jobject,
@@ -643,7 +702,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
     auto n_ctx = llama_n_ctx(context);
     auto n_kv_req = tokens_list.size() + (n_len - tokens_list.size());
 
-    LOGi("n_len = %d, n_ctx = %d, n_kv_req = %d", n_len, n_ctx, n_kv_req);
+    LOGi("n_len = %d, n_ctx = %d, n_kv_req = %zu", n_len, n_ctx, n_kv_req);
 
     if (n_kv_req > n_ctx) {
         LOGe("error: n_kv_req > n_ctx, the required KV cache size is not big enough");
@@ -653,14 +712,17 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     common_batch_clear(*batch);
 
-    // Evaluate initial prompt in micro-batches to reduce latency and memory pressure
-    const int ubatch = 64;
+    // Reset KV and evaluate initial prompt in micro-batches with correct absolute positions
+    llama_memory_clear(llama_get_memory(context), true);
+    const int ubatch = 64; // smaller prefill chunk to reduce spikes
     int processed = 0;
+    int n_cur = 0;
     while (processed < (int) tokens_list.size()) {
         const int chunk = std::min(ubatch, (int) tokens_list.size() - processed);
         common_batch_clear(*batch);
         for (int i = 0; i < chunk; ++i) {
-            common_batch_add(*batch, tokens_list[processed + i], processed + i, { 0 }, /*is_last*/ processed + i == (int) tokens_list.size() - 1);
+            const bool is_last = (processed + i == (int) tokens_list.size() - 1);
+            common_batch_add(*batch, tokens_list[processed + i], n_cur + i, { 0 }, is_last);
         }
         batch->logits[batch->n_tokens - 1] = true;
         if (llama_decode(context, *batch) != 0) {
@@ -668,11 +730,13 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
             break;
         }
         processed += chunk;
+        n_cur += chunk;
     }
 
     env->ReleaseStringUTFChars(jtext, text);
 
-    return batch->n_tokens;
+    // Return the absolute number of tokens consumed so far to seed generation positions
+    return n_cur;
 }
 
 extern "C"
@@ -742,7 +806,21 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         LOGi("Thinking tokens detected: %s", filtered_chars.c_str());
     }
     
-    // Always preserve thinking tokens and let UI handle display
+    // Strip think tags for non-reasoning models to avoid UI spam
+    bool strip_think = true; // conservative default; UI can still request full text via settings
+    if (strip_think) {
+        // remove <think>...</think>
+        std::string::size_type start = 0;
+        while ((start = filtered_chars.find("<think>", start)) != std::string::npos) {
+            auto end = filtered_chars.find("</think>", start);
+            if (end == std::string::npos) { break; }
+            filtered_chars.erase(start, (end + 8) - start);
+        }
+        // clean stray tags
+        while ((start = filtered_chars.find("<think>")) != std::string::npos) filtered_chars.erase(start, 7);
+        while ((start = filtered_chars.find("</think>")) != std::string::npos) filtered_chars.erase(start, 8);
+    }
+
     if (is_valid_utf8(filtered_chars.c_str())) {
         new_token = env->NewStringUTF(filtered_chars.c_str());
         LOGi("cached: %s, new_token_chars: `%s`, id: %d, thinking: %s", 
@@ -1219,7 +1297,7 @@ Java_android_llama_cpp_LLamaAndroid_getMemoryUsageNative(JNIEnv *, jobject, jlon
     }
 
     // llama_get_state_size() returns the amount of memory (in bytes) currently used by the context
-    const size_t used = llama_get_state_size(ctx);
+    const size_t used = llama_state_get_size(ctx);
     return static_cast<jlong>(used);
 }
 
@@ -1337,6 +1415,10 @@ Java_android_llama_cpp_LLamaAndroid_get_1embeddings(JNIEnv *env, jobject, jlong 
 
     llama_context_params ctx_params = llama_context_default_params();
     ctx_params.embeddings = true;
+    ctx_params.n_ctx = 512;
+    ctx_params.kv_unified = true;
+    ctx_params.n_batch = 256;
+    ctx_params.n_ubatch = 64;
     llama_context *ctx = llama_init_from_model(const_cast<llama_model *>(model), ctx_params);
     if (ctx == nullptr) {
         return nullptr;
@@ -1373,6 +1455,68 @@ Java_android_llama_cpp_LLamaAndroid_get_1embeddings(JNIEnv *env, jobject, jlong 
     }
 
     llama_free(ctx);
+    return nullptr;
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_android_llama_cpp_LLamaAndroid_new_1embeddings_1context(JNIEnv *, jobject, jlong jmodel) {
+    const llama_model *model = reinterpret_cast<llama_model *>(jmodel);
+    if (model == nullptr) return 0;
+    llama_context_params ctx_params = llama_context_default_params();
+    ctx_params.embeddings = true;
+    ctx_params.n_threads = std::max(1, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2);
+    ctx_params.n_threads_batch = ctx_params.n_threads;
+    ctx_params.n_ctx = 512;
+    ctx_params.kv_unified = true;
+    llama_context *ctx = llama_init_from_model(const_cast<llama_model *>(model), ctx_params);
+    return reinterpret_cast<jlong>(ctx);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_android_llama_cpp_LLamaAndroid_free_1embeddings_1context(JNIEnv *, jobject, jlong jctx) {
+    auto * ctx = reinterpret_cast<llama_context *>(jctx);
+    if (ctx) llama_free(ctx);
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_android_llama_cpp_LLamaAndroid_get_1embeddings_1with_1ctx(JNIEnv *env, jobject, jlong jctx, jstring jtext) {
+    llama_context *ctx = reinterpret_cast<llama_context *>(jctx);
+    if (ctx == nullptr) return nullptr;
+    const llama_model *model = llama_get_model(ctx);
+    if (model == nullptr) return nullptr;
+
+    const char *c_text = env->GetStringUTFChars(jtext, nullptr);
+    std::string text(c_text);
+    env->ReleaseStringUTFChars(jtext, c_text);
+
+    std::vector<llama_token> tokens(text.size());
+    int n_tokens = llama_tokenize(llama_model_get_vocab(model), text.c_str(), (int) text.length(), tokens.data(), (int) tokens.size(), false, false);
+    if (n_tokens < 0) {
+        return nullptr;
+    }
+
+    if (n_tokens > 0) {
+        int processed = 0;
+        while (processed < n_tokens) {
+            const int chunk = std::min(64, n_tokens - processed);
+            llama_batch batch2 = llama_batch_init(chunk, /*embd*/ 0, /*n_seq_max*/ 1);
+            for (int i = 0; i < chunk; ++i) {
+                common_batch_add(batch2, tokens[processed + i], processed + i, { 0 }, processed + i == n_tokens - 1);
+            }
+            batch2.logits[batch2.n_tokens - 1] = true;
+            llama_decode(ctx, batch2);
+            llama_batch_free(batch2);
+            processed += chunk;
+        }
+        const int n_embd = llama_model_n_embd(model);
+        const float *embeddings = llama_get_embeddings(ctx);
+        if (embeddings != nullptr) {
+            jfloatArray result = env->NewFloatArray(n_embd);
+            env->SetFloatArrayRegion(result, 0, n_embd, embeddings);
+            return result;
+        }
+    }
+
     return nullptr;
 }
 
@@ -1453,7 +1597,7 @@ static bench_metrics run_bench_loop(llama_context * ctx) {
 
     // Resolve a valid token to feed
     const auto vocab = llama_model_get_vocab(llama_get_model(ctx));
-    int token_feed = llama_token_bos(vocab);
+    int token_feed = llama_vocab_bos(vocab);
     if (token_feed < 0) {
         // Fallback: tokenize a simple prompt and take the first token
         const char * prompt = "Hello";
@@ -1558,7 +1702,8 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
         ctx_params.offload_kqv = true;
         ctx_params.op_offload  = true;
         ctx_params.n_batch = 512;
-        ctx_params.n_ubatch = 128;
+        ctx_params.n_ubatch = 64;
+        ctx_params.kv_unified = true;
 
         struct llama_context * ctx_gpu = llama_init_from_model(model, ctx_params);
         LOGi("Starting GPU bench loop (backend=%s)", ggml_backend_reg_by_name("Vulkan") ? "Vulkan" : (ggml_backend_reg_by_name("OpenCL") ? "OpenCL" : "Unknown"));

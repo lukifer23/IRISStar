@@ -22,6 +22,7 @@ private const val KEY_MODEL_CONTEXT_LENGTH = "model_context_length"
 private const val KEY_MODEL_SYSTEM_PROMPT = "model_system_prompt"
 private const val KEY_MODEL_CHAT_FORMAT = "model_chat_format"
 private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
+private const val KEY_MODEL_GPU_LAYERS = "model_gpu_layers"
 private const val KEY_CACHED_MODELS = "cached_models"
 private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
 
@@ -171,6 +172,14 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     open fun getModelThreadCount(): Int {
         return sharedPreferences.getInt(KEY_MODEL_THREAD_COUNT, 4)
+    }
+
+    open fun setModelGpuLayers(layers: Int) {
+        sharedPreferences.edit().putInt(KEY_MODEL_GPU_LAYERS, layers).apply()
+    }
+
+    open fun getModelGpuLayers(): Int {
+        return sharedPreferences.getInt(KEY_MODEL_GPU_LAYERS, -1)
     }
 
     // Per-model configuration

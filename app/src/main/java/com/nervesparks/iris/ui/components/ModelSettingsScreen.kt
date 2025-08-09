@@ -28,6 +28,7 @@ fun ModelSettingsScreen(
     var systemPrompt by remember(viewModel.modelSystemPrompt) { mutableStateOf(viewModel.modelSystemPrompt) }
     var selectedChatFormat by remember(viewModel.modelChatFormat) { mutableStateOf(viewModel.modelChatFormat) }
     var threadCount by remember(viewModel.modelThreadCount) { mutableStateOf(viewModel.modelThreadCount) }
+    var gpuLayers by remember(viewModel.modelGpuLayers) { mutableStateOf(viewModel.modelGpuLayers) }
 
     Column(
         modifier = Modifier
@@ -255,6 +256,55 @@ fun ModelSettingsScreen(
         }
         
         Spacer(modifier = Modifier.height(16.dp))
+
+        // GPU Layers Control
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = if (gpuLayers < 0) "GPU Layers: Auto" else "GPU Layers: $gpuLayers",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondary
+                )
+                Text(
+                    text = "How many transformer layers to offload to GPU (-1 = Auto)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = gpuLayers < 0,
+                        onCheckedChange = { checked -> gpuLayers = if (checked) -1 else 0 },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = MaterialTheme.colorScheme.tertiary,
+                            uncheckedColor = MaterialTheme.colorScheme.onSecondary
+                        )
+                    )
+                    Text("Auto", color = MaterialTheme.colorScheme.onSecondary)
+                }
+                if (gpuLayers >= 0) {
+                    Slider(
+                        value = gpuLayers.toFloat(),
+                        onValueChange = { gpuLayers = it.toInt() },
+                        valueRange = 0f..64f,
+                        steps = 63,
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.tertiary,
+                            activeTrackColor = MaterialTheme.colorScheme.tertiary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+                        )
+                    )
+                }
+            }
+        }
         
         // System Prompt Control
         Card(
@@ -352,7 +402,8 @@ fun ModelSettingsScreen(
                     contextLength = contextLength,
                     systemPrompt = systemPrompt,
                     chatFormat = selectedChatFormat,
-                    threadCount = threadCount
+                    threadCount = threadCount,
+                    gpuLayers = gpuLayers
                 )
                 onBackPressed()
             },
