@@ -31,6 +31,8 @@ import com.nervesparks.iris.ui.theme.SemanticColors
 import com.nervesparks.iris.ui.theme.ModernIconButton
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.SecondaryButton
+import com.nervesparks.iris.ui.theme.ThemedModalSurface
+import com.nervesparks.iris.ui.theme.ThemedModalCard
 import java.io.File
 
 @Composable
@@ -97,21 +99,16 @@ fun ModelSelectionModal(
             dismissOnClickOutside = true
         )
     ) {
-        Card(
+        ThemedModalSurface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .heightIn(max = 600.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(ComponentStyles.defaultPadding)
+                .heightIn(max = 600.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(ComponentStyles.largePadding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header
@@ -138,12 +135,12 @@ fun ModelSelectionModal(
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
                 
                 // Action buttons for model management
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                 ) {
                     // Download Models button
                     SecondaryButton(
@@ -153,9 +150,9 @@ fun ModelSelectionModal(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(ComponentStyles.smallIconSize)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                         Text("Download Models")
                     }
                     
@@ -167,47 +164,43 @@ fun ModelSelectionModal(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(ComponentStyles.smallIconSize)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                         Text("Import Model")
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
                 
                 // Status indicator
                 if (!hasDownloadedModels) {
                     // No models downloaded
-                    Card(
+                    ThemedModalCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(ComponentStyles.defaultPadding),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(24.dp)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(ComponentStyles.defaultIconSize)
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(ComponentStyles.defaultSpacing))
                             Text(
                                 text = "No models downloaded yet",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
                     
                     Text(
                         text = "Download models from HuggingFace or import local GGUF files to get started",
@@ -216,7 +209,7 @@ fun ModelSelectionModal(
                         textAlign = TextAlign.Center
                     )
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(ComponentStyles.largePadding))
                     
                     PrimaryButton(
                         onClick = onNavigateToModels,
@@ -233,7 +226,7 @@ fun ModelSelectionModal(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -245,16 +238,16 @@ fun ModelSelectionModal(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                         Switch(checked = showReasoningOnly, onCheckedChange = { showReasoningOnly = it })
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
 
                     // Model list
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                     ) {
                         items(filteredModels) { model ->
                             val modelName = model["name"] ?: ""
@@ -274,15 +267,15 @@ fun ModelSelectionModal(
                                         else -> MaterialTheme.colorScheme.surfaceVariant
                                     }
                                 ),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ComponentStyles.smallCardShape,
                                 elevation = CardDefaults.cardElevation(
-                                    defaultElevation = if (isSelected) 4.dp else 1.dp
+                                    defaultElevation = if (isSelected) ComponentStyles.largeElevation else ComponentStyles.smallElevation
                                 )
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp),
+                                        .padding(ComponentStyles.defaultPadding),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(
@@ -300,14 +293,14 @@ fun ModelSelectionModal(
                                                 fontWeight = FontWeight.Medium
                                             )
                                             if (model["supportsReasoning"] == "true") {
-                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                                                 Text(
                                                     text = "Reasoning",
                                                     color = Color.Black,
                                                     fontSize = 12.sp,
                                                     modifier = Modifier
                                                         .background(SemanticColors.Warning, ComponentStyles.smallCardShape)
-                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                        .padding(horizontal = ComponentStyles.smallPadding, vertical = ComponentStyles.smallPadding / 2)
                                                 )
                                             }
                                         }
@@ -327,7 +320,7 @@ fun ModelSelectionModal(
                                             imageVector = Icons.Default.Check,
                                             contentDescription = "Selected",
                                             tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(ComponentStyles.defaultIconSize)
                                         )
                                     }
                                 }
@@ -335,12 +328,12 @@ fun ModelSelectionModal(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
                     
                     // Action buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
                     ) {
                         SecondaryButton(
                             onClick = onDismiss,

@@ -23,7 +23,9 @@ data class PerformanceMonitorState(
     val contextLimit: Int,
     val maxContextLimit: Int,
     val tokensGenerated: Int,
-    val isGenerating: Boolean
+    val isGenerating: Boolean,
+    val backend: String? = null,
+    val offload: Pair<Int,Int>? = null
 )
 
 @Composable
@@ -37,7 +39,9 @@ fun PerformanceMonitor(viewModel: MainViewModel) {
             contextLimit = viewModel.contextLimit,
             maxContextLimit = viewModel.maxContextLimit,
             tokensGenerated = viewModel.tokensGenerated,
-            isGenerating = viewModel.isGenerating
+            isGenerating = viewModel.isGenerating,
+            backend = viewModel.currentBackend,
+            offload = (viewModel.offloadedLayers to viewModel.totalLayers)
         )
     )
 }
@@ -91,6 +95,14 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
                     value = "${state.contextLimit}/${state.maxContextLimit}",
                     color = MaterialTheme.colorScheme.tertiary
                 )
+                state.backend?.let { be ->
+                    val off = state.offload?.let { (a,b) -> if (a >= 0 && b > 0) " ($a/$b)" else "" } ?: ""
+                    CompactMetricItem(
+                        label = "Backend",
+                        value = be + off,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // Generation progress

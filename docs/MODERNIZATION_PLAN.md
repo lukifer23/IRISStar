@@ -412,3 +412,110 @@ Based on the modernization plan and current state, the next logical steps are:
 ### **Phase 8: Platform Modernization (Future)**
 - [ ] **8.1** Android platform features
 - [ ] **8.2** Accessibility & Internationalization
+# IRIS Star Modernization & Hardening Plan (Trackable)
+
+This plan optimizes, hardens, and modernizes the app without removing features. Tasks are grouped for clarity and are checkable so we can track progress over time.
+
+Legend: [ ] Pending  ·  [x] Completed
+
+Goals
+- [ ] Preserve all current features and UX capabilities
+- [ ] Reduce redundancy and centralize shared logic
+- [ ] Improve security, privacy, stability, and performance
+- [ ] Modernize build/tooling for maintainability
+
+1) Foundations: Build & Toolchain
+- [ ] Move to Java 17 toolchain for AGP 8.5
+- [ ] Bump Kotlin, Compose BOM, Material3, Hilt, Room, Retrofit, Moshi to latest stable compatible matrix
+- [ ] Align app and NDK toolchains for reproducible builds (CMake/NDK versions)
+- [ ] Expand R8/proguard rules for Hilt, Room, Moshi, ML Kit, JNI reflection
+
+2) Architecture & Code Organization
+- [ ] Split MainViewModel into feature-scoped ViewModels (Chat/Search/Voice/Model/Metrics) with Hilt scopes
+- [ ] Introduce PromptComposer service: centralize prompt assembly, token-reserve enforcement, context trimming
+- [ ] Centralize default model catalog in ModelRepository; remove duplicates in MainViewModel and MainActivity
+- [ ] Keep dev-only screens (ModernTestScreen) behind debug build type
+
+3) Networking
+- [ ] Use DI-provided OkHttpClient everywhere (WebSearchService, ModelUpdateWorker)
+- [ ] Add SSL pinning for HuggingFace; toggle by build type
+- [ ] Respect caching headers (ETag, Last-Modified) via OkHttp cache; leverage dedupe interceptor already present
+- [ ] Remove hardcoded Google API key/CSE ID; load from EncryptedSharedPreferences or BuildConfig (debug only) and require user config in release
+
+4) Data & Storage
+- [ ] Enable Room schema export (exportSchema=true) and add schema/ directory
+- [ ] Replace fallbackToDestructiveMigration with real migrations; add migration tests
+- [ ] Review data_extraction_rules.xml to exclude sensitive data by default (tokens, secrets), add explicit user opt-in controls
+- [ ] Settings export/import: redact secrets by default; require explicit include for tokens
+
+5) Native Layer (llama.cpp)
+- [ ] Persist user-chosen GPU layers; reload model on change; reflect offload N/N in UI consistently
+- [ ] Harden plugin load logic order and limit search to app-controlled paths post-registry discovery
+- [ ] Expose additional perf stats (KV size, tokenization time) to UI metrics
+
+6) Downloads & Model Management
+- [ ] Unify downloads flow: share integrity verification and model registration across DownloadManager and WorkManager codepaths
+- [ ] Add SHA-256 verification and optional signature checks; persist model metadata in DB
+- [ ] Curate default/suggested models with labels (Fast/Quality/Reasoning) and known sizes
+
+7) UI/UX
+- [ ] Clean Manifest splash/theme; remove hardcoded colors and use theme-based splash
+- [ ] Ensure thinking tokens toggle honored consistently between TemplateRegistry and JNI strip logic
+- [ ] Improve long-operation UX: progress, cancel, resume for quantize/download/verify
+- [ ] Accessibility: content descriptions, min touch targets, dynamic type paths
+
+8) Performance
+- [ ] Memoize token counts for static segments (system prompt/template stem) and repeated prompts
+- [ ] Add stable keys to chat lists; reduce recompositions via scoped state reads
+- [ ] Offload heavy summarization/trimming to WorkManager when exceeding UI budgets
+- [ ] Keep UI thread free of any blocking network/disk work (review voice/search paths)
+
+9) Security & Privacy
+- [ ] Remove hardcoded secrets from source; add CI secrets scanning
+- [ ] SSL pinning for Retrofit; consider CT enforcement if feasible
+- [ ] Disable Timber DebugTree in release; gate verbose logs by build type
+- [ ] Gate sensitive actions (export/import, token view) behind biometrics (optional)
+- [ ] Whitelist approved model download hosts; reject unknown domains
+
+10) Testing & QA
+- [ ] Unit tests: repositories, PromptComposer, TemplateRegistry, ReasoningParser, settings import/export
+- [ ] Instrumentation: chat flow (load, send, stream), downloads, navigation/back
+- [ ] Integration: model registry + UI flows; WorkManager periodic updates (TestDriver)
+- [ ] Room migration tests and data retention checks
+- [ ] JNI smoke tests (manual/device): load/unload cycles and short generation
+
+11) Build & Release
+- [ ] Product flavors: dev (looser security/logging) vs prod (pinning, no debug logging)
+- [ ] CI: assemble, tests, lint/ktlint, dependency updates, signing
+- [ ] Consistent branding: unify rootProject.name to IrisStar
+
+12) Conflicts & Duplicates To Resolve
+- [ ] Default model lists consolidated into repository (remove in MainViewModel/MainActivity)
+- [ ] Use AppNavigation.kt as source of truth; remove leftover Navigation.kt helpers if not used
+- [ ] WebSearchService uses DI OkHttpClient; remove private client
+- [ ] Consolidate prompt/context trimming to PromptComposer
+- [ ] Reuse constants in tests via shared fixture or public constants
+
+13) Feature Backlog (Non-breaking Enhancements)
+- [ ] Vision + OCR: parse images with ML Kit and feed extracted text to chat
+- [ ] Local RAG: embeddings index and vector search on-device; PDF/webpage import
+- [ ] Chat export/import: Markdown/PDF, share intents; optional per-chat encryption
+- [ ] Tooling/plugins: structured function-calling (web_search, calculator, file_search) with user consent/rate limits
+- [ ] Model profiles: per-chat model + settings; auto-switch by battery/thermal state
+- [ ] Offline web saver: page snapshots → text extraction → local search
+- [ ] Scheduler/automation: periodic model metadata refresh and integrity checks
+- [ ] Safety guardrails: configurable content filters
+
+Milestones & Order of Operations
+1. [ ] Consolidation & Security Start (Sections 2, 3, 4, 9, 12)
+2. [ ] Downloads + Model Mgmt Unification (Section 6)
+3. [ ] Performance Pass (Section 8)
+4. [ ] UI/UX Polish + Accessibility (Section 7)
+5. [ ] Native Layer Enhancements (Section 5)
+6. [ ] Testing & CI Maturity (Section 10, 11)
+7. [ ] Feature Backlog Items (Section 13)
+
+Notes & Non-Goals
+- No features removed; maintain current behavior while improving internals
+- Avoid placeholder fixes; implement proper root-cause solutions
+- Prioritize user privacy and offline-first guarantees

@@ -8,7 +8,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -76,7 +83,8 @@ fun ModernChatInput(
                         showAttachmentDialog = true
                         onAttachmentClick()
                     },
-                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                    enabled = enabled
                 ) {
                     Icon(
                         imageVector = Icons.Default.AddCircle,
@@ -88,7 +96,8 @@ fun ModernChatInput(
 
                 ModernIconButton(
                     onClick = onCodeClick,
-                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                    enabled = enabled
                 ) {
                     Icon(
                         imageVector = Icons.Default.Code,
@@ -100,7 +109,8 @@ fun ModernChatInput(
 
                 ModernIconButton(
                     onClick = { showTranslationDialog = true },
-                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                    enabled = enabled
                 ) {
                     Icon(
                         imageVector = Icons.Default.Translate,
@@ -112,7 +122,8 @@ fun ModernChatInput(
 
                 ModernIconButton(
                     onClick = onWebSearchClick,
-                    modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                    modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                    enabled = enabled
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -157,7 +168,7 @@ fun ModernChatInput(
                             .background(MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Send,
+                            imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
@@ -165,12 +176,13 @@ fun ModernChatInput(
                 } else {
                     ModernIconButton(
                         onClick = onVoiceClick,
-                        modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                        modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                        enabled = enabled
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.mic_svgrepo_com),
                             contentDescription = "Voice Input",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(ComponentStyles.defaultIconSize)
                         )
                     }

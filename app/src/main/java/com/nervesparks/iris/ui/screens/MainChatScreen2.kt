@@ -37,7 +37,7 @@ import com.nervesparks.iris.ui.theme.PrimaryButton
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,7 +93,7 @@ fun NavDrawer(
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                imageVector = Icons.Default.List,
+                imageVector = Icons.AutoMirrored.Filled.List,
                 contentDescription = null,
                 modifier = Modifier.size(ComponentStyles.defaultIconSize)
             )
@@ -275,7 +275,8 @@ fun MainChatScreen2(
                             if (viewModel.message.isNotBlank()) {
                                 viewModel.performWebSearch(viewModel.message)
                             }
-                        }
+                        },
+                        enabled = !viewModel.isGenerating
                     )
                 }
             }

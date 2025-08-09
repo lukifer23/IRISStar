@@ -251,90 +251,55 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
 
     // Confirmation Dialog
     if (state.showConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                state = state.copy(showConfirmDialog = false)
-            },
-            title = { Text("Benchmarking Notice") },
-            text = { Text("This process will 30 seconds to 1 minute. Do you want to continue?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        state = state.copy(
-                            showConfirmDialog = false,
-                            isRunning = true,
-                            results = emptyList(),
-                            error = null
-                        )
-                        scope.launch {
-                            try {
-                                viewModel.myCustomBenchmark()
-
-                                // Update tokens per second after benchmarking
-                                state = state.copy(
-                                    results = viewModel.tokensList.toList() // Fetch tokens collected
-                                )
-                            } catch (e: Exception) {
-                                state = state.copy(
-                                    error = "Error: ${e.message}"
-                                )
-                            } finally {
-                                state = state.copy(isRunning = false)
+        androidx.compose.ui.window.Dialog(onDismissRequest = { state = state.copy(showConfirmDialog = false) }) {
+            com.nervesparks.iris.ui.theme.ThemedModalCard {
+                Column(Modifier.padding(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding)) {
+                    Text("Benchmarking Notice", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.smallPadding))
+                    Text("This process will 30 seconds to 1 minute. Do you want to continue?")
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding))
+                    Row(horizontalArrangement = Arrangement.spacedBy(com.nervesparks.iris.ui.theme.ComponentStyles.defaultSpacing)) {
+                        TextButton(onClick = { state = state.copy(showConfirmDialog = false) }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                        TextButton(onClick = {
+                            state = state.copy(showConfirmDialog = false, isRunning = true, results = emptyList(), error = null)
+                            scope.launch {
+                                try {
+                                    viewModel.myCustomBenchmark()
+                                    state = state.copy(results = viewModel.tokensList.toList())
+                                } catch (e: Exception) {
+                                    state = state.copy(error = "Error: ${e.message}")
+                                } finally {
+                                    state = state.copy(isRunning = false)
+                                }
                             }
-                        }
+                        }, modifier = Modifier.weight(1f)) { Text("Start") }
                     }
-                ) {
-                    Text("Start")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        state = state.copy(showConfirmDialog = false)
-                    }
-                ) {
-                    Text("Cancel")
                 }
             }
-        )
+        }
     }
     
     // Comparative Benchmark Dialog
     if (state.showComparativeDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                state = state.copy(showComparativeDialog = false)
-            },
-            title = { Text("CPU vs GPU Performance Test") },
-            text = { Text("This will test the same model on both CPU and GPU backends to compare performance. Takes about 10-15 seconds. Continue?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        state = state.copy(showComparativeDialog = false)
-                        scope.launch {
-                            try {
-                                viewModel.runComparativeBenchmark()
-                            } catch (e: Exception) {
-                                state = state.copy(
-                                    error = "Error: ${e.message}"
-                                )
+        androidx.compose.ui.window.Dialog(onDismissRequest = { state = state.copy(showComparativeDialog = false) }) {
+            com.nervesparks.iris.ui.theme.ThemedModalCard {
+                Column(Modifier.padding(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding)) {
+                    Text("CPU vs GPU Performance Test", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.smallPadding))
+                    Text("This will test the same model on both CPU and GPU backends to compare performance. Takes about 10-15 seconds. Continue?")
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding))
+                    Row(horizontalArrangement = Arrangement.spacedBy(com.nervesparks.iris.ui.theme.ComponentStyles.defaultSpacing)) {
+                        TextButton(onClick = { state = state.copy(showComparativeDialog = false) }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                        TextButton(onClick = {
+                            state = state.copy(showComparativeDialog = false)
+                            scope.launch {
+                                try { viewModel.runComparativeBenchmark() } catch (e: Exception) { state = state.copy(error = "Error: ${e.message}") }
                             }
-                        }
+                        }, modifier = Modifier.weight(1f)) { Text("Start Test") }
                     }
-                ) {
-                    Text("Start Test")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        state = state.copy(showComparativeDialog = false)
-                    }
-                ) {
-                    Text("Cancel")
                 }
             }
-        )
+        }
     }
     
     // Model Selection Modal for Benchmark

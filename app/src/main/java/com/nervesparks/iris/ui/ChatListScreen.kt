@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -97,30 +97,25 @@ fun ChatListScreen(
     
     // Delete All Chats Dialog
     if (showDeleteAllDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text("Delete All Chats") },
-            text = { Text("Are you sure you want to delete all chats? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        scope.launch {
-                            chats.forEach { chat ->
-                                viewModel.deleteChat(chat)
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showDeleteAllDialog = false }) {
+            com.nervesparks.iris.ui.theme.ThemedModalCard {
+                Column(Modifier.padding(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding)) {
+                    Text("Delete All Chats", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.smallPadding))
+                    Text("Are you sure you want to delete all chats? This action cannot be undone.")
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding))
+                    Row(horizontalArrangement = Arrangement.spacedBy(com.nervesparks.iris.ui.theme.ComponentStyles.defaultSpacing)) {
+                        TextButton(onClick = { showDeleteAllDialog = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                        TextButton(onClick = {
+                            scope.launch {
+                                chats.forEach { chat -> viewModel.deleteChat(chat) }
                             }
-                        }
-                        showDeleteAllDialog = false
+                            showDeleteAllDialog = false
+                        }, modifier = Modifier.weight(1f)) { Text("Delete All", color = MaterialTheme.colorScheme.error) }
                     }
-                ) {
-                    Text("Delete All", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text("Cancel")
                 }
             }
-        )
+        }
     }
 }
 
@@ -150,7 +145,7 @@ private fun ChatRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Chat,
+                imageVector = Icons.AutoMirrored.Filled.Chat,
                 contentDescription = "Chat",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
@@ -187,19 +182,22 @@ private fun ChatRow(
     }
 
     if (showRename) {
-        AlertDialog(
-            onDismissRequest = { showRename = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (newTitle.isNotBlank()) onRename(newTitle.trim())
-                    showRename = false
-                }) { Text("Save") }
-            },
-            dismissButton = { TextButton(onClick = { showRename = false }) { Text("Cancel") } },
-            title = { Text("Rename chat") },
-            text = {
-                OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, singleLine = true)
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showRename = false }) {
+            com.nervesparks.iris.ui.theme.ThemedModalCard {
+                Column(Modifier.padding(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding)) {
+                    Text("Rename chat", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.smallPadding))
+                    OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, singleLine = true)
+                    Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding))
+                    Row(horizontalArrangement = Arrangement.spacedBy(com.nervesparks.iris.ui.theme.ComponentStyles.defaultSpacing)) {
+                        TextButton(onClick = { showRename = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                        TextButton(onClick = {
+                            if (newTitle.isNotBlank()) onRename(newTitle.trim())
+                            showRename = false
+                        }, modifier = Modifier.weight(1f)) { Text("Save") }
+                    }
+                }
             }
-        )
+        }
     }
 }

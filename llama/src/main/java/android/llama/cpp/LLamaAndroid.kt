@@ -203,6 +203,10 @@ class LLamaAndroid {
         }
     }
 
+    suspend fun getOffloadCounts(): IntArray {
+        return withContext(runLoop) { get_offload_counts() }
+    }
+
     suspend fun load(pathToModel: String, userThreads: Int, topK: Int, topP: Float, temp: Float, gpuLayers: Int = -1){
         if (!nativeLibraryLoaded) {
             // Best-effort synchronous load to avoid UnsatisfiedLinkError on first JNI call
