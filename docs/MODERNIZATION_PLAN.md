@@ -449,9 +449,12 @@ Goals
 - [ ] Settings export/import: redact secrets by default; require explicit include for tokens
 
 5) Native Layer (llama.cpp)
-- [ ] Persist user-chosen GPU layers; reload model on change; reflect offload N/N in UI consistently
-- [ ] Harden plugin load logic order and limit search to app-controlled paths post-registry discovery
-- [ ] Expose additional perf stats (KV size, tokenization time) to UI metrics
+- [x] Persist user-chosen GPU layers; reload model on change; reflect offload N/N in UI consistently
+- [x] Harden plugin load logic order and limit search to app-controlled paths post-registry discovery
+- [x] Expose additional perf stats (KV size) to UI metrics and diagnostics
+- [x] Safe backend switching (defer free when contexts exist)
+- [x] Correct batch allocation/free via upstream helpers
+- [x] GPU benchmark skip when offload is zero/CPU session forced; clear JSON error
 
 6) Downloads & Model Management
 - [ ] Unify downloads flow: share integrity verification and model registration across DownloadManager and WorkManager codepaths
@@ -468,7 +471,7 @@ Goals
 - [ ] Memoize token counts for static segments (system prompt/template stem) and repeated prompts
 - [ ] Add stable keys to chat lists; reduce recompositions via scoped state reads
 - [ ] Offload heavy summarization/trimming to WorkManager when exceeding UI budgets
-- [ ] Keep UI thread free of any blocking network/disk work (review voice/search paths)
+- [x] Keep UI thread free of any blocking network/disk work (reviewed runLoop usage for JNI)
 
 9) Security & Privacy
 - [ ] Remove hardcoded secrets from source; add CI secrets scanning

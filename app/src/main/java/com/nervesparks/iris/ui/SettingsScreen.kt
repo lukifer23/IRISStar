@@ -400,10 +400,11 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    val counts = remember(viewModel.currentBackend, viewModel.loadedModelName.value) {
-                        try { LLamaAndroid.instance().get_offload_counts() } catch (e: Exception) { intArrayOf() }
+                    val offText = if (viewModel.offloadedLayers >= 0 && viewModel.totalLayers > 0) {
+                        "Offload: ${viewModel.offloadedLayers}/${viewModel.totalLayers}"
+                    } else {
+                        "Offload: n/a"
                     }
-                    val offText = if (counts.size == 2 && counts[0] >= 0 && counts[1] > 0) "Offload: ${counts[0]}/${counts[1]}" else "Offload: n/a"
                     Text(
                         text = offText,
                         style = MaterialTheme.typography.bodySmall,

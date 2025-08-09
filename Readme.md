@@ -78,6 +78,13 @@ Troubleshooting:
 - Switching backends but still seeing the previous one: the app now forcefully unloads/reloads the model on backend change; reselect your backend and reload the model.
 - GPU latency too high: try a smaller model and/or reduce context length in Settings; Vulkan backends on mobile benefit from smaller ctx and micro-batching.
 
+### Runtime Diagnostics and Stability
+
+- The app exposes a native diagnostics snapshot used by the UI logs after model load. It includes backend registry, active contexts, GPU offload counts, KV size, and micro-batch size.
+- Backend switching is now safe: the runtime defers backend teardown when contexts are active to avoid crashes. Change backend in Settings, then reload the model.
+- GPU benchmark safety: if the device reports zero GPU offload or a CPU-forced session, the benchmark skips the GPU path and reports a clear reason instead of crashing.
+- Token logging is gated to avoid excessive log traffic during generation; verbose token logs can be enabled in development builds.
+
 ## Optimizing Your Experience with Iris
 
 The performance of Iris is directly influenced by the size, speed, and compute requirements of the models you use. These factors also impact the overall user experience. For a faster and smoother experience, consider downloading smaller models.

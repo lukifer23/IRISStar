@@ -4,7 +4,7 @@
 - **Current Status**: 85% Complete (per modernization plan)
 - **Target**: Production-ready, enterprise-grade AI chat application
 - **Approach**: Small, incremental changes with testing between each step
-- **Last Updated**: December 19, 2024 - Phase 1 Critical Fixes Completed
+ - **Last Updated**: August 9, 2025 - Native benchmark hardening, backend safety, batch free fix
 
 ---
 
@@ -174,12 +174,11 @@
 - **Status**: ⏳ PENDING
 - **Estimated Time**: 4 hours
 
-#### 7.2 Memory Leak Prevention
-- **Issue**: Potential memory leaks in ViewModel lifecycle
-- **Location**: Various ViewModels
-- **Fix**: Implement proper lifecycle management
-- **Status**: ⏳ PENDING
-- **Estimated Time**: 2 hours
+#### 7.2 JNI Batch Memory Leak Prevention
+- **Issue**: JNI `free_batch` did not free heap-allocated buffers, potential leak
+- **Location**: `llama/src/main/cpp/llama-android.cpp`
+- **Fix**: Replace custom allocator with `llama_batch_init`/`llama_batch_free`; delete wrapper pointer
+- **Status**: ✅ COMPLETED
 
 #### 7.3 List Rendering Optimization
 - **Issue**: Missing proper keying for LazyColumn items
@@ -246,12 +245,11 @@
 - **Status**: ⏳ PENDING
 - **Estimated Time**: 2 hours
 
-#### 10.2 Deprecated Code Replacement
-- **Issue**: Some llama.cpp functions marked as deprecated
+#### 10.2 Backend Switching Safety
+- **Issue**: Freeing/initializing backends while contexts active could crash
 - **Location**: Native code integration
-- **Fix**: Replace deprecated functions with current APIs
-- **Status**: ⏳ PENDING
-- **Estimated Time**: 3 hours
+- **Fix**: Track active contexts; defer backend free/switch until zero
+- **Status**: ✅ COMPLETED
 
 ---
 
@@ -400,10 +398,10 @@
 - **v1.1**: [To be updated as we progress]
 
 ### **Recent Changes**
-- Created comprehensive issue tracking system
-- Organized issues by priority and category
-- Added detailed status tracking
-- Included time estimates for each fix
+- Native benchmark stability: embeddings off, null guards, decode backoff
+- GPU benchmark skip when offload zero / CPU session forced
+- Proper batch allocation/free using upstream helpers
+- Backend switching safety; token log gating; diagnostics exporter
 
 ---
 

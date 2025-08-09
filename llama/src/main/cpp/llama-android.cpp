@@ -56,6 +56,7 @@ static T json_value(const json & body, const std::string & key, const T & defaul
 
 #include <dlfcn.h>
 #include <climits>
+#include <atomic>
 
 jclass la_int_var;
 jmethodID la_int_var_value;
@@ -72,6 +73,8 @@ static int  g_total_layers        = -1;
 static long long g_kv_size_bytes  = -1;       // last reported KV cache size
 static long long g_last_tokenize_us = -1;     // last prompt tokenize duration
 static int  g_dynamic_ubatch      = 64;       // adaptive prefill ubatch
+static std::atomic<int> g_active_contexts{0}; // number of live contexts
+static bool g_verbose_tokens = false;         // verbose token logging gate
 
 bool is_valid_utf8(const char * string) {
     if (!string) {
@@ -376,6 +379,7 @@ Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject, jlong jmo
         return 0;
     }
 
+    g_active_contexts.fetch_add(1, std::memory_order_relaxed);
     return reinterpret_cast<jlong>(context);
 }
 
@@ -383,18 +387,45 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1context(JNIEnv *, jobject, jlong context) {
     llama_free(reinterpret_cast<llama_context *>(context));
+    g_active_contexts.fetch_sub(1, std::memory_order_relaxed);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_backend_1free(JNIEnv *, jobject) {
-    llama_backend_free();
+    // Only free backend when there are no active contexts
+    if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
+        llama_backend_free();
+    } else {
+        LOGi("backend_free requested but %d contexts still active; skipping", g_active_contexts.load());
+    }
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv *, jobject) {
     llama_log_set(log_callback, NULL);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_android_llama_cpp_LLamaAndroid_set_1verbose_1tokens(JNIEnv *, jobject, jboolean enable) {
+    g_verbose_tokens = enable == JNI_TRUE;
+}
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_android_llama_cpp_LLamaAndroid_export_1diag(JNIEnv * env, jobject) {
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "backend(OpenCL=%s,Vulkan=%s), contexts=%d, offload=%d/%d, kvMiB=%.2f, ubatch=%d",
+             ggml_backend_reg_by_name("OpenCL") ? "yes" : "no",
+             ggml_backend_reg_by_name("Vulkan") ? "yes" : "no",
+             g_active_contexts.load(),
+             g_offloaded_layers, g_total_layers,
+             g_kv_size_bytes > 0 ? (double) g_kv_size_bytes / (1024.0*1024.0) : 0.0,
+             g_dynamic_ubatch);
+    return env->NewStringUTF(buf);
 }
 
 extern "C"
@@ -541,61 +572,21 @@ Java_android_llama_cpp_LLamaAndroid_bench_1model(
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *, jobject, jint n_tokens, jint embd, jint n_seq_max) {
-
-    // Source: Copy of llama.cpp:llama_batch_init but heap-allocated.
-
-    llama_batch *batch = new llama_batch {
-        0,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-    };
-
-    if (embd) {
-        batch->embd = (float *) malloc(sizeof(float) * n_tokens * embd);
-    } else {
-        batch->token = (llama_token *) malloc(sizeof(llama_token) * n_tokens);
-    }
-
-    batch->pos      = (llama_pos *)     malloc(sizeof(llama_pos)      * n_tokens);
-    batch->n_seq_id = (int32_t *)       malloc(sizeof(int32_t)        * n_tokens);
-    batch->seq_id   = (llama_seq_id **) malloc(sizeof(llama_seq_id *) * n_tokens);
-    for (int i = 0; i < n_tokens; ++i) {
-        batch->seq_id[i] = (llama_seq_id *) malloc(sizeof(llama_seq_id) * n_seq_max);
-    }
-    batch->logits   = (int8_t *)        malloc(sizeof(int8_t)         * n_tokens);
-
+    // Use upstream allocator to ensure compatible free
+    llama_batch * batch = new llama_batch;
+    *batch = llama_batch_init(n_tokens, embd, n_seq_max);
     return reinterpret_cast<jlong>(batch);
 }
-
-void fixed_llama_batch_free(struct llama_batch batch) {
-    if (batch.token)    free(batch.token);
-    if (batch.embd)     free(batch.embd);
-    if (batch.pos)      free(batch.pos);
-
-    if (batch.seq_id) {
-        for (int i = 0; i < *batch.n_seq_id; ++i) {
-            free(batch.seq_id[i]);
-        }
-        if (batch.n_seq_id) free(batch.n_seq_id);
-        free(batch.seq_id);
-    }
-    if (batch.logits)   free(batch.logits);
-}
-
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv *, jobject, jlong batch_pointer) {
-
-
-    common_batch_clear(*reinterpret_cast<llama_batch *>(batch_pointer));
-
-//    fixed_llama_batch_free(*reinterpret_cast<llama_batch *>(batch_pointer));
-
+    if (batch_pointer == 0) return;
+    llama_batch * batch = reinterpret_cast<llama_batch *>(batch_pointer);
+    // Clear dynamic content, then free using upstream helper and delete wrapper
+    common_batch_clear(*batch);
+    llama_batch_free(*batch);
+    delete batch;
 }
 
 extern "C"
@@ -679,21 +670,30 @@ Java_android_llama_cpp_LLamaAndroid_set_1backend(JNIEnv *env, jobject, jstring j
         LOGi("Set backend to CPU");
     }
 
-    llama_backend_free();
-    llama_backend_init();
+    // Only switch backends when safe: no active contexts
+    if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
+        llama_backend_free();
+        llama_backend_init();
+    } else {
+        LOGi("set_backend: contexts active (%d); deferring backend switch to CPU fallback semantics", g_active_contexts.load());
+    }
 
     if (strcmp(backend, "opencl") == 0 && !llama_supports_gpu_offload()) {
         LOGe("OpenCL init failed, falling back to CPU");
         unsetenv("GGML_OPENCL_PLATFORM");
         unsetenv("GGML_OPENCL_DEVICE");
-        llama_backend_free();
-        llama_backend_init();
+        if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
+            llama_backend_free();
+            llama_backend_init();
+        }
         success = false;
     } else if (strcmp(backend, "vulkan") == 0) {
         if (ggml_backend_reg_by_name("Vulkan") == nullptr) {
             LOGe("Vulkan backend not registered after init");
-            llama_backend_free();
-            llama_backend_init();
+            if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
+                llama_backend_free();
+                llama_backend_init();
+            }
             success = false;
         }
     }
@@ -733,6 +733,9 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
     const auto context = reinterpret_cast<llama_context *>(context_pointer);
     const auto batch = reinterpret_cast<llama_batch *>(batch_pointer);
 
+    // ensure embeddings mode is off for generation
+    llama_set_embeddings(context, false);
+
     const auto tokens_list = common_tokenize(context, text, 1);
 
     auto n_ctx = llama_n_ctx(context);
@@ -750,7 +753,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     // Reset KV and evaluate initial prompt in micro-batches with correct absolute positions
     llama_memory_clear(llama_get_memory(context), true);
-    const int ubatch = g_dynamic_ubatch; // adaptive prefill chunk
+    int ubatch = std::max(16, std::min(g_dynamic_ubatch, std::max(1, (int) llama_n_ubatch(context))));
     int processed = 0;
     int n_cur = 0;
     while (processed < (int) tokens_list.size()) {
@@ -762,7 +765,12 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
         }
         batch->logits[batch->n_tokens - 1] = true;
         if (llama_decode(context, *batch) != 0) {
-            LOGe("llama_decode() failed during prompt ubatch");
+            LOGe("llama_decode() failed during prompt ubatch at processed=%d chunk=%d", processed, chunk);
+            // Back off ubatch and retry once for transient pressure
+            if (ubatch > 16) {
+                ubatch = std::max(16, ubatch / 2);
+                continue;
+            }
             break;
         }
         processed += chunk;
@@ -808,7 +816,12 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     }
 
     auto new_token_chars = common_token_to_piece(context, new_token_id);
-    cached_token_chars += new_token_chars;
+    if (g_verbose_tokens) {
+        cached_token_chars += new_token_chars;
+    } else {
+        // Fast path: bypass accumulation when verbose logging is disabled
+        cached_token_chars = new_token_chars;
+    }
 
     // Enhanced thinking token processing
     std::string filtered_chars = cached_token_chars;
@@ -860,9 +873,11 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
 
     if (is_valid_utf8(filtered_chars.c_str())) {
         new_token = env->NewStringUTF(filtered_chars.c_str());
-        LOGi("cached: %s, new_token_chars: `%s`, id: %d, thinking: %s", 
-             filtered_chars.c_str(), new_token_chars.c_str(), new_token_id, 
-             containsThinkingTokens ? "true" : "false");
+        if (g_verbose_tokens) {
+            LOGi("cached: %s, new_token_chars: `%s`, id: %d, thinking: %s",
+                 filtered_chars.c_str(), new_token_chars.c_str(), new_token_id,
+                 containsThinkingTokens ? "true" : "false");
+        }
         cached_token_chars.clear();
     } else {
         new_token = env->NewStringUTF("");
@@ -1632,9 +1647,12 @@ static bench_metrics run_bench_loop(llama_context * ctx) {
         return out;
     }
 
+    // ensure we are not in embeddings mode
+    llama_set_embeddings(ctx, false);
+
     // Keep the benchmark short to avoid long stalls on mobile
     const int pp = 128;  // prompt processing tokens
-    const int tg = 32;   // text generation steps
+    const int tg = 24;   // text generation steps (kept modest for stability)
     const int pl = 1;    // tokens generated per step
 
     // Use a dedicated local batch to avoid interference with UI batch
@@ -1643,7 +1661,16 @@ static bench_metrics run_bench_loop(llama_context * ctx) {
     int i, j;
 
     // Resolve a valid token to feed
-    const auto vocab = llama_model_get_vocab(llama_get_model(ctx));
+    const auto model = llama_get_model(ctx);
+    if (!model) {
+        LOGe("run_bench_loop: null model");
+        return out;
+    }
+    const auto vocab = llama_model_get_vocab(model);
+    if (!vocab) {
+        LOGe("run_bench_loop: null vocab");
+        return out;
+    }
     int token_feed = llama_vocab_bos(vocab);
     if (token_feed < 0) {
         // Fallback: tokenize a simple prompt and take the first token
@@ -1662,7 +1689,7 @@ static bench_metrics run_bench_loop(llama_context * ctx) {
     batch.logits[batch.n_tokens - 1] = true;
     llama_memory_clear(llama_get_memory(ctx), true);
     if (llama_decode(ctx, batch) != 0) {
-        LOGi("run_bench_loop: prompt decode failed");
+        LOGe("run_bench_loop: prompt decode failed");
         llama_batch_free(batch);
         return out;
     }
@@ -1677,7 +1704,7 @@ static bench_metrics run_bench_loop(llama_context * ctx) {
             common_batch_add(batch, token_feed, i, { j }, true);
         }
         if (llama_decode(ctx, batch) != 0) {
-            LOGi("run_bench_loop: tg decode failed at i=%d", i);
+            LOGe("run_bench_loop: tg decode failed at i=%d", i);
             break;
         }
     }
@@ -1717,44 +1744,69 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
 
     // Create a fresh CPU context for isolated benchmarking
     llama_context_params cpu_params = llama_context_default_params();
-    cpu_params.n_ctx = 8192; // avoid 3.5 GB KV and allocation failure on mobile
+    cpu_params.n_ctx = 2048; // keep KV modest for stability on mobile
     int n_threads = std::max(1, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2);
     cpu_params.n_threads = n_threads;
     cpu_params.n_threads_batch = n_threads;
+    cpu_params.kv_unified = true;
+    cpu_params.n_batch = 256;
+    cpu_params.n_ubatch = 64;
     struct llama_context * ctx_cpu_local = llama_init_from_model(model, cpu_params);
-    LOGi("Starting CPU bench loop");
-    bench_metrics cpu = run_bench_loop(ctx_cpu_local);
-    llama_free(ctx_cpu_local);
+    bench_metrics cpu{};
+    if (ctx_cpu_local) {
+        LOGi("Starting CPU bench loop");
+        cpu = run_bench_loop(ctx_cpu_local);
+        llama_free(ctx_cpu_local);
+    } else {
+        LOGe("CPU bench: failed to create context");
+        results["cpu"]["error"] = "CPU context init failed";
+        cpu.tokens_generated = 0; cpu.duration_ms = 0; cpu.tokens_per_sec = 0.0;
+    }
 
     results["cpu"]["tokens_generated"] = cpu.tokens_generated;
     results["cpu"]["duration_ms"]     = cpu.duration_ms;
     results["cpu"]["tokens_per_sec"]  = cpu.tokens_per_sec;
 
-    if (ggml_backend_reg_by_name("Vulkan") != nullptr || ggml_backend_reg_by_name("OpenCL") != nullptr) {
+    const bool has_vulkan = ggml_backend_reg_by_name("Vulkan") != nullptr;
+    const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
+    const bool skip_gpu_due_to_zero_offload = g_force_cpu_session || (g_offloaded_layers == 0 && g_total_layers > 0);
+    if (!skip_gpu_due_to_zero_offload && (has_vulkan || has_opencl)) {
         // If OpenCL specifically, prep env; Vulkan doesn't need env variables
-        if (ggml_backend_reg_by_name("OpenCL") != nullptr) {
+        if (has_opencl) {
             setenv("GGML_OPENCL_PLATFORM", "0", 1);
             setenv("GGML_OPENCL_DEVICE",   "0", 1);
         }
-        llama_backend_init();
-        LOGi("runComparativeBenchmark: GPU backend present; backend re-initialized for GPU context");
+        // Do not re-initialize backends during runtime to avoid crashing active contexts
 
         // create temporary context for GPU (keep memory modest for mobile drivers)
         llama_context_params ctx_params = llama_context_default_params();
-        ctx_params.n_ctx = 4096; // smaller ctx for GPU test stability on mobile
+        ctx_params.n_ctx = 2048; // align with app defaults for stability
         int n_threads2 = std::max(1, (int) sysconf(_SC_NPROCESSORS_ONLN) - 2);
         ctx_params.n_threads = n_threads2;
         ctx_params.n_threads_batch = n_threads2;
         // Enable GPU offload where supported
         ctx_params.offload_kqv = true;
         ctx_params.op_offload  = true;
-        ctx_params.n_batch = 512;
+        ctx_params.n_batch = 256;
         ctx_params.n_ubatch = 64;
         ctx_params.kv_unified = true;
 
         struct llama_context * ctx_gpu = llama_init_from_model(model, ctx_params);
-        LOGi("Starting GPU bench loop (backend=%s)", ggml_backend_reg_by_name("Vulkan") ? "Vulkan" : (ggml_backend_reg_by_name("OpenCL") ? "OpenCL" : "Unknown"));
-        bench_metrics gpu = run_bench_loop(ctx_gpu);
+        bench_metrics gpu{};
+        if (ctx_gpu) {
+            LOGi("Starting GPU bench loop (backend=%s)", ggml_backend_reg_by_name("Vulkan") ? "Vulkan" : (ggml_backend_reg_by_name("OpenCL") ? "OpenCL" : "Unknown"));
+            gpu = run_bench_loop(ctx_gpu);
+            llama_free(ctx_gpu);
+        } else {
+            LOGe("GPU bench: failed to create context");
+            results["gpu"]["available"] = false;
+            results["gpu"]["error"] = "GPU context init failed";
+            results["speedup"] = 0.0;
+            // restore env and exit early
+            unsetenv("GGML_OPENCL_PLATFORM");
+            unsetenv("GGML_OPENCL_DEVICE");
+            return env->NewStringUTF(results.dump().c_str());
+        }
 
         results["gpu"]["tokens_generated"] = gpu.tokens_generated;
         results["gpu"]["duration_ms"]     = gpu.duration_ms;
@@ -1762,16 +1814,19 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
         results["gpu"]["available"]       = true;
         results["speedup"] = cpu.tokens_per_sec > 0 ? gpu.tokens_per_sec / cpu.tokens_per_sec : 0.0;
 
-        llama_free(ctx_gpu);
-
         // restore CPU backend (clear OpenCL env if set)
         unsetenv("GGML_OPENCL_PLATFORM");
         unsetenv("GGML_OPENCL_DEVICE");
-        llama_backend_init();
+        // Do not touch backend init here; leave active runtime intact
     } else {
         results["gpu"]["available"] = false;
-        results["gpu"]["error"]     = "GPU backend not present";
-        LOGi("runComparativeBenchmark: GPU backend NOT present");
+        if (skip_gpu_due_to_zero_offload) {
+            results["gpu"]["error"] = "GPU benchmark skipped: zero offload or CPU-forced session";
+            LOGi("runComparativeBenchmark: skipping GPU bench due to zero offload/CPU session");
+        } else {
+            results["gpu"]["error"]     = "GPU backend not present";
+            LOGi("runComparativeBenchmark: GPU backend NOT present");
+        }
         results["speedup"]           = 0.0;
     }
 

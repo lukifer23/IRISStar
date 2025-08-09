@@ -188,6 +188,8 @@ class LLamaAndroid {
     private external fun quantizeNative(inputPath: String, outputPath: String, quantizeType: String): Int
 
     private external fun getMemoryUsageNative(context: Long): Long
+    private external fun set_verbose_tokens(enable: Boolean)
+    private external fun export_diag(): String
 
 
 
@@ -320,6 +322,15 @@ class LLamaAndroid {
             success = set_backend(backend)
         }
         return success
+    }
+
+    fun setVerboseTokens(enable: Boolean) {
+        if (!nativeLibraryLoaded) return
+        set_verbose_tokens(enable)
+    }
+
+    suspend fun exportDiag(): String {
+        return withContext(runLoop) { export_diag() }
     }
     
     suspend fun getMemoryUsage(): Long {

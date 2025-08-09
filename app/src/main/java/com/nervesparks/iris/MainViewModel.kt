@@ -1954,6 +1954,8 @@ class MainViewModel @Inject constructor(
                 Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
                 showAlert = false
                 applyThinkStripGate()
+                // Keep native token logs quiet in normal operation
+                try { llamaAndroid.setVerboseTokens(false) } catch (_: Exception) {}
                 // Fetch offload counts for display
                 try {
                     val counts = llamaAndroid.getOffloadCounts()
@@ -1962,6 +1964,11 @@ class MainViewModel @Inject constructor(
                         totalLayers = counts[1]
                         Log.d(tag, "Offload counts: ${counts[0]}/${counts[1]}")
                     }
+                } catch (_: Exception) {}
+                // Export runtime diagnostics
+                try {
+                    val diag = llamaAndroid.exportDiag()
+                    Log.d(tag, "Runtime diag: $diag")
                 } catch (_: Exception) {}
 
             } catch (exc: IllegalStateException) {
