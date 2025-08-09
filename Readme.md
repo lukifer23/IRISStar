@@ -68,8 +68,9 @@ How to enable and verify:
 
 Notes and recommendations for mobile GPUs:
 
-- Context length: 4k–8k recommended on GPU to avoid excessive memory pressure. CPU can use higher context lengths.
-- Internal batching: The app caps GPU contexts to `n_batch=512`, `n_ubatch=128` to improve latency and stability.
+- Chat defaults (mobile): `n_ctx=2048`, `n_batch=256`, `n_ubatch=64`. These values reduce KV memory and improve stability on mobile GPUs.
+- Generation cap: default `n_len=256` tokens per response.
+- GPU layers: default Auto (offload as many as fit). User can set exact layer count in Settings.
 - If you see `failed to find ggml_backend_init in libggml-vulkan.so` during startup but Vulkan is reported as present, it is benign; the backend registry still succeeds.
 
 Troubleshooting:

@@ -67,6 +67,8 @@ std::string cached_token_chars;
 static int  g_user_gpu_layers     = INT_MIN;
 static bool g_force_cpu_session   = false;    // set true when offload 0/N detected
 static bool g_strip_think_default = false;    // native stream filtering toggle
+static int  g_offloaded_layers    = -1;
+static int  g_total_layers        = -1;
 
 bool is_valid_utf8(const char * string) {
     if (!string) {
@@ -169,16 +171,23 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
 
 static void log_callback(ggml_log_level level, const char * fmt, void * /*data*/) {
     if (fmt == nullptr) return;
+    // Trap offload counts from llama.cpp logs
+    if (strstr(fmt, "offloaded ") && strstr(fmt, " layers to GPU")) {
+        int a = -1, b = -1;
+        if (sscanf(fmt, "load_tensors: offloaded %d/%d layers to GPU", &a, &b) == 2 ||
+            sscanf(fmt, "offloaded %d/%d layers to GPU", &a, &b) == 2) {
+            g_offloaded_layers = a;
+            g_total_layers     = b;
+            if (a == 0 && b > 0) {
+                g_force_cpu_session = true;
+                __android_log_print(ANDROID_LOG_INFO, TAG, "Detected zero GPU offload; forcing CPU context for this session");
+            }
+        }
+    }
     if (level == GGML_LOG_LEVEL_ERROR)     __android_log_print(ANDROID_LOG_ERROR, TAG, "%s", fmt);
     else if (level == GGML_LOG_LEVEL_INFO) __android_log_print(ANDROID_LOG_INFO,  TAG, "%s", fmt);
     else if (level == GGML_LOG_LEVEL_WARN) __android_log_print(ANDROID_LOG_WARN,  TAG, "%s", fmt);
     else                                   __android_log_print(ANDROID_LOG_DEFAULT, TAG, "%s", fmt);
-
-    // Detect zero-offload informational line from llama.cpp
-    if (strstr(fmt, "offloaded 0/") != nullptr) {
-        g_force_cpu_session = true;
-        __android_log_print(ANDROID_LOG_INFO, TAG, "Detected zero GPU offload; forcing CPU context for this session");
-    }
 }
 
 extern "C"
@@ -284,6 +293,17 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_set_1strip_1think(JNIEnv *, jobject, jboolean enable) {
     g_strip_think_default = enable == JNI_TRUE;
+}
+
+extern "C"
+JNIEXPORT jintArray JNICALL
+Java_android_llama_cpp_LLamaAndroid_get_1offload_1counts(JNIEnv * env, jobject) {
+    jint res[2];
+    res[0] = g_offloaded_layers;
+    res[1] = g_total_layers;
+    jintArray arr = env->NewIntArray(2);
+    env->SetIntArrayRegion(arr, 0, 2, res);
+    return arr;
 }
 
 extern "C"
@@ -760,6 +780,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     if (!la_int_var_inc) la_int_var_inc = env->GetMethodID(la_int_var, "inc", "()V");
 
     // sample the most likely token
+    const auto t_sample_start = ggml_time_us();
     const auto new_token_id = llama_sampler_sample(sampler, context, -1);
 
     const auto eot = llama_vocab_eot(llama_model_get_vocab(model));
@@ -807,8 +828,8 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     }
     
     // Strip think tags for non-reasoning models to avoid UI spam
-    bool strip_think = true; // conservative default; UI can still request full text via settings
-    if (strip_think) {
+    // strip only when default enabled (non-reasoning models)
+    if (g_strip_think_default) {
         // remove <think>...</think>
         std::string::size_type start = 0;
         while ((start = filtered_chars.find("<think>", start)) != std::string::npos) {
@@ -836,8 +857,16 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
 
     env->CallVoidMethod(intvar_ncur, la_int_var_inc);
 
+    const auto t_decode_start = ggml_time_us();
     if (llama_decode(context, *batch) != 0) {
         LOGe("llama_decode() returned null");
+    }
+    const auto t_decode_end = ggml_time_us();
+    const double decode_ms = double(t_decode_end - t_decode_start) / 1000.0;
+    if (decode_ms > 5000.0) { // 5s watchdog
+        LOGe("decode watchdog: %.2f ms > 5000 ms; clearing KV and aborting token", decode_ms);
+        llama_memory_clear(llama_get_memory(context), true);
+        return nullptr;
     }
 
     return new_token;

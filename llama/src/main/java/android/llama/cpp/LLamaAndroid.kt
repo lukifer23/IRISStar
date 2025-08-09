@@ -156,6 +156,7 @@ class LLamaAndroid {
     private external fun set_gpu_layers(ngl: Int)
     private external fun is_offload_zero(): Boolean
     private external fun set_strip_think(enable: Boolean)
+    private external fun get_offload_counts(): IntArray
 
     private external fun completion_init(
         context: Long,
@@ -231,7 +232,9 @@ class LLamaAndroid {
                     val modelEotStr = get_eot_str(model)
                     if (modelEotStr == "") throw IllegalStateException("eot_fetch() failed")
 
-                    Log.i(tag, "Loaded model $pathToModel")
+                    val counts = get_offload_counts()
+                    val offMsg = if (counts.size == 2) "offloaded ${counts[0]}/${counts[1]}" else "offload n/a"
+                    Log.i(tag, "Loaded model $pathToModel ($offMsg)")
                     threadLocalState.set(State.Loaded(model, context, batch, sampler, modelEotStr))
                     modelHandleCache = model
                     contextHandleCache = context
