@@ -12,6 +12,9 @@ private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
 private const val KEY_HUGGINGFACE_TOKEN = "huggingface_token"
 private const val KEY_HUGGINGFACE_USERNAME = "huggingface_username"
+// Web search (Google Programmable Search) keys
+private const val KEY_GOOGLE_API_KEY = "google_api_key"
+private const val KEY_GOOGLE_CSE_ID = "google_cse_id"
 
 // Model configuration keys
 private const val KEY_MODEL_TEMPERATURE = "model_temperature"
@@ -112,6 +115,23 @@ open class UserPreferencesRepository protected constructor(context: Context) {
     // Model configuration methods
     open fun setModelTemperature(temperature: Float) {
         sharedPreferences.edit().putFloat(KEY_MODEL_TEMPERATURE, temperature).apply()
+    }
+
+    // Google Programmable Search settings (stored encrypted)
+    open fun setGoogleApiKey(key: String) {
+        sharedPreferences.edit().putString(KEY_GOOGLE_API_KEY, key).apply()
+    }
+
+    open fun getGoogleApiKey(): String {
+        return sharedPreferences.getString(KEY_GOOGLE_API_KEY, "") ?: ""
+    }
+
+    open fun setGoogleCseId(id: String) {
+        sharedPreferences.edit().putString(KEY_GOOGLE_CSE_ID, id).apply()
+    }
+
+    open fun getGoogleCseId(): String {
+        return sharedPreferences.getString(KEY_GOOGLE_CSE_ID, "") ?: ""
     }
 
     open fun getModelTemperature(): Float {

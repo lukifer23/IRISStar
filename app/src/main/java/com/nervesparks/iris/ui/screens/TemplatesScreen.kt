@@ -137,18 +137,11 @@ fun TemplatesScreen(
             var name by remember(editingTemplate) { mutableStateOf(editingTemplate?.name ?: "") }
             var content by remember(editingTemplate) { mutableStateOf(editingTemplate?.content ?: "") }
 
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                containerColor = MaterialTheme.colorScheme.surface,
-                title = {
-                    Text(
-                        text = if (editingTemplate == null) "New Template" else "Edit Template",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                text = {
-                    Column {
+            androidx.compose.ui.window.Dialog(onDismissRequest = { showDialog = false }) {
+                com.nervesparks.iris.ui.theme.ThemedModalCard {
+                    Column(Modifier.padding(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding)) {
+                        Text(text = if (editingTemplate == null) "New Template" else "Edit Template", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.smallPadding))
                         ModernTextField(
                             value = name,
                             onValueChange = { name = it },
@@ -171,41 +164,32 @@ fun TemplatesScreen(
                                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
-                    }
-                },
-                confirmButton = {
-                    PrimaryButton(
-                        onClick = {
-                            if (name.isNotBlank()) {
-                                scope.launch {
-                                    val success = if (editingTemplate == null) {
-                                        viewModel.addTemplate(Template(name = name, content = content))
-                                    } else {
-                                        viewModel.editTemplate(editingTemplate!!.copy(name = name, content = content))
+                        Spacer(Modifier.height(com.nervesparks.iris.ui.theme.ComponentStyles.defaultPadding))
+                        Row(horizontalArrangement = Arrangement.spacedBy(com.nervesparks.iris.ui.theme.ComponentStyles.defaultSpacing)) {
+                            SecondaryButton(onClick = { showDialog = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                            PrimaryButton(onClick = {
+                                if (name.isNotBlank()) {
+                                    scope.launch {
+                                        val success = if (editingTemplate == null) {
+                                            viewModel.addTemplate(Template(name = name, content = content))
+                                        } else {
+                                            viewModel.editTemplate(editingTemplate!!.copy(name = name, content = content))
+                                        }
+                                        if (success) {
+                                            showDialog = false
+                                            snackbarHostState.showSnackbar(if (editingTemplate == null) "Template added" else "Template updated")
+                                        } else {
+                                            snackbarHostState.showSnackbar("Error saving template")
+                                        }
                                     }
-                                    if (success) {
-                                        showDialog = false
-                                        snackbarHostState.showSnackbar(
-                                            if (editingTemplate == null) "Template added" else "Template updated"
-                                        )
-                                    } else {
-                                        snackbarHostState.showSnackbar("Error saving template")
-                                    }
+                                } else {
+                                    scope.launch { snackbarHostState.showSnackbar("Name cannot be blank") }
                                 }
-                            } else {
-                                scope.launch { snackbarHostState.showSnackbar("Name cannot be blank") }
-                            }
+                            }, modifier = Modifier.weight(1f)) { Text("Save") }
                         }
-                    ) {
-                        Text("Save")
-                    }
-                },
-                dismissButton = {
-                    SecondaryButton(onClick = { showDialog = false }) {
-                        Text("Cancel")
                     }
                 }
-            )
+            }
         }
     }
 }

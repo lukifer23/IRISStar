@@ -29,6 +29,75 @@ class ModelRepositoryImpl @Inject constructor(
     private val tag = "ModelRepositoryImpl"
     private var currentLoadedModel: String = ""
     private var cachedModels: List<Map<String, String>>? = null
+    private fun curatedDefaultModels(): List<Map<String, String>> = listOf(
+        mapOf(
+            "name" to "deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/deepcogito_cogito-v1-preview-llama-3B-GGUF/resolve/main/deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf?download=true",
+            "destination" to "deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
+            "supportsReasoning" to "true",
+            "chatTemplate" to "COGITO"
+        ),
+        mapOf(
+            "name" to "LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/LGAI-EXAONE_EXAONE-Deep-2.4B-GGUF/resolve/main/LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf?download=true",
+            "destination" to "LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
+            "supportsReasoning" to "true",
+            "chatTemplate" to "EXAONE"
+        ),
+        mapOf(
+            "name" to "NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/NousResearch_DeepHermes-3-Llama-3-3B-Preview-GGUF/resolve/main/NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf?download=true",
+            "destination" to "NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
+            "supportsReasoning" to "false",
+            "chatTemplate" to "DEEPHERMES"
+        ),
+        mapOf(
+            "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
+            "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+            "supportsReasoning" to "false",
+            "chatTemplate" to "QWEN3"
+        ),
+        mapOf(
+            "name" to "Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Thinking-2507-GGUF/resolve/main/Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf?download=true",
+            "destination" to "Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
+            "supportsReasoning" to "true",
+            "chatTemplate" to "QWEN3"
+        ),
+        mapOf(
+            "name" to "google_gemma-3n-E2B-it-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/google_gemma-3n-E2B-it-GGUF/resolve/main/google_gemma-3n-E2B-it-Q4_K_M.gguf?download=true",
+            "destination" to "google_gemma-3n-E2B-it-Q4_K_M.gguf",
+            "supportsReasoning" to "false",
+            "supportsVision" to "true",
+            "chatTemplate" to "GEMMA"
+        ),
+        mapOf(
+            "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
+            "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
+            "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
+            "supportsReasoning" to "false"
+        ),
+        mapOf(
+            "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
+            "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
+            "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
+            "supportsReasoning" to "false"
+        ),
+        mapOf(
+            "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
+            "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
+            "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
+            "supportsReasoning" to "false"
+        ),
+        mapOf(
+            "name" to "NemoTron-1.5B-Q4_K_M.gguf",
+            "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
+            "destination" to "NemoTron-1.5B-Q4_K_M.gguf",
+            "supportsReasoning" to "true"
+        )
+    )
 
     private data class CachedModel(
         val name: String,
@@ -59,39 +128,8 @@ class ModelRepositoryImpl @Inject constructor(
                 }
             }
             
-            // Add default models to the list
-            val defaultModels = listOf(
-                mapOf(
-                    "name" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                    "source" to "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
-                    "destination" to "Llama-3.2-3B-Instruct-Q4_K_L.gguf",
-                    "supportsReasoning" to "false"
-                ),
-                mapOf(
-                    "name" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                    "source" to "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
-                    "destination" to "Llama-3.2-1B-Instruct-Q6_K_L.gguf",
-                    "supportsReasoning" to "false"
-                ),
-                mapOf(
-                    "name" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                    "source" to "https://huggingface.co/Crataco/stablelm-2-1_6b-chat-imatrix-GGUF/resolve/main/stablelm-2-1_6b-chat.Q4_K_M.imx.gguf?download=true",
-                    "destination" to "stablelm-2-1_6b-chat.Q4_K_M.imx.gguf",
-                    "supportsReasoning" to "false"
-                ),
-                mapOf(
-                    "name" to "NemoTron-1.5B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/nvidia_OpenReasoning-Nemotron-1.5B-GGUF/resolve/main/nvidia_OpenReasoning-Nemotron-1.5B-Q4_K_M.gguf?download=true",
-                    "destination" to "NemoTron-1.5B-Q4_K_M.gguf",
-                    "supportsReasoning" to "true"
-                ),
-                mapOf(
-                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
-                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "supportsReasoning" to "true"
-                )
-            )
+            // Curated default models (centralized)
+            val defaultModels = curatedDefaultModels()
             
             val allModels = defaultModels + mapped
             cachedModels = allModels
@@ -115,16 +153,8 @@ class ModelRepositoryImpl @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.e(tag, "Error refreshing model catalogue", e)
-            
-            // Return default models even if API fails
-            listOf(
-                mapOf(
-                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf?download=true",
-                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "supportsReasoning" to "true"
-                )
-            )
+            // Return curated default models even if API fails
+            curatedDefaultModels()
         }
     }
 

@@ -69,6 +69,9 @@ static bool g_force_cpu_session   = false;    // set true when offload 0/N detec
 static bool g_strip_think_default = false;    // native stream filtering toggle
 static int  g_offloaded_layers    = -1;
 static int  g_total_layers        = -1;
+static long long g_kv_size_bytes  = -1;       // last reported KV cache size
+static long long g_last_tokenize_us = -1;     // last prompt tokenize duration
+static int  g_dynamic_ubatch      = 64;       // adaptive prefill ubatch
 
 bool is_valid_utf8(const char * string) {
     if (!string) {
@@ -182,6 +185,13 @@ static void log_callback(ggml_log_level level, const char * fmt, void * /*data*/
                 g_force_cpu_session = true;
                 __android_log_print(ANDROID_LOG_INFO, TAG, "Detected zero GPU offload; forcing CPU context for this session");
             }
+        }
+    }
+    // Trap KV cache size from llama.cpp logs (MiB)
+    if (strstr(fmt, "llama_kv_cache_unified: size =") != nullptr) {
+        double mib = -1.0;
+        if (sscanf(fmt, "llama_kv_cache_unified: size = %lf MiB", &mib) == 1) {
+            if (mib > 0) g_kv_size_bytes = (long long)(mib * 1024.0 * 1024.0);
         }
     }
     if (level == GGML_LOG_LEVEL_ERROR)     __android_log_print(ANDROID_LOG_ERROR, TAG, "%s", fmt);
@@ -304,6 +314,12 @@ Java_android_llama_cpp_LLamaAndroid_get_1offload_1counts(JNIEnv * env, jobject) 
     jintArray arr = env->NewIntArray(2);
     env->SetIntArrayRegion(arr, 0, 2, res);
     return arr;
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_android_llama_cpp_LLamaAndroid_get_1kv_1size_1bytes(JNIEnv *, jobject) {
+    return (jlong) g_kv_size_bytes;
 }
 
 extern "C"
@@ -734,7 +750,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     // Reset KV and evaluate initial prompt in micro-batches with correct absolute positions
     llama_memory_clear(llama_get_memory(context), true);
-    const int ubatch = 64; // smaller prefill chunk to reduce spikes
+    const int ubatch = g_dynamic_ubatch; // adaptive prefill chunk
     int processed = 0;
     int n_cur = 0;
     while (processed < (int) tokens_list.size()) {
@@ -866,6 +882,8 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     if (decode_ms > 5000.0) { // 5s watchdog
         LOGe("decode watchdog: %.2f ms > 5000 ms; clearing KV and aborting token", decode_ms);
         llama_memory_clear(llama_get_memory(context), true);
+        // adaptively reduce ubatch to ease pressure next iterations
+        if (g_dynamic_ubatch > 16) g_dynamic_ubatch = g_dynamic_ubatch / 2;
         return nullptr;
     }
 

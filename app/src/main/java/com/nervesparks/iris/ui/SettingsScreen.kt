@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.data.UserPreferencesRepository
+import android.llama.cpp.LLamaAndroid
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.MemoryManager
@@ -393,11 +394,22 @@ fun SettingsScreen(
                 )
                 
                 // GPU Information
-                Text(
-                    text = "GPU Info: ${viewModel.gpuInfo}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)) {
+                    Text(
+                        text = "GPU Info: ${viewModel.gpuInfo}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val counts = remember(viewModel.currentBackend, viewModel.loadedModelName.value) {
+                        try { LLamaAndroid.instance().get_offload_counts() } catch (e: Exception) { intArrayOf() }
+                    }
+                    val offText = if (counts.size == 2 && counts[0] >= 0 && counts[1] > 0) "Offload: ${counts[0]}/${counts[1]}" else "Offload: n/a"
+                    Text(
+                        text = offText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 
                 // Adreno GPU Status
                 if (viewModel.isAdrenoGpu) {

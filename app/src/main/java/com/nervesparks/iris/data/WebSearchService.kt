@@ -8,17 +8,11 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.net.URLEncoder
 
-class WebSearchService {
-    private val client = OkHttpClient()
+class WebSearchService(
+    private val client: OkHttpClient,
+    private val userPreferencesRepository: UserPreferencesRepository
+) {
     private val tag = "WebSearchService"
-    
-    // Google Custom Search API credentials
-    // You'll need to get these from Google Cloud Console
-    private val GOOGLE_API_KEY = "AIzaSyAoFgCVdXg6lOsHVPVVd4en9I5m1WusmiY" // Replace with your API key
-    private val GOOGLE_CSE_ID = "017576662512468239146:omuauf_lfve" // Default search engine ID
-    
-    // Fallback to DuckDuckGo if Google API not configured
-    private val useGoogleAPI = GOOGLE_API_KEY != "YOUR_GOOGLE_API_KEY" && GOOGLE_CSE_ID != "YOUR_CUSTOM_SEARCH_ENGINE_ID"
 
     data class SearchResult(
         val title: String,
@@ -40,9 +34,10 @@ class WebSearchService {
     suspend fun searchWeb(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
             Log.d(tag, "Searching web for: $query")
-            
-            if (useGoogleAPI) {
-                performGoogleSearch(query)
+            val apiKey = userPreferencesRepository.getGoogleApiKey()
+            val cseId = userPreferencesRepository.getGoogleCseId()
+            if (apiKey.isNotBlank() && cseId.isNotBlank()) {
+                performGoogleSearch(query, apiKey, cseId)
             } else {
                 performDuckDuckGoSearch(query)
             }
@@ -58,11 +53,11 @@ class WebSearchService {
     /**
      * Perform search using Google Custom Search API
      */
-    private suspend fun performGoogleSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    private suspend fun performGoogleSearch(query: String, apiKey: String, cseId: String): SearchResponse = withContext(Dispatchers.IO) {
         Log.d(tag, "Using Google Custom Search API")
         
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
-        val url = "https://www.googleapis.com/customsearch/v1?key=$GOOGLE_API_KEY&cx=$GOOGLE_CSE_ID&q=$encodedQuery&num=5"
+        val url = "https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cseId&q=$encodedQuery&num=5"
         
         val request = Request.Builder()
             .url(url)

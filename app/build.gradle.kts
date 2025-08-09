@@ -157,4 +157,10 @@ configurations.all {
 
 kapt {
     correctErrorTypes = true
+    arguments {
+        // Export Room schemas for proper migrations
+        arg("room.schemaLocation", "$projectDir/schemas")
+        arg("room.incremental", "true")
+        arg("room.expandProjection", "true")
+    }
 }

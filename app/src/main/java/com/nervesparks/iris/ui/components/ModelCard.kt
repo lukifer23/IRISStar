@@ -162,40 +162,28 @@ fun ModelCard(
                             }
 
                             if (showDeleteConfirmation) {
-                                AlertDialog(
-                                    textContentColor = MaterialTheme.colorScheme.onSurface,
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.background(shape = ComponentStyles.smallCardShape, color = MaterialTheme.colorScheme.surface),
-                                    onDismissRequest = { showDeleteConfirmation = false },
-                                    title = { Text("Confirm Deletion", color = MaterialTheme.colorScheme.onSurface) },
-                                    text = { Text("Are you sure you want to delete this model? The app will restart after deletion.") },
-                                    confirmButton = {
-                                        ThemedWarningButton(
-                                            onClick = {
-                                                if (modelName == viewModel.loadedModelName.value) {
-                                                    viewModel.setDefaultModelName("")
-                                                }
-                                                coroutineScope.launch { viewModel.unload() }
-                                                File(extFilesDir, modelName).delete()
-                                                viewModel.showModal = true
-                                                if (modelName == viewModel.loadedModelName.value) {
-                                                    viewModel.loadedModelName.value = ""
-                                                }
-                                                isDeleted = true
-                                                viewModel.refresh = true
+                                androidx.compose.ui.window.Dialog(onDismissRequest = { showDeleteConfirmation = false }) {
+                                    com.nervesparks.iris.ui.theme.ThemedModalCard {
+                                        Column(Modifier.padding(ComponentStyles.defaultPadding)) {
+                                            Text("Confirm Deletion", style = MaterialTheme.typography.titleMedium)
+                                            Spacer(Modifier.height(ComponentStyles.smallPadding))
+                                            Text("Are you sure you want to delete this model? The app will restart after deletion.")
+                                            Spacer(Modifier.height(ComponentStyles.defaultPadding))
+                                            Row(horizontalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)) {
+                                                SecondaryButton(onClick = { showDeleteConfirmation = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                                                ThemedWarningButton(onClick = {
+                                                    if (modelName == viewModel.loadedModelName.value) { viewModel.setDefaultModelName("") }
+                                                    coroutineScope.launch { viewModel.unload() }
+                                                    File(extFilesDir, modelName).delete()
+                                                    viewModel.showModal = true
+                                                    if (modelName == viewModel.loadedModelName.value) { viewModel.loadedModelName.value = "" }
+                                                    isDeleted = true
+                                                    viewModel.refresh = true
+                                                }, modifier = Modifier.weight(1f)) { Text("Delete") }
                                             }
-                                        ) {
-                                            Text("Delete")
-                                        }
-                                    },
-                                    dismissButton = {
-                                        SecondaryButton(
-                                            onClick = { showDeleteConfirmation = false }
-                                        ) {
-                                            Text("Cancel")
                                         }
                                     }
-                                )
+                                }
                             }
                         }
                     }

@@ -155,8 +155,9 @@ class LLamaAndroid {
     private external fun set_backend_search_dir(dir: String)
     private external fun set_gpu_layers(ngl: Int)
     private external fun is_offload_zero(): Boolean
-    private external fun set_strip_think(enable: Boolean)
-    private external fun get_offload_counts(): IntArray
+    external fun set_strip_think(enable: Boolean)
+    external fun get_offload_counts(): IntArray
+    external fun get_kv_size_bytes(): Long
 
     private external fun completion_init(
         context: Long,

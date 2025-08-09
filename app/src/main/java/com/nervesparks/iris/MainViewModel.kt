@@ -61,6 +61,8 @@ class MainViewModel @Inject constructor(
     private val modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
     private val documentRepository: DocumentRepository,
+    private val webSearchService: WebSearchService,
+    private val androidSearchService: AndroidSearchService,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -113,6 +115,15 @@ class MainViewModel @Inject constructor(
     // Thinking token settings - moved to top to ensure initialization
     var showThinkingTokens by mutableStateOf(true)
     var thinkingTokenStyle by mutableStateOf("COLLAPSIBLE") // COLLAPSIBLE, ALWAYS_VISIBLE, HIDDEN
+    // Ensure native stripping respects UI + model capability
+    private fun applyThinkStripGate() {
+        try {
+            LLamaAndroid.instance().let {
+                val enableStrip = !(supportsReasoning && showThinkingTokens)
+                it.set_strip_think(enableStrip)
+            }
+        } catch (_: Exception) {}
+    }
 
     // Flag indicating if the currently loaded model supports reasoning tokens
     var supportsReasoning by mutableStateOf(false)
@@ -186,61 +197,13 @@ class MainViewModel @Inject constructor(
 
 
         viewModelScope.launch {
-            // Always start with our curated default models
-            val defaultModels = listOf(
-                mapOf(
-                    "name" to "deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/deepcogito_cogito-v1-preview-llama-3B-GGUF/resolve/main/deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
-                    "destination" to "deepcogito_cogito-v1-preview-llama-3B-Q4_K_M.gguf",
-                    "supportsReasoning" to "true",
-                    "chatTemplate" to "COGITO"
-                ),
-                mapOf(
-                    "name" to "LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/LGAI-EXAONE_EXAONE-Deep-2.4B-GGUF/resolve/main/LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
-                    "destination" to "LGAI-EXAONE_EXAONE-Deep-2.4B-Q4_K_M.gguf",
-                    "supportsReasoning" to "true",
-                    "chatTemplate" to "EXAONE"
-                ),
-                mapOf(
-                    "name" to "NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/NousResearch_DeepHermes-3-Llama-3-3B-Preview-GGUF/resolve/main/NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
-                    "destination" to "NousResearch_DeepHermes-3-Llama-3-3B-Preview-Q4_K_M.gguf",
-                    "supportsReasoning" to "false",
-                    "chatTemplate" to "DEEPHERMES"
-                ),
-                mapOf(
-                    "name" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "destination" to "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
-                    "supportsReasoning" to "false",
-                    "chatTemplate" to "QWEN3"
-                ),
-                mapOf(
-                    "name" to "Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Thinking-2507-GGUF/resolve/main/Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
-                    "destination" to "Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf",
-                    "supportsReasoning" to "true",
-                    "chatTemplate" to "QWEN3"
-                ),
-                mapOf(
-                    "name" to "google_gemma-3n-E2B-it-Q4_K_M.gguf",
-                    "source" to "https://huggingface.co/bartowski/google_gemma-3n-E2B-it-GGUF/resolve/main/google_gemma-3n-E2B-it-Q4_K_M.gguf",
-                    "destination" to "google_gemma-3n-E2B-it-Q4_K_M.gguf",
-                    "supportsReasoning" to "false",
-                    "supportsVision" to "true",
-                    "chatTemplate" to "GEMMA"
-                )
-            )
-            
             try {
-                // Try to get additional models from API, but always include our defaults
-                val apiModels = modelRepository.refreshAvailableModels()
-                allModels = defaultModels + apiModels
-                Log.d(tag, "Loaded ${defaultModels.size} default models + ${apiModels.size} API models")
+                val models = modelRepository.refreshAvailableModels()
+                allModels = models
+                Log.d(tag, "Loaded ${models.size} models from repository (defaults + API)")
             } catch (e: Exception) {
-                Log.e(tag, "Error refreshing available models from API, using defaults only", e)
-                allModels = defaultModels
+                Log.e(tag, "Error refreshing available models from API; repository will provide curated defaults", e)
+                allModels = emptyList()
             }
         }
     }
@@ -309,9 +272,7 @@ class MainViewModel @Inject constructor(
     var showBackendSelection by mutableStateOf(false)
     var backendError by mutableStateOf<String?>(null)
 
-    // Web search service
-    private val webSearchService = WebSearchService()
-    private val androidSearchService = AndroidSearchService(application)
+    // Web search services are injected via DI
 
     fun performWebSearch(query: String, summarize: Boolean = true) {
         // Add the search query as a user message
@@ -1197,6 +1158,7 @@ class MainViewModel @Inject constructor(
     fun updateShowThinkingTokens(show: Boolean) {
         showThinkingTokens = show
         userPreferencesRepository.setShowThinkingTokens(show)
+        applyThinkStripGate()
     }
 
     fun updateThinkingTokenStyle(style: String) {
@@ -1991,6 +1953,7 @@ class MainViewModel @Inject constructor(
                 
                 Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
                 showAlert = false
+                applyThinkStripGate()
                 // Fetch offload counts for display
                 try {
                     val counts = llamaAndroid.getOffloadCounts()

@@ -2,6 +2,9 @@ package com.nervesparks.iris.di
 
 import android.content.Context
 import com.nervesparks.iris.data.HuggingFaceApiService
+import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.data.WebSearchService
+import com.nervesparks.iris.data.AndroidSearchService
 import com.nervesparks.iris.data.network.CacheControlInterceptor
 import com.nervesparks.iris.data.network.NetworkConfig
 import com.nervesparks.iris.data.network.RequestDeduplicationInterceptor
@@ -78,4 +81,17 @@ object NetworkModule {
     fun provideHuggingFaceApiService(retrofit: Retrofit): HuggingFaceApiService {
         return retrofit.create(HuggingFaceApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideWebSearchService(
+        client: OkHttpClient,
+        userPreferencesRepository: UserPreferencesRepository
+    ): WebSearchService = WebSearchService(client, userPreferencesRepository)
+
+    @Provides
+    @Singleton
+    fun provideAndroidSearchService(
+        @ApplicationContext context: Context
+    ): AndroidSearchService = AndroidSearchService(context)
 }
