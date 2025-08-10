@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class LLamaAndroid {
     private val tag: String? = this::class.simpleName
-    private var stopGeneration: Boolean = false
+    @Volatile private var stopGeneration: Boolean = false
     private var nativeLibraryLoaded: Boolean = false
     //private var model_eot_str: String = ""
 
@@ -349,33 +349,41 @@ class LLamaAndroid {
     suspend fun send(message: String): Flow<String> = flow {
         stopGeneration = false
         _isSending.value = true
+
+        if (!ensureLibraryLoaded()) {
+            Log.e(tag, "Native library not loaded")
+            emit("Error: failed to load native library")
+            _isSending.value = false
+            return@flow
+        }
+
         when (val state = threadLocalState.get()) {
             is State.Loaded -> {
-                val ncur = IntVar(completion_init(state.context, state.batch, message, nlen))
-                var end_token_store = ""
-                var chat_len = 0
-                while (chat_len <= nlen && ncur.value < context_size && !stopGeneration) {
-                    _isSending.value = true
-                    val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
-                    chat_len += 1
-                    if (str == "```" || str == "``") {
-                        _isMarked.value = !_isMarked.value
-                    }
-                    if (str == null) {
-                        _isSending.value = false
-                        _isCompleteEOT.value = true
-                        break
-                    }
-                    end_token_store = end_token_store+str
-                    if((end_token_store.length > state.modelEotStr.length) and end_token_store.contains(state.modelEotStr)){
-                        _isSending.value = false
-                        _isCompleteEOT.value = false
-                        break
-                    }
-                    if((end_token_store.length/2) > state.modelEotStr.length ){
-                        end_token_store = end_token_store.slice(end_token_store.length/2..end_token_store.length-1)
-                    }
-
+                try {
+                    val ncur = IntVar(completion_init(state.context, state.batch, message, nlen))
+                    var end_token_store = ""
+                    var chat_len = 0
+                    while (chat_len <= nlen && ncur.value < context_size && !stopGeneration) {
+                        _isSending.value = true
+                        val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
+                        chat_len += 1
+                        if (str == "```" || str == "``") {
+                            _isMarked.value = !_isMarked.value
+                        }
+                        if (str == null) {
+                            _isSending.value = false
+                            _isCompleteEOT.value = true
+                            break
+                        }
+                        end_token_store = end_token_store + str
+                        if ((end_token_store.length > state.modelEotStr.length) and end_token_store.contains(state.modelEotStr)) {
+                            _isSending.value = false
+                            _isCompleteEOT.value = false
+                            break
+                        }
+                        if ((end_token_store.length / 2) > state.modelEotStr.length) {
+                            end_token_store = end_token_store.slice(end_token_store.length / 2..end_token_store.length - 1)
+                        }
 
 //                    if (str == "</s>" || str == " User" || str== " user" || str == "user" || str == "<|im_end|>" || str == "\n" +
 //                        "                                                                                                    "
@@ -385,18 +393,25 @@ class LLamaAndroid {
 //                        break
 //
 //                    }
-                    if (stopGeneration) {
-                        break
+                        if (stopGeneration) {
+                            break
+                        }
+                        emit(str)
                     }
-                    emit(str)
+                } catch (e: Exception) {
+                    Log.e(tag, "Error during send: ${e.message}")
+                    Log.e(tag, "Stack trace: ${e.stackTraceToString()}")
+                    _isSending.value = false
+                    _isCompleteEOT.value = false
+                } finally {
+                    kv_cache_clear(state.context)
+                    _isSending.value = false
                 }
-                kv_cache_clear(state.context)
             }
             else -> {
                 _isSending.value = false
             }
         }
-        _isSending.value = false
     }.flowOn(runLoop)
 
 
