@@ -362,11 +362,16 @@ class LLamaAndroid {
                         _isMarked.value = !_isMarked.value
                     }
                     if (str == null) {
+                        Log.w(tag, "Skipping null token from native layer")
                         _isSending.value = false
                         _isCompleteEOT.value = true
                         break
                     }
-                    end_token_store = end_token_store+str
+                    if (str.isEmpty()) {
+                        Log.w(tag, "Skipping empty token from native layer")
+                        continue
+                    }
+                    end_token_store = end_token_store + str
                     if((end_token_store.length > state.modelEotStr.length) and end_token_store.contains(state.modelEotStr)){
                         _isSending.value = false
                         _isCompleteEOT.value = false

@@ -880,7 +880,9 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         }
         cached_token_chars.clear();
     } else {
-        new_token = env->NewStringUTF("");
+        LOGw("Skipping invalid UTF-8 token: `%s` (id: %d)",
+             filtered_chars.c_str(), new_token_id);
+        return nullptr;
     }
 
     common_batch_clear(*batch);
