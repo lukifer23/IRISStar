@@ -116,6 +116,20 @@ bool is_valid_utf8(const char * string) {
 std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
     json jsonArray = json::array();
 
+    jclass mapClass = env->FindClass("java/util/Map");
+    if (!mapClass) {
+        LOGe("Error: Could not find java/util/Map class");
+        return jsonArray.dump();
+    }
+
+    jmethodID getMethod = env->GetMethodID(mapClass, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jmethodID keySetMethod = env->GetMethodID(mapClass, "keySet", "()Ljava/util/Set;");
+    if (!getMethod || !keySetMethod) {
+        LOGe("Error: Could not find Map methods");
+        env->DeleteLocalRef(mapClass);
+        return jsonArray.dump();
+    }
+
     jsize arrayLength = env->GetArrayLength(allMessages);
     for (jsize i = 0; i < arrayLength; ++i) {
         // Get the individual message from the array
@@ -126,18 +140,8 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
         }
 
         // Check if the object is a Map
-        jclass mapClass = env->FindClass("java/util/Map");
         if (!env->IsInstanceOf(messageObj, mapClass)) {
             LOGe("Error: Object is not a Map at index %d", i);
-            env->DeleteLocalRef(messageObj);
-            continue;
-        }
-
-        // Get Map methods
-        jmethodID getMethod = env->GetMethodID(mapClass, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
-        jmethodID keySetMethod = env->GetMethodID(mapClass, "keySet", "()Ljava/util/Set;");
-        if (!getMethod || !keySetMethod) {
-            LOGe("Error: Could not find Map methods");
             env->DeleteLocalRef(messageObj);
             continue;
         }
@@ -153,6 +157,7 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
             jsonMsg["role"] = roleStr;
             env->ReleaseStringUTFChars((jstring)roleObj, roleStr);
         }
+        env->DeleteLocalRef(roleKey);
 
         // Get content
         jstring contentKey = env->NewStringUTF("content");
@@ -162,6 +167,7 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
             jsonMsg["content"] = contentStr;
             env->ReleaseStringUTFChars((jstring)contentObj, contentStr);
         }
+        env->DeleteLocalRef(contentKey);
 
         // Add to array if both role and content were successfully extracted
         if (!jsonMsg.empty()) {
@@ -172,6 +178,7 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
         env->DeleteLocalRef(messageObj);
     }
 
+    env->DeleteLocalRef(mapClass);
     return jsonArray.dump();
 }
 
