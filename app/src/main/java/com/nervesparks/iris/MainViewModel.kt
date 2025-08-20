@@ -48,7 +48,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
-import com.nervesparks.iris.data.WebSearchService.SearchResult
+import com.nervesparks.iris.data.search.SearchResult
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions

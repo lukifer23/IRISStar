@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import com.nervesparks.iris.data.search.SearchResponse
+import com.nervesparks.iris.data.search.SearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
@@ -14,20 +16,6 @@ import java.net.URLEncoder
  */
 class AndroidSearchService(private val context: Context) {
     private val tag = "AndroidSearchService"
-
-    data class SearchResult(
-        val title: String,
-        val snippet: String,
-        val url: String,
-        val source: String
-    )
-
-    data class SearchResponse(
-        val success: Boolean,
-        val results: List<SearchResult>? = null,
-        val error: String? = null,
-        val query: String = ""
-    )
 
     /**
      * Launch search in user's default browser
