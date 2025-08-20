@@ -8,6 +8,7 @@
 #include <chrono>
 #include <algorithm>
 #include <cstdlib>
+#include <mutex>
 #include "llama.h"
 #include "ggml-backend.h"
 #include "common.h"
@@ -75,6 +76,8 @@ static long long g_last_tokenize_us = -1;     // last prompt tokenize duration
 static int  g_dynamic_ubatch      = 64;       // adaptive prefill ubatch
 static std::atomic<int> g_active_contexts{0}; // number of live contexts
 static bool g_verbose_tokens = false;         // verbose token logging gate
+static std::mutex g_backend_mutex;            // guard backend switches
+static std::string g_backend_selection = "cpu"; // requested backend
 
 bool is_valid_utf8(const char * string) {
     if (!string) {
@@ -644,57 +647,55 @@ JNIEXPORT jboolean JNICALL
 Java_android_llama_cpp_LLamaAndroid_set_1backend(JNIEnv *env, jobject, jstring jbackend) {
     const char *backend = env->GetStringUTFChars(jbackend, 0);
     bool success = true;
+    {
+        std::lock_guard<std::mutex> lock(g_backend_mutex);
 
-    if (strcmp(backend, "opencl") == 0) {
-        setenv("GGML_OPENCL_PLATFORM", "0", 1);
-        setenv("GGML_OPENCL_DEVICE", "0", 1);
-        LOGi("Set backend to OpenCL");
-    } else if (strcmp(backend, "vulkan") == 0) {
-        // Proactively load system Vulkan and the ggml Vulkan backend if present
-        void *vk1 = dlopen("/system/lib64/libvulkan.so", RTLD_NOW | RTLD_GLOBAL);
-        void *vk2 = vk1 ? vk1 : dlopen("/vendor/lib64/libvulkan.so", RTLD_NOW | RTLD_GLOBAL);
-        if (!vk2) {
-            LOGi("Vulkan loader not preloaded: %s", dlerror());
+        if (g_active_contexts.load(std::memory_order_relaxed) != 0) {
+            LOGi("set_backend: contexts active (%d); refusing backend switch", g_active_contexts.load());
+            success = false;
         } else {
-            LOGi("Vulkan loader preloaded");
-        }
-        // Try loading backend plugins again to ensure Vulkan is registered
-        ggml_backend_load_all();
-        // Try typical backend sonames and the Android packaged path
-        ggml_backend_load("libggml-vulkan.so");
-        ggml_backend_load("libggml-vulkan-android.so");
-        LOGi("Set backend to Vulkan (requested)");
-    } else if (strcmp(backend, "cpu") == 0) {
-        unsetenv("GGML_OPENCL_PLATFORM");
-        unsetenv("GGML_OPENCL_DEVICE");
-        LOGi("Set backend to CPU");
-    }
+            if (strcmp(backend, "opencl") == 0) {
+                g_backend_selection = "opencl";
+                LOGi("Set backend to OpenCL (requires env config at startup)");
+            } else if (strcmp(backend, "vulkan") == 0) {
+                g_backend_selection = "vulkan";
+                // Proactively load system Vulkan and the ggml Vulkan backend if present
+                void *vk1 = dlopen("/system/lib64/libvulkan.so", RTLD_NOW | RTLD_GLOBAL);
+                void *vk2 = vk1 ? vk1 : dlopen("/vendor/lib64/libvulkan.so", RTLD_NOW | RTLD_GLOBAL);
+                if (!vk2) {
+                    LOGi("Vulkan loader not preloaded: %s", dlerror());
+                } else {
+                    LOGi("Vulkan loader preloaded");
+                }
+                // Try loading backend plugins again to ensure Vulkan is registered
+                ggml_backend_load_all();
+                // Try typical backend sonames and the Android packaged path
+                ggml_backend_load("libggml-vulkan.so");
+                ggml_backend_load("libggml-vulkan-android.so");
+                LOGi("Set backend to Vulkan (requested)");
+            } else {
+                g_backend_selection = "cpu";
+                LOGi("Set backend to CPU");
+            }
 
-    // Only switch backends when safe: no active contexts
-    if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
-        llama_backend_free();
-        llama_backend_init();
-    } else {
-        LOGi("set_backend: contexts active (%d); deferring backend switch to CPU fallback semantics", g_active_contexts.load());
-    }
-
-    if (strcmp(backend, "opencl") == 0 && !llama_supports_gpu_offload()) {
-        LOGe("OpenCL init failed, falling back to CPU");
-        unsetenv("GGML_OPENCL_PLATFORM");
-        unsetenv("GGML_OPENCL_DEVICE");
-        if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
             llama_backend_free();
             llama_backend_init();
-        }
-        success = false;
-    } else if (strcmp(backend, "vulkan") == 0) {
-        if (ggml_backend_reg_by_name("Vulkan") == nullptr) {
-            LOGe("Vulkan backend not registered after init");
-            if (g_active_contexts.load(std::memory_order_relaxed) == 0) {
+
+            if (g_backend_selection == "opencl" && !llama_supports_gpu_offload()) {
+                LOGe("OpenCL init failed, falling back to CPU");
+                g_backend_selection = "cpu";
                 llama_backend_free();
                 llama_backend_init();
+                success = false;
+            } else if (g_backend_selection == "vulkan") {
+                if (ggml_backend_reg_by_name("Vulkan") == nullptr) {
+                    LOGe("Vulkan backend not registered after init");
+                    g_backend_selection = "cpu";
+                    llama_backend_free();
+                    llama_backend_init();
+                    success = false;
+                }
             }
-            success = false;
         }
     }
 
@@ -1771,11 +1772,6 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
     const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
     const bool skip_gpu_due_to_zero_offload = g_force_cpu_session || (g_offloaded_layers == 0 && g_total_layers > 0);
     if (!skip_gpu_due_to_zero_offload && (has_vulkan || has_opencl)) {
-        // If OpenCL specifically, prep env; Vulkan doesn't need env variables
-        if (has_opencl) {
-            setenv("GGML_OPENCL_PLATFORM", "0", 1);
-            setenv("GGML_OPENCL_DEVICE",   "0", 1);
-        }
         // Do not re-initialize backends during runtime to avoid crashing active contexts
 
         // create temporary context for GPU (keep memory modest for mobile drivers)
@@ -1802,9 +1798,6 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
             results["gpu"]["available"] = false;
             results["gpu"]["error"] = "GPU context init failed";
             results["speedup"] = 0.0;
-            // restore env and exit early
-            unsetenv("GGML_OPENCL_PLATFORM");
-            unsetenv("GGML_OPENCL_DEVICE");
             return env->NewStringUTF(results.dump().c_str());
         }
 
@@ -1814,9 +1807,6 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
         results["gpu"]["available"]       = true;
         results["speedup"] = cpu.tokens_per_sec > 0 ? gpu.tokens_per_sec / cpu.tokens_per_sec : 0.0;
 
-        // restore CPU backend (clear OpenCL env if set)
-        unsetenv("GGML_OPENCL_PLATFORM");
-        unsetenv("GGML_OPENCL_DEVICE");
         // Do not touch backend init here; leave active runtime intact
     } else {
         results["gpu"]["available"] = false;
