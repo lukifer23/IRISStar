@@ -138,8 +138,8 @@ dependencies {
         exclude(group = "com.google.guava", module = "guava")
     }
 
-    // Security Crypto for encrypted shared preferences
-    implementation("androidx.security:security-crypto:1.0.0")
+    // Security Crypto for encrypted storage
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // WorkManager for background tasks
     implementation("androidx.work:work-runtime-ktx:2.9.0") {
