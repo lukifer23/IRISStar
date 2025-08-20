@@ -752,6 +752,10 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     if (n_kv_req > n_ctx) {
         LOGe("error: n_kv_req > n_ctx, the required KV cache size is not big enough");
+        env->ReleaseStringUTFChars(jtext, text);
+        env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"),
+                      "n_kv_req > n_ctx: reduce prompt length or increase context");
+        return -1;
     }
 
     // Suppress per-token logging to avoid UI jank and high latency

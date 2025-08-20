@@ -360,7 +360,13 @@ class LLamaAndroid {
         when (val state = threadLocalState.get()) {
             is State.Loaded -> {
                 try {
-                    val ncur = IntVar(completion_init(state.context, state.batch, message, nlen))
+                    val initVal = completion_init(state.context, state.batch, message, nlen)
+                    if (initVal < 0) {
+                        emit("Error: prompt exceeds context window. Reduce prompt length or increase context.")
+                        _isSending.value = false
+                        return@flow
+                    }
+                    val ncur = IntVar(initVal)
                     var end_token_store = ""
                     var chat_len = 0
                     while (chat_len <= nlen && ncur.value < context_size && !stopGeneration) {
@@ -401,6 +407,7 @@ class LLamaAndroid {
                 } catch (e: Exception) {
                     Log.e(tag, "Error during send: ${e.message}")
                     Log.e(tag, "Stack trace: ${e.stackTraceToString()}")
+                    emit("Error: ${e.message}. Reduce prompt length or increase context.")
                     _isSending.value = false
                     _isCompleteEOT.value = false
                 } finally {
@@ -421,7 +428,13 @@ class LLamaAndroid {
             withTimeout(30.seconds) { // Set timeout to 2 minutes
                 when (val state = threadLocalState.get()) {
                     is State.Loaded -> {
-                        val ncur = IntVar(completion_init(state.context, state.batch, "Write an article on global warming in 1000 words", nlen))
+                        val initVal = completion_init(state.context, state.batch, "Write an article on global warming in 1000 words", nlen)
+                        if (initVal < 0) {
+                            emit("Error: prompt exceeds context window. Reduce prompt length or increase context.")
+                            _isSending.value = false
+                            return@flow
+                        }
+                        val ncur = IntVar(initVal)
                         while (ncur.value <= nlen) {
                             val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
                             if (str == null) {
@@ -445,6 +458,8 @@ class LLamaAndroid {
             // Handle timeout or any other exceptions if necessary
             if (e is kotlinx.coroutines.TimeoutCancellationException) {
                 println("Benchmark timed out after 2 minutes.")
+            } else {
+                emit("Error: ${e.message}. Reduce prompt length or increase context.")
             }
         } finally {
             _isSending.value = false
