@@ -16,14 +16,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nervesparks.iris.data.WebSearchService
+import com.nervesparks.iris.data.search.SearchResult
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.SemanticColors
 
 @Composable
 fun SearchResultCard(
-    result: WebSearchService.SearchResult,
-    onResultClick: (WebSearchService.SearchResult) -> Unit = {}
+    result: SearchResult,
+    onResultClick: (SearchResult) -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "search_result")
     
@@ -115,9 +115,9 @@ fun SearchResultCard(
 
 @Composable
 fun SearchResultsSection(
-    results: List<WebSearchService.SearchResult>,
+    results: List<SearchResult>,
     query: String,
-    onResultClick: (WebSearchService.SearchResult) -> Unit = {}
+    onResultClick: (SearchResult) -> Unit = {}
 ) {
     val context = LocalContext.current
     

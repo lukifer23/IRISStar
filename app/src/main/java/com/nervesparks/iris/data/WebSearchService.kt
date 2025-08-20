@@ -1,6 +1,8 @@
 package com.nervesparks.iris.data
 
 import android.util.Log
+import com.nervesparks.iris.data.search.SearchResponse
+import com.nervesparks.iris.data.search.SearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -13,20 +15,6 @@ class WebSearchService(
     private val userPreferencesRepository: UserPreferencesRepository
 ) {
     private val tag = "WebSearchService"
-
-    data class SearchResult(
-        val title: String,
-        val snippet: String,
-        val url: String,
-        val source: String
-    )
-
-    data class SearchResponse(
-        val success: Boolean,
-        val results: List<SearchResult>? = null,
-        val error: String? = null,
-        val query: String = ""
-    )
 
     /**
      * Perform a web search using Google Custom Search API or fallback to DuckDuckGo
