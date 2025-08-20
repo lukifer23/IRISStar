@@ -57,6 +57,7 @@ static T json_value(const json & body, const std::string & key, const T & defaul
 #include <dlfcn.h>
 #include <climits>
 #include <atomic>
+#include <mutex>
 
 jclass la_int_var;
 jmethodID la_int_var_value;
@@ -64,17 +65,19 @@ jmethodID la_int_var_inc;
 
 std::string cached_token_chars;
 
-// user-configured GPU layer offload. INT_MIN == unspecified (auto)
-static int  g_user_gpu_layers     = INT_MIN;
-static bool g_force_cpu_session   = false;    // set true when offload 0/N detected
-static bool g_strip_think_default = false;    // native stream filtering toggle
-static int  g_offloaded_layers    = -1;
-static int  g_total_layers        = -1;
-static long long g_kv_size_bytes  = -1;       // last reported KV cache size
-static long long g_last_tokenize_us = -1;     // last prompt tokenize duration
-static int  g_dynamic_ubatch      = 64;       // adaptive prefill ubatch
+struct gpu_globals {
+    std::mutex mutex;
+    int  user_gpu_layers     = INT_MIN; // user-configured GPU layer offload. INT_MIN == unspecified (auto)
+    bool force_cpu_session   = false;   // set true when offload 0/N detected
+    int  offloaded_layers    = -1;
+    int  total_layers        = -1;
+    long long kv_size_bytes  = -1;      // last reported KV cache size
+    long long last_tokenize_us = -1;    // last prompt tokenize duration
+    int  dynamic_ubatch      = 64;      // adaptive prefill ubatch
+};
+
+static gpu_globals g_gpu;
 static std::atomic<int> g_active_contexts{0}; // number of live contexts
-static bool g_verbose_tokens = false;         // verbose token logging gate
 
 bool is_valid_utf8(const char * string) {
     if (!string) {
@@ -182,10 +185,17 @@ static void log_callback(ggml_log_level level, const char * fmt, void * /*data*/
         int a = -1, b = -1;
         if (sscanf(fmt, "load_tensors: offloaded %d/%d layers to GPU", &a, &b) == 2 ||
             sscanf(fmt, "offloaded %d/%d layers to GPU", &a, &b) == 2) {
-            g_offloaded_layers = a;
-            g_total_layers     = b;
-            if (a == 0 && b > 0) {
-                g_force_cpu_session = true;
+            bool log_zero = false;
+            {
+                std::lock_guard<std::mutex> lock(g_gpu.mutex);
+                g_gpu.offloaded_layers = a;
+                g_gpu.total_layers     = b;
+                if (a == 0 && b > 0) {
+                    g_gpu.force_cpu_session = true;
+                    log_zero = true;
+                }
+            }
+            if (log_zero) {
                 __android_log_print(ANDROID_LOG_INFO, TAG, "Detected zero GPU offload; forcing CPU context for this session");
             }
         }
@@ -194,7 +204,10 @@ static void log_callback(ggml_log_level level, const char * fmt, void * /*data*/
     if (strstr(fmt, "llama_kv_cache_unified: size =") != nullptr) {
         double mib = -1.0;
         if (sscanf(fmt, "llama_kv_cache_unified: size = %lf MiB", &mib) == 1) {
-            if (mib > 0) g_kv_size_bytes = (long long)(mib * 1024.0 * 1024.0);
+            if (mib > 0) {
+                std::lock_guard<std::mutex> lock(g_gpu.mutex);
+                g_gpu.kv_size_bytes = (long long)(mib * 1024.0 * 1024.0);
+            }
         }
     }
     if (level == GGML_LOG_LEVEL_ERROR)     __android_log_print(ANDROID_LOG_ERROR, TAG, "%s", fmt);
@@ -256,17 +269,25 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
         backend_inited = true;
     }
     llama_model_params model_params = llama_model_default_params();
-    g_force_cpu_session = false; // reset session flag for new model
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex);
+        g_gpu.force_cpu_session = false; // reset session flag for new model
+    }
 
     // configure GPU offload preference if GPU backend present
     const bool has_vulkan = ggml_backend_reg_by_name("Vulkan") != nullptr;
     const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
+    int user_layers;
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex);
+        user_layers = g_gpu.user_gpu_layers;
+    }
     if (has_vulkan || has_opencl) {
-        if (g_user_gpu_layers == INT_MIN || g_user_gpu_layers < 0) {
+        if (user_layers == INT_MIN || user_layers < 0) {
             // Auto: request full offload; loader will cap to supported layers
             model_params.n_gpu_layers = 999;
         } else {
-            model_params.n_gpu_layers = g_user_gpu_layers;
+            model_params.n_gpu_layers = user_layers;
         }
     } else {
         model_params.n_gpu_layers = 0; // CPU only
@@ -289,40 +310,44 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
     return reinterpret_cast<jlong>(model);
 }
 
+// Thread-safe: updates global GPU configuration under mutex.
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_set_1gpu_1layers(JNIEnv *, jobject, jint ngl) {
     // ngl < 0 => Auto
-    g_user_gpu_layers = (int) ngl;
+    std::lock_guard<std::mutex> lock(g_gpu.mutex); // Thread-safe
+    g_gpu.user_gpu_layers = (int) ngl;
 }
 
+// Thread-safe: reads GPU state under mutex.
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_android_llama_cpp_LLamaAndroid_is_1offload_1zero(JNIEnv *, jobject) {
-    return g_force_cpu_session ? JNI_TRUE : JNI_FALSE;
+    std::lock_guard<std::mutex> lock(g_gpu.mutex); // Thread-safe
+    return g_gpu.force_cpu_session ? JNI_TRUE : JNI_FALSE;
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_set_1strip_1think(JNIEnv *, jobject, jboolean enable) {
-    g_strip_think_default = enable == JNI_TRUE;
-}
-
+// Thread-safe: reads offload counters under mutex.
 extern "C"
 JNIEXPORT jintArray JNICALL
 Java_android_llama_cpp_LLamaAndroid_get_1offload_1counts(JNIEnv * env, jobject) {
     jint res[2];
-    res[0] = g_offloaded_layers;
-    res[1] = g_total_layers;
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex); // Thread-safe
+        res[0] = g_gpu.offloaded_layers;
+        res[1] = g_gpu.total_layers;
+    }
     jintArray arr = env->NewIntArray(2);
     env->SetIntArrayRegion(arr, 0, 2, res);
     return arr;
 }
 
+// Thread-safe: reads KV cache size under mutex.
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_get_1kv_1size_1bytes(JNIEnv *, jobject) {
-    return (jlong) g_kv_size_bytes;
+    std::lock_guard<std::mutex> lock(g_gpu.mutex); // Thread-safe
+    return (jlong) g_gpu.kv_size_bytes;
 }
 
 extern "C"
@@ -352,7 +377,12 @@ Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject, jlong jmo
     // Favor stability on mobile GPUs: cap context if GPU backend is present
     const bool has_vulkan = ggml_backend_reg_by_name("Vulkan") != nullptr;
     const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
-    if (!g_force_cpu_session && (has_vulkan || has_opencl)) {
+    bool force_cpu;
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex);
+        force_cpu = g_gpu.force_cpu_session;
+    }
+    if (!force_cpu && (has_vulkan || has_opencl)) {
         ctx_params.n_ctx = 2048; // leaner default for chat on mobile GPUs
         ctx_params.offload_kqv = true;
         ctx_params.op_offload  = true;
@@ -407,27 +437,32 @@ Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv *, jobject) {
     llama_log_set(log_callback, NULL);
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_set_1verbose_1tokens(JNIEnv *, jobject, jboolean enable) {
-    g_verbose_tokens = enable == JNI_TRUE;
-}
-
+// Thread-safe: reads GPU diagnostics under mutex.
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_export_1diag(JNIEnv * env, jobject) {
     char buf[256];
+    int offloaded_layers, total_layers, dynamic_ubatch;
+    long long kv_size;
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex); // Thread-safe
+        offloaded_layers = g_gpu.offloaded_layers;
+        total_layers     = g_gpu.total_layers;
+        kv_size          = g_gpu.kv_size_bytes;
+        dynamic_ubatch   = g_gpu.dynamic_ubatch;
+    }
     snprintf(buf, sizeof(buf),
              "backend(OpenCL=%s,Vulkan=%s), contexts=%d, offload=%d/%d, kvMiB=%.2f, ubatch=%d",
              ggml_backend_reg_by_name("OpenCL") ? "yes" : "no",
              ggml_backend_reg_by_name("Vulkan") ? "yes" : "no",
              g_active_contexts.load(),
-             g_offloaded_layers, g_total_layers,
-             g_kv_size_bytes > 0 ? (double) g_kv_size_bytes / (1024.0*1024.0) : 0.0,
-             g_dynamic_ubatch);
+             offloaded_layers, total_layers,
+             kv_size > 0 ? (double) kv_size / (1024.0*1024.0) : 0.0,
+             dynamic_ubatch);
     return env->NewStringUTF(buf);
 }
 
+// Not thread-safe: configure backend search path during initialization only.
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_set_1backend_1search_1dir(JNIEnv * env, jobject, jstring jdir) {
@@ -639,6 +674,7 @@ Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
     llama_backend_init();
 }
 
+// Not thread-safe: modifies backend configuration; ensure no concurrent use.
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_android_llama_cpp_LLamaAndroid_set_1backend(JNIEnv *env, jobject, jstring jbackend) {
@@ -753,7 +789,12 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     // Reset KV and evaluate initial prompt in micro-batches with correct absolute positions
     llama_memory_clear(llama_get_memory(context), true);
-    int ubatch = std::max(16, std::min(g_dynamic_ubatch, std::max(1, (int) llama_n_ubatch(context))));
+    int ubatch_val;
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex);
+        ubatch_val = g_gpu.dynamic_ubatch;
+    }
+    int ubatch = std::max(16, std::min(ubatch_val, std::max(1, (int) llama_n_ubatch(context))));
     int processed = 0;
     int n_cur = 0;
     while (processed < (int) tokens_list.size()) {
@@ -792,12 +833,17 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         jlong batch_pointer,
         jlong sampler_pointer,
         jint n_len,
-        jobject intvar_ncur
+        jobject intvar_ncur,
+        jboolean strip_think,
+        jboolean verbose_tokens
 ) {
     const auto context = reinterpret_cast<llama_context *>(context_pointer);
     const auto batch   = reinterpret_cast<llama_batch   *>(batch_pointer);
     const auto sampler = reinterpret_cast<llama_sampler *>(sampler_pointer);
     const auto model = llama_get_model(context);
+
+    const bool strip = strip_think == JNI_TRUE;
+    const bool verbose = verbose_tokens == JNI_TRUE;
 
     if (!la_int_var) la_int_var = env->GetObjectClass(intvar_ncur);
     if (!la_int_var_value) la_int_var_value = env->GetMethodID(la_int_var, "getValue", "()I");
@@ -816,7 +862,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     }
 
     auto new_token_chars = common_token_to_piece(context, new_token_id);
-    if (g_verbose_tokens) {
+    if (verbose) {
         cached_token_chars += new_token_chars;
     } else {
         // Fast path: bypass accumulation when verbose logging is disabled
@@ -858,7 +904,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     
     // Strip think tags for non-reasoning models to avoid UI spam
     // strip only when default enabled (non-reasoning models)
-    if (g_strip_think_default) {
+    if (strip) {
         // remove <think>...</think>
         std::string::size_type start = 0;
         while ((start = filtered_chars.find("<think>", start)) != std::string::npos) {
@@ -873,7 +919,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
 
     if (is_valid_utf8(filtered_chars.c_str())) {
         new_token = env->NewStringUTF(filtered_chars.c_str());
-        if (g_verbose_tokens) {
+        if (verbose) {
             LOGi("cached: %s, new_token_chars: `%s`, id: %d, thinking: %s",
                  filtered_chars.c_str(), new_token_chars.c_str(), new_token_id,
                  containsThinkingTokens ? "true" : "false");
@@ -898,7 +944,10 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         LOGe("decode watchdog: %.2f ms > 5000 ms; clearing KV and aborting token", decode_ms);
         llama_memory_clear(llama_get_memory(context), true);
         // adaptively reduce ubatch to ease pressure next iterations
-        if (g_dynamic_ubatch > 16) g_dynamic_ubatch = g_dynamic_ubatch / 2;
+        {
+            std::lock_guard<std::mutex> lock(g_gpu.mutex);
+            if (g_gpu.dynamic_ubatch > 16) g_gpu.dynamic_ubatch = g_gpu.dynamic_ubatch / 2;
+        }
         return nullptr;
     }
 
@@ -1769,7 +1818,15 @@ Java_android_llama_cpp_LLamaAndroid_runComparativeBenchmark(
 
     const bool has_vulkan = ggml_backend_reg_by_name("Vulkan") != nullptr;
     const bool has_opencl = ggml_backend_reg_by_name("OpenCL") != nullptr;
-    const bool skip_gpu_due_to_zero_offload = g_force_cpu_session || (g_offloaded_layers == 0 && g_total_layers > 0);
+    int offloaded_layers, total_layers;
+    bool force_cpu;
+    {
+        std::lock_guard<std::mutex> lock(g_gpu.mutex);
+        offloaded_layers = g_gpu.offloaded_layers;
+        total_layers     = g_gpu.total_layers;
+        force_cpu        = g_gpu.force_cpu_session;
+    }
+    const bool skip_gpu_due_to_zero_offload = force_cpu || (offloaded_layers == 0 && total_layers > 0);
     if (!skip_gpu_due_to_zero_offload && (has_vulkan || has_opencl)) {
         // If OpenCL specifically, prep env; Vulkan doesn't need env variables
         if (has_opencl) {

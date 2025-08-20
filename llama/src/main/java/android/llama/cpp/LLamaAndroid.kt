@@ -22,6 +22,8 @@ class LLamaAndroid {
     private val tag: String? = this::class.simpleName
     @Volatile private var stopGeneration: Boolean = false
     private var nativeLibraryLoaded: Boolean = false
+    private var stripThink: Boolean = false
+    private var verboseTokens: Boolean = false
     //private var model_eot_str: String = ""
 
     private val threadLocalState: ThreadLocal<State> = ThreadLocal.withInitial { State.Idle }
@@ -155,7 +157,6 @@ class LLamaAndroid {
     private external fun set_backend_search_dir(dir: String)
     private external fun set_gpu_layers(ngl: Int)
     private external fun is_offload_zero(): Boolean
-    external fun set_strip_think(enable: Boolean)
     external fun get_offload_counts(): IntArray
     external fun get_kv_size_bytes(): Long
 
@@ -177,7 +178,9 @@ class LLamaAndroid {
         batch: Long,
         sampler: Long,
         nLen: Int,
-        ncur: IntVar
+        ncur: IntVar,
+        stripThink: Boolean,
+        verboseTokens: Boolean
     ): String?
 
     private external fun kv_cache_clear(context: Long)
@@ -188,7 +191,6 @@ class LLamaAndroid {
     private external fun quantizeNative(inputPath: String, outputPath: String, quantizeType: String): Int
 
     private external fun getMemoryUsageNative(context: Long): Long
-    private external fun set_verbose_tokens(enable: Boolean)
     private external fun export_diag(): String
 
 
@@ -324,9 +326,12 @@ class LLamaAndroid {
         return success
     }
 
+    fun set_strip_think(enable: Boolean) {
+        stripThink = enable
+    }
+
     fun setVerboseTokens(enable: Boolean) {
-        if (!nativeLibraryLoaded) return
-        set_verbose_tokens(enable)
+        verboseTokens = enable
     }
 
     suspend fun exportDiag(): String {
@@ -365,7 +370,7 @@ class LLamaAndroid {
                     var chat_len = 0
                     while (chat_len <= nlen && ncur.value < context_size && !stopGeneration) {
                         _isSending.value = true
-                        val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
+                        val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur, stripThink, verboseTokens)
                         chat_len += 1
                         if (str == "```" || str == "``") {
                             _isMarked.value = !_isMarked.value
@@ -423,7 +428,7 @@ class LLamaAndroid {
                     is State.Loaded -> {
                         val ncur = IntVar(completion_init(state.context, state.batch, "Write an article on global warming in 1000 words", nlen))
                         while (ncur.value <= nlen) {
-                            val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
+                            val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur, stripThink, verboseTokens)
                             if (str == null) {
                                 _isSending.value = false
                                 _isCompleteEOT.value = true
