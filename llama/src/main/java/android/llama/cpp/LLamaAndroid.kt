@@ -87,8 +87,7 @@ class LLamaAndroid {
         _isMarked.value = false
     }
 
-
-    val runLoop: CoroutineDispatcher = Executors.newSingleThreadExecutor {
+    private val executor = Executors.newSingleThreadExecutor {
         thread(start = false, name = "Llm-RunLoop") {
             Log.d(tag, "Dedicated thread for native code: ${Thread.currentThread().name}")
 
@@ -124,7 +123,13 @@ class LLamaAndroid {
                 Log.e(tag, "Stack trace: ${exception.stackTraceToString()}")
             }
         }
-    }.asCoroutineDispatcher()
+    }
+
+    val runLoop: CoroutineDispatcher = executor.asCoroutineDispatcher()
+
+    fun shutdown() {
+        executor.shutdown()
+    }
 
     private val nlen: Int = 256
     private val context_size: Int = 2048

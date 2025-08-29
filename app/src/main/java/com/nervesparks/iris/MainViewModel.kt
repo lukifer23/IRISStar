@@ -1434,6 +1434,8 @@ class MainViewModel @Inject constructor(
 
             } catch (exc: IllegalStateException) {
                 addMessage("error", exc.message ?: "")
+            } finally {
+                llamaAndroid.shutdown()
             }
         }
     }
