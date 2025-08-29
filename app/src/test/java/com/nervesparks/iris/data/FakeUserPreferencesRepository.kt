@@ -108,7 +108,8 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
             topK = prefs[prefix + "top_k"] as? Int ?: 40,
             threadCount = prefs[prefix + "thread_count"] as? Int ?: 2,
             contextLength = prefs[prefix + "context_length"] as? Int ?: 4096,
-            systemPrompt = prefs[prefix + "system_prompt"] as? String ?: ""
+            systemPrompt = prefs[prefix + "system_prompt"] as? String ?: "",
+            gpuLayers = prefs[prefix + "gpu_layers"] as? Int ?: -1
         )
     }
 
@@ -120,6 +121,7 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         prefs[prefix + "thread_count"] = config.threadCount
         prefs[prefix + "context_length"] = config.contextLength
         prefs[prefix + "system_prompt"] = config.systemPrompt
+        prefs[prefix + "gpu_layers"] = config.gpuLayers
     }
 
     override fun getCachedModels(): String {

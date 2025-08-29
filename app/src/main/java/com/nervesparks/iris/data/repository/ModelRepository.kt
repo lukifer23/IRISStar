@@ -72,5 +72,6 @@ data class ModelConfiguration(
     val topK: Int = 40,
     val threadCount: Int = 2,
     val contextLength: Int = 4096,
-    val systemPrompt: String = ""
-) 
+    val systemPrompt: String = "",
+    val gpuLayers: Int = -1,
+)
