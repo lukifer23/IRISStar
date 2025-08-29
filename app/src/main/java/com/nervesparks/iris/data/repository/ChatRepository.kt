@@ -18,7 +18,12 @@ interface ChatRepository {
      * Get chat by ID
      */
     suspend fun getChat(chatId: Long): Chat?
-    
+
+    /**
+     * Observe all chats
+     */
+    fun observeChats(): Flow<List<Chat>>
+
     /**
      * Observe chat changes
      */
@@ -33,11 +38,21 @@ interface ChatRepository {
      * Update chat title
      */
     suspend fun updateChatTitle(chatId: Long, title: String)
+
+    /**
+     * Rename chat using entity
+     */
+    suspend fun renameChat(chat: Chat, newTitle: String)
     
     /**
      * Delete a chat
      */
     suspend fun deleteChat(chatId: Long)
+
+    /**
+     * Delete chat using entity
+     */
+    suspend fun deleteChat(chat: Chat)
     
     /**
      * Get messages for a chat
@@ -68,6 +83,11 @@ interface ChatRepository {
      * Clear all messages in a chat
      */
     suspend fun clearMessages(chatId: Long)
+
+    /**
+     * Save chat with associated messages
+     */
+    suspend fun saveChatWithMessages(chat: Chat, messages: List<Message>): Long
     
     /**
      * Get chat statistics

@@ -37,7 +37,7 @@ import java.util.UUID
 
 import android.app.Application
 import android.content.Context
-import com.nervesparks.iris.data.ChatRepository
+import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.Message
