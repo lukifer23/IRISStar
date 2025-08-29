@@ -3,8 +3,6 @@ package com.nervesparks.iris.data.repository.impl
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.ChatDao
 import com.nervesparks.iris.data.db.Message
-import com.nervesparks.iris.data.exceptions.ChatNotFoundException
-import com.nervesparks.iris.data.exceptions.MessageNotFoundException
 import com.nervesparks.iris.data.exceptions.ValidationException
 import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.repository.ChatStats
@@ -24,6 +22,8 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun getChat(chatId: Long): Chat? = withContext(Dispatchers.IO) {
         chatDao.getChat(chatId)
     }
+
+    override fun observeChats(): Flow<List<Chat>> = chatDao.observeChats()
 
     override fun observeChat(chatId: Long): Flow<Chat> = chatDao.observeChat(chatId)
 
@@ -61,11 +61,19 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun renameChat(chat: Chat, newTitle: String) = withContext(Dispatchers.IO) {
+        chatDao.updateChat(chat.copy(title = newTitle, updated = System.currentTimeMillis()))
+    }
+
     override suspend fun deleteChat(chatId: Long) = withContext(Dispatchers.IO) {
         val chat = chatDao.getChat(chatId)
         if (chat != null) {
             chatDao.deleteChat(chat)
         }
+    }
+
+    override suspend fun deleteChat(chat: Chat) = withContext(Dispatchers.IO) {
+        chatDao.deleteChat(chat)
     }
 
     override suspend fun getMessages(chatId: Long): List<Message> = withContext(Dispatchers.IO) {
@@ -118,6 +126,23 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun clearMessages(chatId: Long) = withContext(Dispatchers.IO) {
         chatDao.deleteMessages(chatId)
+    }
+
+    override suspend fun saveChatWithMessages(chat: Chat, messages: List<Message>): Long {
+        return withContext(Dispatchers.IO) {
+            val id = if (chat.id == 0L) {
+                chatDao.insertChat(chat)
+            } else {
+                chatDao.updateChat(chat)
+                chat.id
+            }
+            val msgs = messages.mapIndexed { idx, m ->
+                m.copy(chatId = id, index = idx)
+            }
+            chatDao.deleteMessages(id)
+            chatDao.insertMessages(msgs)
+            id
+        }
     }
 
     override suspend fun getChatStats(chatId: Long): ChatStats {

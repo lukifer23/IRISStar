@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.nervesparks.iris.data.db.AppDatabase
 import com.nervesparks.iris.data.exceptions.ValidationException
+import com.nervesparks.iris.data.repository.ChatRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -18,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 class ChatRepositoryImplTest {
 
     private lateinit var db: AppDatabase
-    private lateinit var repository: ChatRepositoryImpl
+    private lateinit var repository: ChatRepository
 
     @Before
     fun setup() {
