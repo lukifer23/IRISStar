@@ -159,6 +159,7 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
             const char* roleStr = env->GetStringUTFChars((jstring)roleObj, nullptr);
             jsonMsg["role"] = roleStr;
             env->ReleaseStringUTFChars((jstring)roleObj, roleStr);
+            env->DeleteLocalRef(roleObj);
         }
         env->DeleteLocalRef(roleKey);
 
@@ -169,6 +170,7 @@ std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
             const char* contentStr = env->GetStringUTFChars((jstring)contentObj, nullptr);
             jsonMsg["content"] = contentStr;
             env->ReleaseStringUTFChars((jstring)contentObj, contentStr);
+            env->DeleteLocalRef(contentObj);
         }
         env->DeleteLocalRef(contentKey);
 
