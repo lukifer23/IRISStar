@@ -220,33 +220,45 @@ class LLamaAndroid {
                 is State.Idle -> {
                     // Configure GPU offload preference before loading the model
                     set_gpu_layers(gpuLayers)
-                    val model = load_model(pathToModel)
-                    if (model == 0L)  throw IllegalStateException("load_model() failed")
+                    var model = 0L
+                    var context = 0L
+                    var batch = 0L
+                    var sampler = 0L
+                    try {
+                        model = load_model(pathToModel)
+                        if (model == 0L) throw IllegalStateException("load_model() failed")
 
-                    // Configure native stream filtering (default on). UI can still collapse/hide thinking tokens.
-                    set_strip_think(true)
+                        // Configure native stream filtering (default on). UI can still collapse/hide thinking tokens.
+                        set_strip_think(true)
 
-                    val context = new_context(model, userThreads)
-                    if (context == 0L) throw IllegalStateException("new_context() failed")
+                        context = new_context(model, userThreads)
+                        if (context == 0L) throw IllegalStateException("new_context() failed")
 
-                    val batch = new_batch(1024, 0, 1)
-                    if (batch == 0L) throw IllegalStateException("new_batch() failed")
+                        batch = new_batch(1024, 0, 1)
+                        if (batch == 0L) throw IllegalStateException("new_batch() failed")
 
-                    val sampler = new_sampler(top_k = topK, top_p = topP, temp = temp)
-                    if (sampler == 0L) throw IllegalStateException("new_sampler() failed")
+                        sampler = new_sampler(top_k = topK, top_p = topP, temp = temp)
+                        if (sampler == 0L) throw IllegalStateException("new_sampler() failed")
 
+                        val modelEotStr = get_eot_str(model)
+                        if (modelEotStr == "") throw IllegalStateException("eot_fetch() failed")
 
-                    val modelEotStr = get_eot_str(model)
-                    if (modelEotStr == "") throw IllegalStateException("eot_fetch() failed")
-
-                    val counts = get_offload_counts()
-                    val offMsg = if (counts.size == 2) "offloaded ${counts[0]}/${counts[1]}" else "offload n/a"
-                    Log.i(tag, "Loaded model $pathToModel ($offMsg)")
-                    threadLocalState.set(State.Loaded(model, context, batch, sampler, modelEotStr))
-                    modelHandleCache = model
-                    contextHandleCache = context
-                    batchHandleCache = batch
-                    samplerHandleCache = sampler
+                        val counts = get_offload_counts()
+                        val offMsg = if (counts.size == 2) "offloaded ${counts[0]}/${counts[1]}" else "offload n/a"
+                        Log.i(tag, "Loaded model $pathToModel ($offMsg)")
+                        threadLocalState.set(State.Loaded(model, context, batch, sampler, modelEotStr))
+                        modelHandleCache = model
+                        contextHandleCache = context
+                        batchHandleCache = batch
+                        samplerHandleCache = sampler
+                    } catch (e: Exception) {
+                        if (sampler != 0L) free_sampler(sampler)
+                        if (batch != 0L) free_batch(batch)
+                        if (context != 0L) free_context(context)
+                        if (model != 0L) free_model(model)
+                        threadLocalState.set(State.Idle)
+                        throw e
+                    }
                 }
                 else -> {
                     throw IllegalStateException("Model already loaded")
