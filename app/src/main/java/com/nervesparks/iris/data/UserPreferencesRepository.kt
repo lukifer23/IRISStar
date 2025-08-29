@@ -230,7 +230,8 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             topK = prefs[intPreferencesKey(prefix + "top_k")] ?: 40,
             threadCount = prefs[intPreferencesKey(prefix + "thread_count")] ?: 2,
             contextLength = prefs[intPreferencesKey(prefix + "context_length")] ?: 4096,
-            systemPrompt = prefs[stringPreferencesKey(prefix + "system_prompt")] ?: ""
+            systemPrompt = prefs[stringPreferencesKey(prefix + "system_prompt")] ?: "",
+            gpuLayers = prefs[intPreferencesKey(prefix + "gpu_layers")] ?: -1
         )
     }
 
@@ -244,6 +245,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
                 prefs[intPreferencesKey(prefix + "thread_count")] = config.threadCount
                 prefs[intPreferencesKey(prefix + "context_length")] = config.contextLength
                 prefs[stringPreferencesKey(prefix + "system_prompt")] = config.systemPrompt
+                prefs[intPreferencesKey(prefix + "gpu_layers")] = config.gpuLayers
             }
         }
     }

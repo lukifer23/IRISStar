@@ -204,14 +204,19 @@ class ModelRepositoryImpl @Inject constructor(
             if (!modelFile.canRead()) {
                 throw InvalidModelException(modelFile.name, Exception("File is not readable"))
             }
-            
+
+            // Retrieve model configuration with defaults fallback
+            val config = runCatching { getModelConfiguration(modelFile.name) }
+                .getOrElse { ModelConfiguration() }
+
             Log.d(tag, "Loading model: $modelPath")
             llamaAndroid.load(
                 modelPath,
-                userThreads = 2, // Default thread count
-                topK = 40, // Default top-k
-                topP = 0.9f, // Default top-p
-                temp = 0.7f // Default temperature
+                userThreads = config.threadCount,
+                topK = config.topK,
+                topP = config.topP,
+                temp = config.temperature,
+                gpuLayers = config.gpuLayers
             )
             currentLoadedModel = modelFile.name
             Log.i(tag, "Successfully loaded model: $currentLoadedModel")
