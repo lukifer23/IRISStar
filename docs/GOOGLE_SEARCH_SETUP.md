@@ -1,6 +1,6 @@
 # Google Custom Search API Setup Guide
 
-## 🔍 Setting Up Real Web Search
+## Setting Up Real Web Search
 
 To enable real web search functionality in Iris, you need to set up Google Custom Search API.
 
@@ -38,21 +38,21 @@ To enable real web search functionality in Iris, you need to set up Google Custo
 ./gradlew assembleDebug installDebug
 ```
 
-## 🎯 Benefits
+## Benefits
 
 - ✅ **Real Google search results**
 - ✅ **100 free searches per day**
 - ✅ **Reliable and fast**
 - ✅ **Comprehensive results**
 
-## 🔄 Fallback System
+## Fallback System
 
 If Google API is not configured, the app will:
 1. Try DuckDuckGo API
 2. Provide helpful fallback information
 3. Give search tips and alternatives
 
-## 📱 Alternative: Android System Integration
+## Alternative: Android System Integration
 
 If you prefer not to use external APIs, we can also implement:
 

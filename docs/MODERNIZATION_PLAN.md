@@ -1,6 +1,6 @@
 # IRIS Star Modernization Plan
 
-## 🚀 PHASE 1: IMMEDIATE BUILD FIXES (Priority 1) ✅ COMPLETED
+## PHASE 1: IMMEDIATE BUILD FIXES (Priority 1) - COMPLETED
 - [x] **1.1** Clone `llama.cpp` repository to project directory
 - [x] **1.2** Update Android Gradle Plugin and Kotlin versions
 - [x] **1.3** Update all AndroidX and Compose dependencies to latest stable versions
@@ -21,7 +21,7 @@
 - [x] **1.18** Add local model import functionality
 - [x] **1.19** Fix default models not appearing in UI
 
-## 🏗️ PHASE 2: CORE INFRASTRUCTURE MODERNIZATION (Priority 2) ✅ COMPLETED
+## PHASE 2: CORE INFRASTRUCTURE MODERNIZATION (Priority 2) - COMPLETED
 - [x] **2.1** Migrate to proper MVVM architecture with Repository pattern
 - [x] **2.2** Implement dependency injection (Hilt)
 - [x] **2.3** Add comprehensive error handling and state management
@@ -39,7 +39,7 @@
   - [x] **2.9.3** Chat list UI (search, rename, delete)
   - [x] **2.9.4** Reload chat context respecting token window
 
-## 📊 PHASE 3: PERFORMANCE METRICS & MODEL CONFIGURATION (Priority 3) ✅ COMPLETED
+## PHASE 3: PERFORMANCE METRICS & MODEL CONFIGURATION (Priority 3) - COMPLETED
 - [x] **3.1** Implement real-time performance monitoring
   - [x] **3.1.1** TPS (Tokens Per Second) display
   - [x] **3.1.2** TTFT (Time To First Token) measurement
@@ -60,7 +60,7 @@
   - [x] **3.3.3** Configuration import/export
   - [x] **3.3.4** Configuration templates
 
-## 🎨 PHASE 4: UI/UX MODERNIZATION (Priority 4) ✅ COMPLETED
+## PHASE 4: UI/UX MODERNIZATION (Priority 4) - COMPLETED
 - [x] **4.1** Complete Material 3 migration
   - [x] **4.1.1** Implement proper theming (dark mode)
   - [x] **4.1.2** Add dynamic color support
@@ -85,7 +85,7 @@
   - [x] **4.3.8** Context usage HUD
   - [ ] **4.3.9** Template & Thinking validation suite
 
-## 🎨 PHASE 4.5: COMPLETE UI OVERHAUL (NEW PRIORITY) ✅ COMPLETED
+## PHASE 4.5: COMPLETE UI OVERHAUL (NEW PRIORITY) - COMPLETED
 **Goal**: Transform UI to match modern design patterns from reference images (dark theme, top bar + bottom input, user profile, haptic feedback)
 
 ### **File Structure Plan**
@@ -181,7 +181,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 - **No user profile integration** ✅ RESOLVED
 - **No modern input patterns** (attachments, voice, quick actions) ✅ RESOLVED
 
-## 🖼️ PHASE 5: MULTIMODAL & ADVANCED FEATURES (Priority 5)
+## PHASE 5: MULTIMODAL & ADVANCED FEATURES (Priority 5)
 - [ ] **5.1** Image processing capabilities
   - [ ] **5.1.1** Support for LLMs that can process images
   - [x] **5.1.2** Built-in lightweight embedding models
@@ -198,7 +198,7 @@ app/src/main/java/com/nervesparks/iris/ui/
   - [x] **5.3.3** Code generation and analysis
   - [x] **5.3.4** Translation capabilities
 
-## 🚀 PHASE 6: MODEL MANAGEMENT & PRODUCTIVITY (Priority 6) ✅ PARTIALLY COMPLETED
+## PHASE 6: MODEL MANAGEMENT & PRODUCTIVITY (Priority 6) - PARTIALLY COMPLETED
 - [x] **6.1** Advanced model management
   - [x] **6.1.1** Model comparison tools (ModelSelectionModal)
   - [x] **6.1.2** Model performance metrics dashboard (PerformanceMonitor)
@@ -213,7 +213,7 @@ app/src/main/java/com/nervesparks/iris/ui/
   - [ ] **6.2.4** Widgets for quick access
   - [ ] **6.2.5** Shortcuts and automation
 
-## 🔒 PHASE 7: SECURITY & PRIVACY (Priority 7)
+## PHASE 7: SECURITY & PRIVACY (Priority 7)
 - [ ] **7.1** Security enhancements
   - [x] **7.1.1** Implement proper encryption for stored data
   - [x] **7.1.2** Add biometric authentication
@@ -225,7 +225,7 @@ app/src/main/java/com/nervesparks/iris/ui/
   - [ ] **7.2.3** Optimize memory usage
   - [ ] **7.2.4** Add battery optimization features
 
-## 📱 PHASE 8: PLATFORM MODERNIZATION (Priority 8)
+## PHASE 8: PLATFORM MODERNIZATION (Priority 8)
 - [ ] **8.1** Android platform features
   - [ ] **8.1.1** Implement proper notification handling
   - [ ] **8.1.2** Add widget support
@@ -237,7 +237,7 @@ app/src/main/java/com/nervesparks/iris/ui/
   - [ ] **8.2.2** Add multi-language support
   - [ ] **8.2.3** Implement proper RTL support
 
-## 🎯 CURRENT FOCUS AREAS ✅ COMPLETED
+## CURRENT FOCUS AREAS - COMPLETED
 - [x] **A.1** Implement actual download functionality for selected model files ✅ COMPLETED
 - [x] **A.2** Fix file size display when API returns null sizes ✅ COMPLETED
 - [x] **A.3** Add model file size estimation when API doesn't provide sizes ✅ COMPLETED
@@ -262,7 +262,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 - [x] **A.22** Implement download retry mechanism ✅ COMPLETED
 - [x] **A.23** Add download history and management UI ✅ COMPLETED
 
-## 📈 PROGRESS SUMMARY
+## PROGRESS SUMMARY
 - **Phase 1**: ✅ 100% Complete - All immediate build and network issues resolved
 - **Phase 2**: ✅ 100% Complete - Core infrastructure modernized, Repository pattern implemented
 - **Phase 3**: ✅ 100% Complete - Performance metrics implemented, model configuration system complete
@@ -271,7 +271,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 - **Phase 6**: 🔄 50% Complete - Model management partially implemented
 - **Overall Progress**: 🔄 85% Complete
 
-## 🎉 RECENT ACHIEVEMENTS (Latest Commit: PHASE 2 & 3: UI Cleanup, Metrics Fix, and Theme Consistency)
+## RECENT ACHIEVEMENTS (Latest Commit: PHASE 2 & 3: UI Cleanup, Metrics Fix, and Theme Consistency)
 - ✅ **14 files changed, 769 insertions(+), 345 deletions(-)**
 - ✅ **2 new components created**: MarkdownText.kt, MemoryManager.kt
 - ✅ **Major UI/UX improvements**: Cleaner interface, better spacing, consistent theming
@@ -297,14 +297,14 @@ app/src/main/java/com/nervesparks/iris/ui/
 - ✅ **Improved model management** with direct navigation
 - ✅ **Enhanced error handling and user feedback**
 
-## 🔄 TABLED ISSUES
+## TABLED ISSUES
 - **Search Functionality**: NetworkOnMainThreadException persists despite withContext(Dispatchers.IO) implementation
 - **Thinking UI Parsing**: Detection logic needs refinement for different thinking patterns
 - **Configuration Persistence**: Model settings not yet persisted between sessions
 
-## 🎯 NEXT PRIORITY ITEMS
+## NEXT PRIORITY ITEMS
 
-### 🗂️ Detailed Task Breakdown (Latest)
+### Detailed Task Breakdown (Latest)
 - [x] Central TemplateRegistry (CHATML, QWEN3)
 - [x] Unified ReasoningParser & ThinkingMessage refactor
 - [x] Chat list UI with rename / delete / new chat
@@ -323,7 +323,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 - [ ] Unit tests for TemplateRegistry & ReasoningParser
 - [ ] Instrumentation tests for chat flow
 
-## 🚨 CRITICAL COMPILATION ISSUES (IMMEDIATE PRIORITY)
+## CRITICAL COMPILATION ISSUES (IMMEDIATE PRIORITY)
 
 ### **PHASE A: COMPILATION FIXES (URGENT - 1-2 hours)**
 1. **Fix ViewModel Method Missing** - Add `searchModels()` to MainViewModel ✅ COMPLETED
@@ -350,7 +350,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 3. **Testing Suite** - Unit and integration tests ✅ COMPLETED
 4. **UI Polish** - Final design refinements ✅ COMPLETED
 
-## 🎯 SUCCESS CRITERIA
+## SUCCESS CRITERIA
 - ✅ App compiles and runs without errors
 - ✅ All core features work (model loading, chat, thinking UI)
 - ✅ Repository pattern fully implemented
@@ -359,7 +359,7 @@ app/src/main/java/com/nervesparks/iris/ui/
 - ✅ Performance monitoring active
 - ✅ Modern UI fully implemented
 
-## 📋 EXECUTION PLAN
+## EXECUTION PLAN
 
 **STEP 1: Fix Compilation (1-2 hours)** ✅ COMPLETED
 - Add missing ViewModel methods ✅ COMPLETED
