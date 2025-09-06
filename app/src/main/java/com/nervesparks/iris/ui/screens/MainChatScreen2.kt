@@ -264,7 +264,7 @@ fun MainChatScreen2(
                         onValueChange = { viewModel.updateMessage(it) },
                         onSend = { viewModel.send() },
                         onAttachmentClick = {},
-                        onVoiceClick = { viewModel.startVoiceRecognition() },
+                        onVoiceClick = { viewModel.startVoiceRecognition(context) },
                         onCameraClick = { viewModel.onCameraAttachment() },
                         onPhotosClick = { viewModel.onPhotosAttachment() },
                         onFilesClick = { viewModel.onFilesAttachment() },

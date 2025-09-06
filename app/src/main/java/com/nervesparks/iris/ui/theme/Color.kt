@@ -84,20 +84,81 @@ object SemanticColors {
     val Divider = Color(0xFFE0E0E0)
 }
 
+// Gradient definitions for modern UI elements
+object Gradients {
+    // Primary gradients
+    val Primary = listOf(Color(0xFF6750A4), Color(0xFF9C73D7))
+    val Secondary = listOf(Color(0xFF625B71), Color(0xFF8B8494))
+    val Surface = listOf(Color(0xFF1C1B1F), Color(0xFF2A292E))
+
+    // Accent gradients
+    val Success = listOf(Color(0xFF4CAF50), Color(0xFF81C784))
+    val Warning = listOf(Color(0xFFFF9800), Color(0xFFFFB74D))
+    val Error = listOf(Color(0xFFF44336), Color(0xFFE57373))
+
+    // Special purpose gradients
+    val ChatBubble = listOf(Color(0xFFD0BCFF), Color(0xFFEADDFF))
+    val Loading = listOf(Color(0xFF6750A4), Color(0xFF9C73D7), Color(0xFFD0BCFF))
+}
+
+// Enhanced semantic colors for modern UI
+object EnhancedSemanticColors {
+    // Status colors with variations
+    val SuccessLight = Color(0xFFE8F5E8)
+    val SuccessMain = Color(0xFF4CAF50)
+    val SuccessDark = Color(0xFF2E7D32)
+
+    val WarningLight = Color(0xFFFFF8E1)
+    val WarningMain = Color(0xFFFF9800)
+    val WarningDark = Color(0xFFF57C00)
+
+    val ErrorLight = Color(0xFFFFEBEE)
+    val ErrorMain = Color(0xFFF44336)
+    val ErrorDark = Color(0xFFC62828)
+
+    val InfoLight = Color(0xFFE3F2FD)
+    val InfoMain = Color(0xFF2196F3)
+    val InfoDark = Color(0xFF1565C0)
+
+    // Interactive states
+    val HoverOverlay = Color(0x1F000000) // 12% black overlay
+    val PressedOverlay = Color(0x331C1B1F) // 20% surface overlay
+    val FocusRing = Color(0xFF6750A4)
+
+    // Glass morphism colors
+    val GlassBackground = Color(0x80FFFFFF) // 50% white
+    val GlassBorder = Color(0x1FFFFFFF) // 12% white
+
+    // Chat specific colors
+    val UserMessage = Color(0xFF6750A4)
+    val AssistantMessage = Color(0xFF2A292E)
+    val SystemMessage = Color(0xFF4CAF50)
+    val ErrorMessage = Color(0xFFF44336)
+
+    // Model status colors
+    val ModelReady = Color(0xFF4CAF50)
+    val ModelLoading = Color(0xFFFF9800)
+    val ModelError = Color(0xFFF44336)
+    val ModelOffline = Color(0xFF9E9E9E)
+}
+
 // Extension functions for semantic color access
-fun androidx.compose.material3.ColorScheme.semanticSuccess() = SemanticColors.Success
-fun androidx.compose.material3.ColorScheme.semanticWarning() = SemanticColors.Warning
-fun androidx.compose.material3.ColorScheme.semanticInfo() = SemanticColors.Info
-fun androidx.compose.material3.ColorScheme.semanticHover() = SemanticColors.Hover
-fun androidx.compose.material3.ColorScheme.semanticPressed() = SemanticColors.Pressed
-fun androidx.compose.material3.ColorScheme.semanticDisabled() = SemanticColors.Disabled
-fun androidx.compose.material3.ColorScheme.semanticModalBackground() = SemanticColors.ModalBackground
-fun androidx.compose.material3.ColorScheme.semanticModalSurface() = SemanticColors.ModalSurface
-fun androidx.compose.material3.ColorScheme.semanticModalAccent() = SemanticColors.ModalAccent
-fun androidx.compose.material3.ColorScheme.semanticLoadingBackground() = SemanticColors.LoadingBackground
-fun androidx.compose.material3.ColorScheme.semanticLoadingAccent() = SemanticColors.LoadingAccent
-fun androidx.compose.material3.ColorScheme.semanticDownloadSurface() = SemanticColors.DownloadSurface
-fun androidx.compose.material3.ColorScheme.semanticTextPrimary() = SemanticColors.TextPrimary
-fun androidx.compose.material3.ColorScheme.semanticTextSecondary() = SemanticColors.TextSecondary
-fun androidx.compose.material3.ColorScheme.semanticTextDisabled() = SemanticColors.TextDisabled
-fun androidx.compose.material3.ColorScheme.semanticTextInverse() = SemanticColors.TextInverse
+fun androidx.compose.material3.ColorScheme.semanticSuccess() = EnhancedSemanticColors.SuccessMain
+fun androidx.compose.material3.ColorScheme.semanticWarning() = EnhancedSemanticColors.WarningMain
+fun androidx.compose.material3.ColorScheme.semanticInfo() = EnhancedSemanticColors.InfoMain
+fun androidx.compose.material3.ColorScheme.semanticError() = EnhancedSemanticColors.ErrorMain
+
+// Enhanced interactive state colors
+fun androidx.compose.material3.ColorScheme.hoverOverlay() = EnhancedSemanticColors.HoverOverlay
+fun androidx.compose.material3.ColorScheme.pressedOverlay() = EnhancedSemanticColors.PressedOverlay
+fun androidx.compose.material3.ColorScheme.focusRing() = EnhancedSemanticColors.FocusRing
+
+// Chat-specific colors
+fun androidx.compose.material3.ColorScheme.userMessage() = EnhancedSemanticColors.UserMessage
+fun androidx.compose.material3.ColorScheme.assistantMessage() = EnhancedSemanticColors.AssistantMessage
+fun androidx.compose.material3.ColorScheme.systemMessage() = EnhancedSemanticColors.SystemMessage
+
+// Model status colors
+fun androidx.compose.material3.ColorScheme.modelReady() = EnhancedSemanticColors.ModelReady
+fun androidx.compose.material3.ColorScheme.modelLoading() = EnhancedSemanticColors.ModelLoading
+fun androidx.compose.material3.ColorScheme.modelError() = EnhancedSemanticColors.ModelError

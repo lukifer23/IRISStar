@@ -10,13 +10,9 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.security.crypto.MasterKey
 import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.repository.ModelConfiguration
-import javax.crypto.Cipher
-import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
-import java.security.KeyStore
+import com.nervesparks.iris.security.EncryptedPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -54,40 +50,7 @@ private val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDat
     name = USER_PREFERENCES_NAME
 )
 
-class EncryptionManager(context: Context) {
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-    private val secretKey: SecretKey
-
-    init {
-        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        secretKey = keyStore.getKey(masterKey.alias, null) as SecretKey
-    }
-
-    fun encrypt(text: String): String {
-        if (text.isEmpty()) return ""
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-        val iv = cipher.iv
-        val encrypted = cipher.doFinal(text.toByteArray())
-        val combined = ByteArray(iv.size + encrypted.size)
-        System.arraycopy(iv, 0, combined, 0, iv.size)
-        System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
-        return Base64.encodeToString(combined, Base64.DEFAULT)
-    }
-
-    fun decrypt(data: String): String {
-        if (data.isEmpty()) return ""
-        val bytes = Base64.decode(data, Base64.DEFAULT)
-        val iv = bytes.copyOfRange(0, 12)
-        val encrypted = bytes.copyOfRange(12, bytes.size)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
-        val decrypted = cipher.doFinal(encrypted)
-        return String(decrypted)
-    }
-}
+// Removed EncryptionManager - using EncryptedPreferences instead
 
 open class UserPreferencesRepository protected constructor(context: Context) {
 
@@ -103,21 +66,20 @@ open class UserPreferencesRepository protected constructor(context: Context) {
     }
 
     private val dataStore = context.userPrefsDataStore
-    private val encryptor = EncryptionManager(context)
+    private val encryptedPrefs = EncryptedPreferences(context)
 
     // Delegated preference helpers
-    private fun stringPreference(key: String, default: String = "", encrypted: Boolean = false) =
+    private fun stringPreference(key: String, default: String = "") =
         object : kotlin.properties.ReadWriteProperty<Any, String> {
             private val prefKey = stringPreferencesKey(key)
             override fun getValue(thisRef: Any, property: kotlin.reflect.KProperty<*>): String = runBlocking {
-                val stored = dataStore.data.first()[prefKey] ?: default
-                if (encrypted && stored.isNotEmpty()) encryptor.decrypt(stored) else stored
+                dataStore.data.first()[prefKey] ?: default
             }
 
             override fun setValue(thisRef: Any, property: kotlin.reflect.KProperty<*>, value: String) {
                 runBlocking {
                     dataStore.edit { prefs ->
-                        prefs[prefKey] = if (encrypted && value.isNotEmpty()) encryptor.encrypt(value) else value
+                        prefs[prefKey] = value
                     }
                 }
             }
@@ -156,70 +118,50 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             }
         }
 
-    // Preferences stored via delegates
-    private var defaultModelName by stringPreference(KEY_DEFAULT_MODEL_NAME, encrypted = true)
-    private var huggingFaceToken by stringPreference(KEY_HUGGINGFACE_TOKEN, encrypted = true)
-    private var huggingFaceUsername by stringPreference(KEY_HUGGINGFACE_USERNAME, encrypted = true)
-    private var googleApiKey by stringPreference(KEY_GOOGLE_API_KEY, encrypted = true)
-    private var googleCseId by stringPreference(KEY_GOOGLE_CSE_ID, encrypted = true)
-    private var modelTemperature by floatPreference(KEY_MODEL_TEMPERATURE, 0.7f)
-    private var modelTopP by floatPreference(KEY_MODEL_TOP_P, 0.9f)
-    private var modelTopK by intPreference(KEY_MODEL_TOP_K, 40)
-    private var modelMaxTokens by intPreference(KEY_MODEL_MAX_TOKENS, 2048)
-    private var modelContextLength by intPreference(KEY_MODEL_CONTEXT_LENGTH, 4096)
-    private var modelSystemPrompt by stringPreference(KEY_MODEL_SYSTEM_PROMPT, "You are a helpful AI assistant.")
-    private var modelChatFormat by stringPreference(KEY_MODEL_CHAT_FORMAT, "CHATML")
-    private var modelThreadCount by intPreference(KEY_MODEL_THREAD_COUNT, 4)
-    private var modelGpuLayers by intPreference(KEY_MODEL_GPU_LAYERS, -1)
-    private var cachedModels by stringPreference(KEY_CACHED_MODELS, "")
-    private var showThinkingTokens by booleanPreference(KEY_SHOW_THINKING_TOKENS, true)
-    private var thinkingTokenStyle by stringPreference(KEY_THINKING_TOKEN_STYLE, "COLLAPSIBLE")
-    private var templatesJson by stringPreference(KEY_TEMPLATES, "[]")
-    private var uiTheme by stringPreference(KEY_UI_THEME, "DARK")
-    private var uiFontSize by floatPreference(KEY_UI_FONT_SIZE, 1.0f)
-    private var uiEnableAnimations by booleanPreference(KEY_UI_ENABLE_ANIMATIONS, true)
-    private var uiEnableHapticFeedback by booleanPreference(KEY_UI_ENABLE_HAPTIC_FEEDBACK, true)
-    private var perfEnableMemoryOptimization by booleanPreference(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, true)
-    private var perfEnableBackgroundProcessing by booleanPreference(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, true)
-    private var securityBiometricEnabled by booleanPreference(KEY_SECURITY_BIOMETRIC_ENABLED, false)
+    // Preferences stored via delegates - public for external access
+    var defaultModelName by stringPreference(KEY_DEFAULT_MODEL_NAME)
 
-    // Public API
-    open fun getDefaultModelName(): String = defaultModelName
-    open fun setDefaultModelName(modelName: String) { defaultModelName = modelName }
+    // Sensitive data stored in encrypted preferences
+    var huggingFaceToken: String
+        get() = encryptedPrefs.getEncryptedString(KEY_HUGGINGFACE_TOKEN)
+        set(value) = encryptedPrefs.putEncryptedString(KEY_HUGGINGFACE_TOKEN, value)
 
-    open fun getHuggingFaceToken(): String = huggingFaceToken
-    open fun setHuggingFaceToken(token: String) { huggingFaceToken = token }
+    var huggingFaceUsername: String
+        get() = encryptedPrefs.getEncryptedString(KEY_HUGGINGFACE_USERNAME)
+        set(value) = encryptedPrefs.putEncryptedString(KEY_HUGGINGFACE_USERNAME, value)
 
-    open fun getHuggingFaceUsername(): String = huggingFaceUsername
-    open fun setHuggingFaceUsername(username: String) { huggingFaceUsername = username }
+    var googleApiKey: String
+        get() = encryptedPrefs.getEncryptedString(KEY_GOOGLE_API_KEY)
+        set(value) = encryptedPrefs.putEncryptedString(KEY_GOOGLE_API_KEY, value)
 
+    var googleCseId: String
+        get() = encryptedPrefs.getEncryptedString(KEY_GOOGLE_CSE_ID)
+        set(value) = encryptedPrefs.putEncryptedString(KEY_GOOGLE_CSE_ID, value)
+    var modelTemperature by floatPreference(KEY_MODEL_TEMPERATURE, 0.7f)
+    var modelTopP by floatPreference(KEY_MODEL_TOP_P, 0.9f)
+    var modelTopK by intPreference(KEY_MODEL_TOP_K, 40)
+    var modelMaxTokens by intPreference(KEY_MODEL_MAX_TOKENS, 2048)
+    var modelContextLength by intPreference(KEY_MODEL_CONTEXT_LENGTH, 4096)
+    var modelSystemPrompt by stringPreference(KEY_MODEL_SYSTEM_PROMPT, "You are a helpful AI assistant.")
+    var modelChatFormat by stringPreference(KEY_MODEL_CHAT_FORMAT, "CHATML")
+    var modelThreadCount by intPreference(KEY_MODEL_THREAD_COUNT, 4)
+    var modelGpuLayers by intPreference(KEY_MODEL_GPU_LAYERS, -1)
+    var cachedModels by stringPreference(KEY_CACHED_MODELS, "")
+    var showThinkingTokens by booleanPreference(KEY_SHOW_THINKING_TOKENS, true)
+    var thinkingTokenStyle by stringPreference(KEY_THINKING_TOKEN_STYLE, "COLLAPSIBLE")
+    var templatesJson by stringPreference(KEY_TEMPLATES, "[]")
+    var uiTheme by stringPreference(KEY_UI_THEME, "DARK")
+    var uiFontSize by floatPreference(KEY_UI_FONT_SIZE, 1.0f)
+    var uiEnableAnimations by booleanPreference(KEY_UI_ENABLE_ANIMATIONS, true)
+    var uiEnableHapticFeedback by booleanPreference(KEY_UI_ENABLE_HAPTIC_FEEDBACK, true)
+    var perfEnableMemoryOptimization by booleanPreference(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, true)
+    var perfEnableBackgroundProcessing by booleanPreference(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, true)
+    var securityBiometricEnabled by booleanPreference(KEY_SECURITY_BIOMETRIC_ENABLED, false)
+
+    // Public API - using delegated properties directly
     open fun hasHuggingFaceCredentials(): Boolean {
-        return getHuggingFaceToken().isNotEmpty() || getHuggingFaceUsername().isNotEmpty()
+        return huggingFaceToken.isNotEmpty() || huggingFaceUsername.isNotEmpty()
     }
-
-    open fun setGoogleApiKey(key: String) { googleApiKey = key }
-    open fun getGoogleApiKey(): String = googleApiKey
-    open fun setGoogleCseId(id: String) { googleCseId = id }
-    open fun getGoogleCseId(): String = googleCseId
-
-    open fun setModelTemperature(temperature: Float) { modelTemperature = temperature }
-    open fun getModelTemperature(): Float = modelTemperature
-    open fun setModelTopP(topP: Float) { modelTopP = topP }
-    open fun getModelTopP(): Float = modelTopP
-    open fun setModelTopK(topK: Int) { modelTopK = topK }
-    open fun getModelTopK(): Int = modelTopK
-    open fun setModelMaxTokens(maxTokens: Int) { modelMaxTokens = maxTokens }
-    open fun getModelMaxTokens(): Int = modelMaxTokens
-    open fun setModelContextLength(contextLength: Int) { modelContextLength = contextLength }
-    open fun getModelContextLength(): Int = modelContextLength
-    open fun setModelSystemPrompt(systemPrompt: String) { modelSystemPrompt = systemPrompt }
-    open fun getModelSystemPrompt(): String = modelSystemPrompt
-    open fun setModelChatFormat(chatFormat: String) { modelChatFormat = chatFormat }
-    open fun getModelChatFormat(): String = modelChatFormat
-    open fun setModelThreadCount(threadCount: Int) { modelThreadCount = threadCount }
-    open fun getModelThreadCount(): Int = modelThreadCount
-    open fun setModelGpuLayers(layers: Int) { modelGpuLayers = layers }
-    open fun getModelGpuLayers(): Int = modelGpuLayers
 
     open fun getModelConfiguration(modelName: String): ModelConfiguration = runBlocking {
         val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
@@ -250,30 +192,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         }
     }
 
-    open fun getCachedModels(): String = cachedModels
-    open fun setCachedModels(json: String) { cachedModels = json }
-
-    open fun setShowThinkingTokens(show: Boolean) { showThinkingTokens = show }
-    open fun getShowThinkingTokens(): Boolean = showThinkingTokens
-    open fun setThinkingTokenStyle(style: String) { thinkingTokenStyle = style }
-    open fun getThinkingTokenStyle(): String = thinkingTokenStyle
-
-    open fun setUITheme(theme: String) { uiTheme = theme }
-    open fun getUITheme(): String = uiTheme
-    open fun setUIFontSize(fontSize: Float) { uiFontSize = fontSize }
-    open fun getUIFontSize(): Float = uiFontSize
-    open fun setUIEnableAnimations(enable: Boolean) { uiEnableAnimations = enable }
-    open fun getUIEnableAnimations(): Boolean = uiEnableAnimations
-    open fun setUIEnableHapticFeedback(enable: Boolean) { uiEnableHapticFeedback = enable }
-    open fun getUIEnableHapticFeedback(): Boolean = uiEnableHapticFeedback
-
-    open fun setPerfEnableMemoryOptimization(enable: Boolean) { perfEnableMemoryOptimization = enable }
-    open fun getPerfEnableMemoryOptimization(): Boolean = perfEnableMemoryOptimization
-    open fun setPerfEnableBackgroundProcessing(enable: Boolean) { perfEnableBackgroundProcessing = enable }
-    open fun getPerfEnableBackgroundProcessing(): Boolean = perfEnableBackgroundProcessing
-
-    open fun setSecurityBiometricEnabled(enabled: Boolean) { securityBiometricEnabled = enabled }
-    open fun getSecurityBiometricEnabled(): Boolean = securityBiometricEnabled
+    // All other properties are accessible via delegated properties
 
     open fun getTemplates(): List<Template> {
         val json = templatesJson
@@ -310,50 +229,50 @@ open class UserPreferencesRepository protected constructor(context: Context) {
 
     open fun exportConfiguration(): String {
         val jsonObject = JSONObject()
-        jsonObject.put("defaultModelName", getDefaultModelName())
-        jsonObject.put("huggingFaceToken", getHuggingFaceToken())
-        jsonObject.put("huggingFaceUsername", getHuggingFaceUsername())
-        jsonObject.put("modelTemperature", getModelTemperature())
-        jsonObject.put("modelTopP", getModelTopP())
-        jsonObject.put("modelTopK", getModelTopK())
-        jsonObject.put("modelMaxTokens", getModelMaxTokens())
-        jsonObject.put("modelContextLength", getModelContextLength())
-        jsonObject.put("modelSystemPrompt", getModelSystemPrompt())
-        jsonObject.put("modelChatFormat", getModelChatFormat())
-        jsonObject.put("modelThreadCount", getModelThreadCount())
-        jsonObject.put("showThinkingTokens", getShowThinkingTokens())
-        jsonObject.put("thinkingTokenStyle", getThinkingTokenStyle())
-        jsonObject.put("uiTheme", getUITheme())
-        jsonObject.put("uiFontSize", getUIFontSize())
-        jsonObject.put("uiEnableAnimations", getUIEnableAnimations())
-        jsonObject.put("uiEnableHapticFeedback", getUIEnableHapticFeedback())
-        jsonObject.put("perfEnableMemoryOptimization", getPerfEnableMemoryOptimization())
-        jsonObject.put("perfEnableBackgroundProcessing", getPerfEnableBackgroundProcessing())
+        jsonObject.put("defaultModelName", defaultModelName)
+        jsonObject.put("huggingFaceToken", huggingFaceToken)
+        jsonObject.put("huggingFaceUsername", huggingFaceUsername)
+        jsonObject.put("modelTemperature", modelTemperature)
+        jsonObject.put("modelTopP", modelTopP)
+        jsonObject.put("modelTopK", modelTopK)
+        jsonObject.put("modelMaxTokens", modelMaxTokens)
+        jsonObject.put("modelContextLength", modelContextLength)
+        jsonObject.put("modelSystemPrompt", modelSystemPrompt)
+        jsonObject.put("modelChatFormat", modelChatFormat)
+        jsonObject.put("modelThreadCount", modelThreadCount)
+        jsonObject.put("showThinkingTokens", showThinkingTokens)
+        jsonObject.put("thinkingTokenStyle", thinkingTokenStyle)
+        jsonObject.put("uiTheme", uiTheme)
+        jsonObject.put("uiFontSize", uiFontSize)
+        jsonObject.put("uiEnableAnimations", uiEnableAnimations)
+        jsonObject.put("uiEnableHapticFeedback", uiEnableHapticFeedback)
+        jsonObject.put("perfEnableMemoryOptimization", perfEnableMemoryOptimization)
+        jsonObject.put("perfEnableBackgroundProcessing", perfEnableBackgroundProcessing)
         return jsonObject.toString()
     }
 
     open fun importConfiguration(jsonString: String): Boolean {
         return try {
             val json = JSONObject(jsonString)
-            if (json.has("defaultModelName")) setDefaultModelName(json.getString("defaultModelName"))
-            if (json.has("huggingFaceToken")) setHuggingFaceToken(json.getString("huggingFaceToken"))
-            if (json.has("huggingFaceUsername")) setHuggingFaceUsername(json.getString("huggingFaceUsername"))
-            if (json.has("modelTemperature")) setModelTemperature(json.getDouble("modelTemperature").toFloat())
-            if (json.has("modelTopP")) setModelTopP(json.getDouble("modelTopP").toFloat())
-            if (json.has("modelTopK")) setModelTopK(json.getInt("modelTopK"))
-            if (json.has("modelMaxTokens")) setModelMaxTokens(json.getInt("modelMaxTokens"))
-            if (json.has("modelContextLength")) setModelContextLength(json.getInt("modelContextLength"))
-            if (json.has("modelSystemPrompt")) setModelSystemPrompt(json.getString("modelSystemPrompt"))
-            if (json.has("modelChatFormat")) setModelChatFormat(json.getString("modelChatFormat"))
-            if (json.has("modelThreadCount")) setModelThreadCount(json.getInt("modelThreadCount"))
-            if (json.has("showThinkingTokens")) setShowThinkingTokens(json.getBoolean("showThinkingTokens"))
-            if (json.has("thinkingTokenStyle")) setThinkingTokenStyle(json.getString("thinkingTokenStyle"))
-            if (json.has("uiTheme")) setUITheme(json.getString("uiTheme"))
-            if (json.has("uiFontSize")) setUIFontSize(json.getDouble("uiFontSize").toFloat())
-            if (json.has("uiEnableAnimations")) setUIEnableAnimations(json.getBoolean("uiEnableAnimations"))
-            if (json.has("uiEnableHapticFeedback")) setUIEnableHapticFeedback(json.getBoolean("uiEnableHapticFeedback"))
-            if (json.has("perfEnableMemoryOptimization")) setPerfEnableMemoryOptimization(json.getBoolean("perfEnableMemoryOptimization"))
-            if (json.has("perfEnableBackgroundProcessing")) setPerfEnableBackgroundProcessing(json.getBoolean("perfEnableBackgroundProcessing"))
+            if (json.has("defaultModelName")) defaultModelName = json.getString("defaultModelName")
+            if (json.has("huggingFaceToken")) huggingFaceToken = json.getString("huggingFaceToken")
+            if (json.has("huggingFaceUsername")) huggingFaceUsername = json.getString("huggingFaceUsername")
+            if (json.has("modelTemperature")) modelTemperature = json.getDouble("modelTemperature").toFloat()
+            if (json.has("modelTopP")) modelTopP = json.getDouble("modelTopP").toFloat()
+            if (json.has("modelTopK")) modelTopK = json.getInt("modelTopK")
+            if (json.has("modelMaxTokens")) modelMaxTokens = json.getInt("modelMaxTokens")
+            if (json.has("modelContextLength")) modelContextLength = json.getInt("modelContextLength")
+            if (json.has("modelSystemPrompt")) modelSystemPrompt = json.getString("modelSystemPrompt")
+            if (json.has("modelChatFormat")) modelChatFormat = json.getString("modelChatFormat")
+            if (json.has("modelThreadCount")) modelThreadCount = json.getInt("modelThreadCount")
+            if (json.has("showThinkingTokens")) showThinkingTokens = json.getBoolean("showThinkingTokens")
+            if (json.has("thinkingTokenStyle")) thinkingTokenStyle = json.getString("thinkingTokenStyle")
+            if (json.has("uiTheme")) uiTheme = json.getString("uiTheme")
+            if (json.has("uiFontSize")) uiFontSize = json.getDouble("uiFontSize").toFloat()
+            if (json.has("uiEnableAnimations")) uiEnableAnimations = json.getBoolean("uiEnableAnimations")
+            if (json.has("uiEnableHapticFeedback")) uiEnableHapticFeedback = json.getBoolean("uiEnableHapticFeedback")
+            if (json.has("perfEnableMemoryOptimization")) perfEnableMemoryOptimization = json.getBoolean("perfEnableMemoryOptimization")
+            if (json.has("perfEnableBackgroundProcessing")) perfEnableBackgroundProcessing = json.getBoolean("perfEnableBackgroundProcessing")
             true
         } catch (e: Exception) {
             android.util.Log.e("UserPreferencesRepository", "Error importing configuration", e)

@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.*
@@ -20,6 +21,7 @@ fun ModernTestScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var messageText by remember { mutableStateOf("") }
     var showModelDropdown by remember { mutableStateOf(false) }
     
@@ -87,7 +89,7 @@ fun ModernTestScreen(
                 messageText = ""
             },
             onAttachmentClick = { /* TODO: Implement attachments */ },
-            onVoiceClick = { viewModel.startVoiceRecognition() },
+            onVoiceClick = { viewModel.startVoiceRecognition(context) },
             onCameraClick = { viewModel.onCameraAttachment() },
             onPhotosClick = { viewModel.onPhotosAttachment() },
             onFilesClick = { viewModel.onFilesAttachment() },

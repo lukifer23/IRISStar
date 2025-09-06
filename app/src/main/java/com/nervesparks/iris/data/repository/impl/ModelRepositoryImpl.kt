@@ -85,7 +85,7 @@ class ModelRepositoryImpl @Inject constructor(
                 throw ValidationException("Search query cannot be blank")
             }
             
-            val token = userPreferencesRepository.getHuggingFaceToken().takeIf { it.isNotEmpty() }
+            val token = userPreferencesRepository.huggingFaceToken.takeIf { it.isNotEmpty() }
             val models = huggingFaceApiService.searchModels(searchQuery, token)
             val mapped = models.flatMap { info ->
                 info.siblings.filter { it.filename.endsWith(".gguf") }.map { file ->
@@ -116,7 +116,7 @@ class ModelRepositoryImpl @Inject constructor(
                     it["supportsReasoning"]?.toBoolean() ?: false
                 )
             }
-            userPreferencesRepository.setCachedModels(adapter.toJson(cacheData))
+            userPreferencesRepository.cachedModels = adapter.toJson(cacheData)
 
             allModels
         } catch (e: NetworkException) {
@@ -132,7 +132,7 @@ class ModelRepositoryImpl @Inject constructor(
     override suspend fun getAvailableModels(directory: File): List<Map<String, String>> {
         return try {
             if (cachedModels == null) {
-                val json = userPreferencesRepository.getCachedModels()
+                val json = userPreferencesRepository.cachedModels
                 if (json.isNotEmpty()) {
                     val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
                     val adapter = moshi.adapter<List<CachedModel>>(listType)

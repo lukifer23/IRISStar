@@ -310,9 +310,15 @@ fun ParametersScreen(viewModel: MainViewModel) {
                         Toast.makeText(context, "Load A Model First", Toast.LENGTH_SHORT).show()
                     } else {
                         viewModel.updateModelSettings(
-                            contextLength = viewModel.modelContextLength,
+                            temperature = viewModel.modelTemperature,
+                            topP = viewModel.modelTopP,
+                            topK = viewModel.modelTopK,
                             maxTokens = viewModel.modelMaxTokens,
-                            systemPrompt = viewModel.modelSystemPrompt
+                            contextLength = viewModel.modelContextLength,
+                            systemPrompt = viewModel.modelSystemPrompt,
+                            chatFormat = viewModel.modelChatFormat,
+                            threadCount = viewModel.modelThreadCount,
+                            gpuLayers = viewModel.modelGpuLayers
                         )
                         viewModel.currentDownloadable?.destination?.path?.let {
                             viewModel.load(it, viewModel.user_thread.toInt())

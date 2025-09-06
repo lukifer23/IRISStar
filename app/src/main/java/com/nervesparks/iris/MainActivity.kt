@@ -67,6 +67,7 @@ import androidx.fragment.app.FragmentActivity
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.security.BiometricAuthenticator
 import com.nervesparks.iris.ui.theme.IrisStarTheme
+import com.nervesparks.iris.ui.theme.ManagedIrisStarTheme
 import com.nervesparks.iris.ui.navigation.AppNavigation
 import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
@@ -128,35 +129,26 @@ class MainActivity : FragmentActivity() {
 
         ModelUpdateWorker.schedule(this)
 
-        if (preferencesRepository.getSecurityBiometricEnabled()) {
+        val content = @Composable {
+            ManagedIrisStarTheme {
+                AppNavigation(
+                    viewModel = viewModel,
+                    clipboardManager = clipboardManager,
+                    downloadManager = downloadManager,
+                    models = models,
+                    extFilesDir = extFilesDir,
+                    preferencesRepository = preferencesRepository
+                )
+            }
+        }
+
+        if (preferencesRepository.securityBiometricEnabled) {
             val biometricAuthenticator = BiometricAuthenticator(this)
             biometricAuthenticator.authenticate(this) {
-                setContent {
-                    IrisStarTheme {
-                        AppNavigation(
-                            viewModel = viewModel,
-                            clipboardManager = clipboardManager,
-                            downloadManager = downloadManager,
-                            models = models,
-                            extFilesDir = extFilesDir,
-                            preferencesRepository = preferencesRepository
-                        )
-                    }
-                }
+                setContent { content() }
             }
         } else {
-            setContent {
-                IrisStarTheme {
-                    AppNavigation(
-                        viewModel = viewModel,
-                        clipboardManager = clipboardManager,
-                        downloadManager = downloadManager,
-                        models = models,
-                        extFilesDir = extFilesDir,
-                        preferencesRepository = preferencesRepository
-                    )
-                }
-            }
+            setContent { content() }
         }
     }
 }

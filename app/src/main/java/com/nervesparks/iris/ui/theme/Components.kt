@@ -14,27 +14,27 @@ import androidx.compose.ui.unit.dp
 // Common component styles for consistent UI across the app
 
 object ComponentStyles {
-    
+
     // Card styles
-    val defaultCardShape = Shapes.radiusSm
-    val smallCardShape = Shapes.radiusXs
-    val largeCardShape = Shapes.radiusMd
-    val extraLargeCardShape = Shapes.radiusLg
-    val pillShape = Shapes.pill
-    
+    val defaultCardShape = LegacyShapes.radiusSm
+    val smallCardShape = LegacyShapes.radiusXs
+    val largeCardShape = LegacyShapes.radiusMd
+    val extraLargeCardShape = LegacyShapes.radiusLg
+    val pillShape = LegacyShapes.pill
+
     // Button styles
-    val primaryButtonShape = Shapes.radiusXs
-    val secondaryButtonShape = Shapes.radiusXs
-    val iconButtonShape = Shapes.radiusXs
-    val pillButtonShape = Shapes.pill
-    
+    val primaryButtonShape = LegacyShapes.radiusXs
+    val secondaryButtonShape = LegacyShapes.radiusXs
+    val iconButtonShape = LegacyShapes.radiusXs
+    val pillButtonShape = LegacyShapes.pill
+
     // Text field styles
-    val textFieldShape = Shapes.radiusXs
-    val chatInputShape = Shapes.pill
-    
+    val textFieldShape = LegacyShapes.radiusXs
+    val chatInputShape = LegacyShapes.pill
+
     // Modal and dialog styles
-    val modalShape = Shapes.radiusMd
-    val dialogShape = Shapes.radiusSm
+    val modalShape = LegacyShapes.radiusMd
+    val dialogShape = LegacyShapes.radiusSm
     
     // Spacing system
     val defaultPadding = Dimens.spaceLg
@@ -221,7 +221,7 @@ fun ThemedModalSurface(
         modifier = modifier,
         shape = ComponentStyles.modalShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.semanticModalBackground()
+            containerColor = SemanticColors.ModalBackground
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.modalElevation)
     ) {
@@ -238,7 +238,7 @@ fun ThemedModalCard(
         modifier = modifier,
         shape = ComponentStyles.dialogShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.semanticModalSurface()
+            containerColor = SemanticColors.ModalSurface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.largeElevation)
     ) {
@@ -255,7 +255,7 @@ fun ThemedLoadingSurface(
         modifier = modifier,
         shape = ComponentStyles.defaultCardShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.semanticLoadingBackground()
+            containerColor = SemanticColors.LoadingBackground
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation)
     ) {
@@ -272,7 +272,7 @@ fun ThemedDownloadSurface(
         modifier = modifier,
         shape = ComponentStyles.defaultCardShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.semanticDownloadSurface()
+            containerColor = SemanticColors.DownloadSurface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation)
     ) {
@@ -293,10 +293,10 @@ fun ThemedAccentButton(
         enabled = enabled,
         shape = ComponentStyles.primaryButtonShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.semanticModalAccent(),
-            contentColor = MaterialTheme.colorScheme.semanticTextInverse(),
-            disabledContainerColor = MaterialTheme.colorScheme.semanticDisabled(),
-            disabledContentColor = MaterialTheme.colorScheme.semanticTextDisabled()
+            containerColor = SemanticColors.ModalAccent,
+            contentColor = SemanticColors.TextInverse,
+            disabledContainerColor = SemanticColors.Disabled,
+            disabledContentColor = SemanticColors.TextDisabled
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = ComponentStyles.defaultElevation,
@@ -321,9 +321,9 @@ fun ThemedSuccessButton(
         shape = ComponentStyles.primaryButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.semanticSuccess(),
-            contentColor = MaterialTheme.colorScheme.semanticTextInverse(),
-            disabledContainerColor = MaterialTheme.colorScheme.semanticDisabled(),
-            disabledContentColor = MaterialTheme.colorScheme.semanticTextDisabled()
+            contentColor = SemanticColors.TextInverse,
+            disabledContainerColor = SemanticColors.Disabled,
+            disabledContentColor = SemanticColors.TextDisabled
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = ComponentStyles.defaultElevation,
@@ -348,9 +348,9 @@ fun ThemedWarningButton(
         shape = ComponentStyles.primaryButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.semanticWarning(),
-            contentColor = MaterialTheme.colorScheme.semanticTextInverse(),
-            disabledContainerColor = MaterialTheme.colorScheme.semanticDisabled(),
-            disabledContentColor = MaterialTheme.colorScheme.semanticTextDisabled()
+            contentColor = SemanticColors.TextInverse,
+            disabledContainerColor = SemanticColors.Disabled,
+            disabledContentColor = SemanticColors.TextDisabled
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = ComponentStyles.defaultElevation,

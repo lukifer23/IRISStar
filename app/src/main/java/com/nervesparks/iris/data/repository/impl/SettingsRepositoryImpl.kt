@@ -23,7 +23,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun getDefaultModelName(): String {
         return withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.getDefaultModelName()
+                userPreferencesRepository.defaultModelName
             } catch (e: Exception) {
                 Log.e(tag, "Error getting default model name", e)
                 ""
@@ -34,7 +34,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setDefaultModelName(modelName: String) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.setDefaultModelName(modelName)
+                userPreferencesRepository.defaultModelName = modelName
                 Log.d(tag, "Default model name set to: $modelName")
             } catch (e: Exception) {
                 Log.e(tag, "Error setting default model name", e)
@@ -45,8 +45,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun getThinkingTokenSettings(): ThinkingTokenSettings {
         return withContext(Dispatchers.IO) {
             try {
-                val showThinkingTokens = userPreferencesRepository.getShowThinkingTokens()
-                val thinkingTokenStyle = userPreferencesRepository.getThinkingTokenStyle()
+                val showThinkingTokens = userPreferencesRepository.showThinkingTokens
+                val thinkingTokenStyle = userPreferencesRepository.thinkingTokenStyle
                 ThinkingTokenSettings(
                     showThinkingTokens = showThinkingTokens,
                     thinkingTokenStyle = thinkingTokenStyle
@@ -61,8 +61,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveThinkingTokenSettings(settings: ThinkingTokenSettings) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.setShowThinkingTokens(settings.showThinkingTokens)
-                userPreferencesRepository.setThinkingTokenStyle(settings.thinkingTokenStyle)
+                userPreferencesRepository.showThinkingTokens = settings.showThinkingTokens
+                userPreferencesRepository.thinkingTokenStyle = settings.thinkingTokenStyle
                 Log.d(tag, "Thinking token settings saved")
             } catch (e: Exception) {
                 Log.e(tag, "Error saving thinking token settings", e)
@@ -74,10 +74,10 @@ class SettingsRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 PerformanceSettings(
-                    threadCount = userPreferencesRepository.getModelThreadCount(),
-                    maxContextLength = userPreferencesRepository.getModelContextLength(),
-                    enableMemoryOptimization = userPreferencesRepository.getPerfEnableMemoryOptimization(),
-                    enableBackgroundProcessing = userPreferencesRepository.getPerfEnableBackgroundProcessing()
+                    threadCount = userPreferencesRepository.modelThreadCount,
+                    maxContextLength = userPreferencesRepository.modelContextLength,
+                    enableMemoryOptimization = userPreferencesRepository.perfEnableMemoryOptimization,
+                    enableBackgroundProcessing = userPreferencesRepository.perfEnableBackgroundProcessing
                 )
             } catch (e: Exception) {
                 Log.e(tag, "Error getting performance settings", e)
@@ -89,10 +89,10 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun savePerformanceSettings(settings: PerformanceSettings) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.setModelThreadCount(settings.threadCount)
-                userPreferencesRepository.setModelContextLength(settings.maxContextLength)
-                userPreferencesRepository.setPerfEnableMemoryOptimization(settings.enableMemoryOptimization)
-                userPreferencesRepository.setPerfEnableBackgroundProcessing(settings.enableBackgroundProcessing)
+                userPreferencesRepository.modelThreadCount = settings.threadCount
+                userPreferencesRepository.modelContextLength = settings.maxContextLength
+                userPreferencesRepository.perfEnableMemoryOptimization = settings.enableMemoryOptimization
+                userPreferencesRepository.perfEnableBackgroundProcessing = settings.enableBackgroundProcessing
                 Log.d(tag, "Performance settings saved")
             } catch (e: Exception) {
                 Log.e(tag, "Error saving performance settings", e)
@@ -104,10 +104,10 @@ class SettingsRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 UISettings(
-                    theme = userPreferencesRepository.getUITheme(),
-                    fontSize = userPreferencesRepository.getUIFontSize(),
-                    enableAnimations = userPreferencesRepository.getUIEnableAnimations(),
-                    enableHapticFeedback = userPreferencesRepository.getUIEnableHapticFeedback()
+                    theme = userPreferencesRepository.uiTheme,
+                    fontSize = userPreferencesRepository.uiFontSize,
+                    enableAnimations = userPreferencesRepository.uiEnableAnimations,
+                    enableHapticFeedback = userPreferencesRepository.uiEnableHapticFeedback
                 )
             } catch (e: Exception) {
                 Log.e(tag, "Error getting UI settings", e)
@@ -119,10 +119,10 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveUISettings(settings: UISettings) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.setUITheme(settings.theme)
-                userPreferencesRepository.setUIFontSize(settings.fontSize)
-                userPreferencesRepository.setUIEnableAnimations(settings.enableAnimations)
-                userPreferencesRepository.setUIEnableHapticFeedback(settings.enableHapticFeedback)
+                userPreferencesRepository.uiTheme = settings.theme
+                userPreferencesRepository.uiFontSize = settings.fontSize
+                userPreferencesRepository.uiEnableAnimations = settings.enableAnimations
+                userPreferencesRepository.uiEnableHapticFeedback = settings.enableHapticFeedback
                 Log.d(tag, "UI settings saved")
             } catch (e: Exception) {
                 Log.e(tag, "Error saving UI settings", e)

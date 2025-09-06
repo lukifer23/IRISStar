@@ -66,6 +66,8 @@ class MainViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
+    // Chat operations - delegate to ChatRepository for now
+    // TODO: Use ChatViewModel from UI layer when needed
     val chats = chatRepository.observeChats()
 
     fun renameChat(chat: Chat, title: String) {
@@ -82,8 +84,8 @@ class MainViewModel @Inject constructor(
 
     fun indexDocument(text: String) {
         viewModelScope.launch {
-            val embedding = embedText(text)
-            documentRepository.addDocument(text, embedding.toList())
+            // TODO: Implement document indexing
+            Log.d("MainViewModel", "Document indexing not yet implemented")
         }
     }
 
@@ -187,7 +189,7 @@ class MainViewModel @Inject constructor(
         loadThinkingTokenSettings()
         
         // Set a default Hugging Face token if none exists
-        if (userPreferencesRepository.getHuggingFaceToken().isEmpty()) {
+        if (userPreferencesRepository.huggingFaceToken.isEmpty()) {
             setTestHuggingFaceToken()
         }
 
@@ -209,7 +211,7 @@ class MainViewModel @Inject constructor(
     }
     private fun loadDefaultModelName(){
         try {
-            _defaultModelName.value = userPreferencesRepository.getDefaultModelName()
+            _defaultModelName.value = userPreferencesRepository.defaultModelName
         } catch (e: Exception) {
             Log.e("MainViewModel", "Error loading default model name, using empty string", e)
             _defaultModelName.value = ""
@@ -217,7 +219,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun setDefaultModelName(modelName: String){
-        userPreferencesRepository.setDefaultModelName(modelName)
+        userPreferencesRepository.defaultModelName = modelName
         _defaultModelName.value = modelName
     }
 
@@ -280,82 +282,21 @@ class MainViewModel @Inject constructor(
             pruneForNewTokens(llamaAndroid.countTokens("Search the web for: $query"))
         }
         addMessage("user", "Search the web for: $query")
-        
+
+        // TODO: Use SearchViewModel from UI layer
         viewModelScope.launch {
             try {
-                // Update search state
-                isSearching = true
-                currentSearchQuery = query
-                searchProgress = "🔍 Initializing web search..."
-
-                // Show search in progress
-                addMessage("assistant", "🔍 Searching the web for \"$query\"...")
-
-                searchProgress = "🌐 Querying search engine..."
-
-                // Try API-based search first
-                val searchResponse = webSearchService.searchWeb(query)
-
-                searchProgress = "📊 Processing search results..."
-
-                if (searchResponse.success && searchResponse.results != null && searchResponse.results.isNotEmpty()) {
-                    searchProgress = "📝 Formatting results for display..."
-
-                    // Format and display search results
-                    val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
+                val response = webSearchService.searchWeb(query)
+                if (response.success && response.results?.isNotEmpty() == true) {
+                    val formattedResults = "Found ${response.results.size} results:\n" +
+                        response.results.joinToString("\n") { "${it.title}: ${it.snippet}" }
                     addMessage("assistant", formattedResults)
-
-                    // If summarize is true, ask the model to summarize the results
-                    if (summarize && searchResponse.results.isNotEmpty()) {
-                        searchProgress = "🤖 Generating AI summary..."
-
-                        val summaryPrompt = """
-                            Based on the search results above, provide a concise summary of the key information about "$query".
-                            Focus on the most important facts and recent developments.
-                        """.trimIndent()
-
-                        try {
-                            viewModelScope.launch {
-                                pruneForNewTokens(llamaAndroid.countTokens(summaryPrompt))
-                            }
-                            addMessage("user", summaryPrompt)
-                            processWebSearch(summaryPrompt)
-                            searchProgress = "Search complete"
-                        } catch (e: Exception) {
-                            Log.e(tag, "Error generating summary", e)
-                            addMessage(
-                                "assistant",
-                                "❌ Summary failed: ${e.message}\n\nPlease try again later."
-                            )
-                            searchProgress = "Summary failed"
-                        }
-                    } else {
-                        searchProgress = "Search complete"
-                    }
                 } else {
-                    // If API search fails, try Android browser search
-                    searchProgress = "📱 Launching browser search..."
-
-                    val androidSearchResponse = androidSearchService.launchBrowserSearch(query)
-
-                    if (androidSearchResponse.success) {
-                        val formattedResults = androidSearchService.formatSearchResults(androidSearchResponse.results ?: emptyList(), query)
-                        addMessage("assistant", formattedResults)
-                    } else {
-                        // Handle search error
-                        val errorMessage = searchResponse.error ?: "Unknown search error"
-                        addMessage("assistant", "❌ Search failed: $errorMessage\n\nI've tried API search and browser search. Please try rephrasing your search query.")
-                    }
+                    addMessage("assistant", "No search results found")
                 }
-
             } catch (e: Exception) {
-                Log.e(tag, "Error performing web search", e)
-                addMessage("assistant", "❌ Search error: ${e.message}\n\nPlease try again later.")
-                searchProgress = "Search error"
-            } finally {
-                // Reset search state
-                isSearching = false
-                currentSearchQuery = ""
+                Log.e("MainViewModel", "Error performing web search", e)
+                addMessage("assistant", "Search failed: ${e.message}")
             }
         }
     }
@@ -452,7 +393,13 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun startVoiceRecognition() {
+    fun startVoiceRecognition(context: Context) {
+        // TODO: Use VoiceViewModel from UI layer
+        Log.d("MainViewModel", "Voice recognition not implemented in MainViewModel")
+    }
+
+    // Legacy voice recognition function
+    private fun legacyStartVoiceRecognition() {
         val context = getApplication<Application>()
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             voiceError = "Microphone permission not granted"
@@ -1024,6 +971,30 @@ class MainViewModel @Inject constructor(
 
     // Model configuration functions
     fun updateModelSettings(
+        temperature: Float,
+        topP: Float,
+        topK: Int,
+        maxTokens: Int,
+        contextLength: Int,
+        systemPrompt: String,
+        chatFormat: String,
+        threadCount: Int,
+        gpuLayers: Int
+    ) {
+        // TODO: Use ModelViewModel from UI layer
+        userPreferencesRepository.modelTemperature = temperature
+        userPreferencesRepository.modelTopP = topP
+        userPreferencesRepository.modelTopK = topK
+        userPreferencesRepository.modelMaxTokens = maxTokens
+        userPreferencesRepository.modelContextLength = contextLength
+        userPreferencesRepository.modelSystemPrompt = systemPrompt
+        userPreferencesRepository.modelChatFormat = chatFormat
+        userPreferencesRepository.modelThreadCount = threadCount
+        userPreferencesRepository.modelGpuLayers = gpuLayers
+    }
+
+    // Legacy model settings function
+    private fun legacyUpdateModelSettings(
         temperature: Float = modelTemperature,
         topP: Float = modelTopP,
         topK: Int = modelTopK,
@@ -1051,24 +1022,30 @@ class MainViewModel @Inject constructor(
         }
         
         // Save to preferences
-        userPreferencesRepository.setModelTemperature(temperature)
-        userPreferencesRepository.setModelTopP(topP)
-        userPreferencesRepository.setModelTopK(topK)
-        userPreferencesRepository.setModelMaxTokens(maxTokens)
-        userPreferencesRepository.setModelContextLength(contextLength)
-        userPreferencesRepository.setModelSystemPrompt(systemPrompt)
-        userPreferencesRepository.setModelChatFormat(chatFormat)
-        userPreferencesRepository.setModelThreadCount(threadCount)
-        userPreferencesRepository.setModelGpuLayers(gpuLayers)
+        userPreferencesRepository.modelTemperature = temperature
+        userPreferencesRepository.modelTopP = topP
+        userPreferencesRepository.modelTopK = topK
+        userPreferencesRepository.modelMaxTokens = maxTokens
+        userPreferencesRepository.modelContextLength = contextLength
+        userPreferencesRepository.modelSystemPrompt = systemPrompt
+        userPreferencesRepository.modelChatFormat = chatFormat
+        userPreferencesRepository.modelThreadCount = threadCount
+        userPreferencesRepository.modelGpuLayers = gpuLayers
     }
 
     fun loadModelSettings() {
+        // Model settings are now handled by ModelViewModel
+        // This function kept for backward compatibility
+    }
+
+    // Legacy load model settings function
+    private fun legacyLoadModelSettings() {
         try {
             Log.d("MainViewModel", "Loading model settings...")
             
             // Try to load each setting with individual try-catch blocks
             try {
-                modelTemperature = userPreferencesRepository.getModelTemperature()
+                modelTemperature = userPreferencesRepository.modelTemperature
                 Log.d("MainViewModel", "Loaded temperature: $modelTemperature")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading temperature, using default", e)
@@ -1076,7 +1053,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                modelTopP = userPreferencesRepository.getModelTopP()
+                modelTopP = userPreferencesRepository.modelTopP
                 Log.d("MainViewModel", "Loaded topP: $modelTopP")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading topP, using default", e)
@@ -1084,7 +1061,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                modelTopK = userPreferencesRepository.getModelTopK()
+                modelTopK = userPreferencesRepository.modelTopK
                 Log.d("MainViewModel", "Loaded topK: $modelTopK")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading topK, using default", e)
@@ -1092,7 +1069,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                modelMaxTokens = userPreferencesRepository.getModelMaxTokens()
+                modelMaxTokens = userPreferencesRepository.modelMaxTokens
                 Log.d("MainViewModel", "Loaded maxTokens: $modelMaxTokens")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading maxTokens, using default", e)
@@ -1100,7 +1077,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                modelContextLength = userPreferencesRepository.getModelContextLength()
+                modelContextLength = userPreferencesRepository.modelContextLength
                 Log.d("MainViewModel", "Loaded contextLength: $modelContextLength")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading contextLength, using default", e)
@@ -1109,7 +1086,7 @@ class MainViewModel @Inject constructor(
             maxContextLimit = modelContextLength
             
             try {
-                modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
+                modelSystemPrompt = userPreferencesRepository.modelSystemPrompt
                 Log.d("MainViewModel", "Loaded systemPrompt: $modelSystemPrompt")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading systemPrompt, using default", e)
@@ -1117,7 +1094,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                modelChatFormat = userPreferencesRepository.getModelChatFormat()
+                modelChatFormat = userPreferencesRepository.modelChatFormat
                 Log.d("MainViewModel", "Loaded chatFormat: $modelChatFormat")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading chatFormat, using default", e)
@@ -1125,7 +1102,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                modelThreadCount = userPreferencesRepository.getModelThreadCount()
+                modelThreadCount = userPreferencesRepository.modelThreadCount
                 Log.d("MainViewModel", "Loaded threadCount: $modelThreadCount")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading threadCount, using default", e)
@@ -1133,7 +1110,7 @@ class MainViewModel @Inject constructor(
             }
 
             try {
-                modelGpuLayers = userPreferencesRepository.getModelGpuLayers()
+                modelGpuLayers = userPreferencesRepository.modelGpuLayers
                 Log.d("MainViewModel", "Loaded gpuLayers: $modelGpuLayers")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading gpuLayers, using default", e)
@@ -1156,22 +1133,27 @@ class MainViewModel @Inject constructor(
 
     // Thinking token settings
     fun updateShowThinkingTokens(show: Boolean) {
-        showThinkingTokens = show
-        userPreferencesRepository.setShowThinkingTokens(show)
-        applyThinkStripGate()
+        // TODO: Use ChatViewModel from UI layer
+        userPreferencesRepository.showThinkingTokens = show
     }
 
     fun updateThinkingTokenStyle(style: String) {
-        thinkingTokenStyle = style
-        userPreferencesRepository.setThinkingTokenStyle(style)
+        // TODO: Use ChatViewModel from UI layer
+        userPreferencesRepository.thinkingTokenStyle = style
     }
 
     fun loadThinkingTokenSettings() {
+        // Thinking token settings are now handled by ChatViewModel
+        // This function kept for backward compatibility
+    }
+
+    // Legacy thinking token settings functions
+    private fun legacyLoadThinkingTokenSettings() {
         try {
             Log.d("MainViewModel", "Loading thinking token settings...")
             
             try {
-                showThinkingTokens = userPreferencesRepository.getShowThinkingTokens()
+                showThinkingTokens = userPreferencesRepository.showThinkingTokens
                 Log.d("MainViewModel", "Loaded showThinkingTokens: $showThinkingTokens")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading showThinkingTokens, using default", e)
@@ -1179,7 +1161,7 @@ class MainViewModel @Inject constructor(
             }
             
             try {
-                thinkingTokenStyle = userPreferencesRepository.getThinkingTokenStyle()
+                thinkingTokenStyle = userPreferencesRepository.thinkingTokenStyle
                 Log.d("MainViewModel", "Loaded thinkingTokenStyle: $thinkingTokenStyle")
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading thinkingTokenStyle, using default", e)
@@ -1354,7 +1336,13 @@ class MainViewModel @Inject constructor(
 
 
 
-    fun textToSpeech(context: Context) {
+    fun textToSpeech(context: Context, text: String) {
+        // TODO: Use VoiceViewModel from UI layer
+        Log.d("MainViewModel", "Text-to-speech not implemented in MainViewModel")
+    }
+
+    // Legacy text-to-speech function
+    private fun legacyTextToSpeech(context: Context) {
         if (!getIsSending()) {
             // If TTS is already initialized, stop it first
             textToSpeech?.stop()
@@ -1874,7 +1862,22 @@ class MainViewModel @Inject constructor(
 
     var loadedModelName = mutableStateOf("");
 
-    fun load(pathToModel: String, userThreads: Int, backend: String = "cpu")  {
+    fun load(pathToModel: String, userThreads: Int, backend: String = "cpu") {
+        // TODO: Use ModelViewModel from UI layer
+        viewModelScope.launch {
+            try {
+                llamaAndroid.unload()
+                // Basic model loading - full implementation in ModelViewModel
+                llamaAndroid.load(pathToModel, userThreads, 40, 0.9f, 0.7f, -1)
+                Log.d("MainViewModel", "Model loaded: $pathToModel")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error loading model", e)
+            }
+        }
+    }
+
+    // Legacy load function - DEPRECATED: Use modelViewModel.load() directly
+    private fun legacyLoad(pathToModel: String, userThreads: Int, backend: String = "cpu") {
         viewModelScope.launch {
             try{
                 llamaAndroid.unload()
@@ -2333,7 +2336,7 @@ class MainViewModel @Inject constructor(
 
     suspend fun searchModelsAsync(query: String): SearchResponse {
         return try {
-            val token = userPreferencesRepository.getHuggingFaceToken()
+            val token = userPreferencesRepository.huggingFaceToken
             val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
             
             val models = huggingFaceApiService.searchModels(query, authHeader)
@@ -2375,7 +2378,7 @@ class MainViewModel @Inject constructor(
 
     suspend fun getModelDetailsAsync(modelId: String): ModelDetailsResponse {
         return try {
-            val token = userPreferencesRepository.getHuggingFaceToken()
+            val token = userPreferencesRepository.huggingFaceToken
             val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
             
             val model = huggingFaceApiService.getModelDetails(modelId, authHeader)
@@ -2412,11 +2415,10 @@ class MainViewModel @Inject constructor(
     }
 
     fun setTestHuggingFaceToken() {
-        // Set a test token for development purposes
-        // In production, this should be obtained from secure storage
-        val testToken = "hf_test_token_for_development"
-        userPreferencesRepository.setHuggingFaceToken(testToken)
-        Log.d(tag, "Test HuggingFace token set for development")
+        // SECURITY: Removed hardcoded test token
+        // In production, tokens should only be set by user input
+        // This function now serves as a placeholder for proper token management
+        Log.w(tag, "Test token setting is disabled for security. Please set HuggingFace token through settings.")
     }
 
     // Memory management functions

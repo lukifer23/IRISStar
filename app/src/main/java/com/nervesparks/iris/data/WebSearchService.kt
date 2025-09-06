@@ -22,8 +22,8 @@ class WebSearchService(
     suspend fun searchWeb(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
             Log.d(tag, "Searching web for: $query")
-            val apiKey = userPreferencesRepository.getGoogleApiKey()
-            val cseId = userPreferencesRepository.getGoogleCseId()
+            val apiKey = userPreferencesRepository.googleApiKey
+            val cseId = userPreferencesRepository.googleCseId
             if (apiKey.isNotBlank() && cseId.isNotBlank()) {
                 performGoogleSearch(query, apiKey, cseId)
             } else {

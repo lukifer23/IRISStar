@@ -32,6 +32,8 @@ import com.nervesparks.iris.ui.theme.ModernCard
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.SecondaryButton
 import com.nervesparks.iris.ui.theme.ModernTextField
+import com.nervesparks.iris.ui.animations.BounceButton
+import com.nervesparks.iris.ui.theme.IrisAnimations
 import com.nervesparks.iris.security.BiometricAuthenticator
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,13 +46,14 @@ fun SettingsScreen(
     onAboutScreenButtonClicked: () -> Unit,
     onBenchMarkScreenButtonClicked: () -> Unit,
     onTemplatesScreenButtonClicked: () -> Unit,
+    onThemeSettingsClicked: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val biometricAuthenticator = remember { BiometricAuthenticator(context) }
-    var biometricEnabled by remember { mutableStateOf(preferencesRepository.getSecurityBiometricEnabled()) }
+    var biometricEnabled by remember { mutableStateOf(preferencesRepository.securityBiometricEnabled) }
     
-    var huggingFaceToken by remember { mutableStateOf(preferencesRepository.getHuggingFaceToken()) }
-    var huggingFaceUsername by remember { mutableStateOf(preferencesRepository.getHuggingFaceUsername()) }
+    var huggingFaceToken by remember { mutableStateOf(preferencesRepository.huggingFaceToken) }
+    var huggingFaceUsername by remember { mutableStateOf(preferencesRepository.huggingFaceUsername) }
     var showToken by remember { mutableStateOf(false) }
     var showSaveSuccess by remember { mutableStateOf(false) }
     
@@ -121,8 +124,8 @@ fun SettingsScreen(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             // Save credentials
-                            preferencesRepository.setHuggingFaceToken(huggingFaceToken)
-                            preferencesRepository.setHuggingFaceUsername(huggingFaceUsername)
+                            preferencesRepository.huggingFaceToken = huggingFaceToken
+                            preferencesRepository.huggingFaceUsername = huggingFaceUsername
                             showSaveSuccess = true
                         }
                     )
@@ -131,8 +134,8 @@ fun SettingsScreen(
                 // Save Button
                 PrimaryButton(
                     onClick = {
-                        preferencesRepository.setHuggingFaceToken(huggingFaceToken)
-                        preferencesRepository.setHuggingFaceUsername(huggingFaceUsername)
+                        preferencesRepository.huggingFaceToken = huggingFaceToken
+                        preferencesRepository.huggingFaceUsername = huggingFaceUsername
                         showSaveSuccess = true
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -262,6 +265,18 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
+                // Theme Settings Button with bounce animation
+                BounceButton(
+                    onClick = onThemeSettingsClicked,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "Theme Settings",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge
+                    )
+                }
+
+
                 // Models Button
                 SecondaryButton(
                     onClick = onModelsScreenButtonClicked,
@@ -314,7 +329,7 @@ fun SettingsScreen(
                         onCheckedChange = {
                             if (biometricAuthenticator.isBiometricAuthAvailable()) {
                                 biometricEnabled = it
-                                preferencesRepository.setSecurityBiometricEnabled(it)
+                                preferencesRepository.securityBiometricEnabled = it
                             }
                         }
                     )

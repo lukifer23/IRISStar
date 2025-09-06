@@ -449,8 +449,7 @@ class LLamaAndroid {
                         if (initVal < 0) {
                             emit("Error: prompt exceeds context window. Reduce prompt length or increase context.")
                             _isSending.value = false
-                            return@flow
-                        }
+                        } else {
                         val ncur = IntVar(initVal)
                         while (ncur.value <= nlen) {
                             val str = completion_loop(state.context, state.batch, state.sampler, nlen, ncur)
@@ -465,6 +464,7 @@ class LLamaAndroid {
                             emit(str)
                         }
                         kv_cache_clear(state.context)
+                        }
                     }
                     else -> {
                         _isSending.value = false

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.nervesparks.iris.ui.theme.IrisAnimations
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.AboutScreen
@@ -14,6 +15,7 @@ import com.nervesparks.iris.ui.ChatListScreen
 import com.nervesparks.iris.ui.ModelsScreen
 import com.nervesparks.iris.ui.ParametersScreen
 import com.nervesparks.iris.ui.SettingsScreen
+import com.nervesparks.iris.ui.ThemeSettingsScreen
 import com.nervesparks.iris.ui.screens.MainChatScreen2
 import com.nervesparks.iris.data.UserPreferencesRepository
 import java.io.File
@@ -22,6 +24,7 @@ object AppDestinations {
     const val CHAT_LIST = "chat_list"
     const val CHAT = "chat"
     const val SETTINGS = "settings"
+    const val THEME_SETTINGS = "theme_settings"
     const val MODELS = "models"
     const val PARAMS = "params"
     const val ABOUT = "about"
@@ -40,7 +43,14 @@ fun AppNavigation(
     preferencesRepository: UserPreferencesRepository
 ) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = AppDestinations.CHAT) {
+    NavHost(
+        navController = navController,
+        startDestination = AppDestinations.CHAT_LIST,
+        enterTransition = { IrisAnimations.SlideInFromRight },
+        exitTransition = { IrisAnimations.SlideOutToLeft },
+        popEnterTransition = { IrisAnimations.SlideInFromRight },
+        popExitTransition = { IrisAnimations.SlideOutToLeft }
+    ) {
         composable(AppDestinations.CHAT_LIST) {
             ChatListScreen(
                 viewModel = viewModel,
@@ -71,7 +81,13 @@ fun AppNavigation(
                 onParamsScreenButtonClicked = { navController.navigate(AppDestinations.PARAMS) },
                 onAboutScreenButtonClicked = { navController.navigate(AppDestinations.ABOUT) },
                 onBenchMarkScreenButtonClicked = { navController.navigate(AppDestinations.BENCHMARK) },
-                onTemplatesScreenButtonClicked = { navController.navigate(AppDestinations.TEMPLATES) }
+                onTemplatesScreenButtonClicked = { navController.navigate(AppDestinations.TEMPLATES) },
+                onThemeSettingsClicked = { navController.navigate(AppDestinations.THEME_SETTINGS) }
+            )
+        }
+        composable(AppDestinations.THEME_SETTINGS) {
+            ThemeSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable(AppDestinations.MODELS) {

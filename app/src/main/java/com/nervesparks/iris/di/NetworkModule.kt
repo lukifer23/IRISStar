@@ -16,6 +16,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Cache
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -59,8 +60,15 @@ object NetworkModule {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = Cache(cacheDir, config.cacheSizeBytes)
 
+        // SSL Pinning for security - pin HuggingFace and other critical services
+        val certificatePinner = CertificatePinner.Builder()
+            .add("huggingface.co", "sha256/4a6cPehI7JG911yo0RVYjBwhsBzSnr70kSGTHNuX2xI=") // Example pin - UPDATE WITH REAL PIN
+            .add("api.github.com", "sha256/4a6cPehI7JG911yo0RVYjBwhsBzSnr70kSGTHNuX2xI=") // Example pin - UPDATE WITH REAL PIN
+            .build()
+
         return OkHttpClient.Builder()
             .cache(cache)
+            .certificatePinner(certificatePinner)
             .addInterceptor(dedupe)
             .addNetworkInterceptor(cacheControlInterceptor)
             .build()

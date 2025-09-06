@@ -39,7 +39,7 @@ class ModelUpdateWorker(
         val modelsDir = applicationContext.getExternalFilesDir(null)
             ?: return@withContext Result.failure()
 
-        val cachedJson = prefs.getCachedModels()
+        val cachedJson = prefs.cachedModels
         if (cachedJson.isBlank()) return@withContext Result.success()
 
         val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
