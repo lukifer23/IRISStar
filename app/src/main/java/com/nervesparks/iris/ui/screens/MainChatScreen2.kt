@@ -257,7 +257,9 @@ fun MainChatScreen2(
                 }
             },
             bottomBar = {
-                Column {
+                Column(
+                    modifier = Modifier.navigationBarsPadding()
+                ) {
                     PerformanceMonitor(viewModel = viewModel)
                     ModernChatInput(
                         value = viewModel.message,

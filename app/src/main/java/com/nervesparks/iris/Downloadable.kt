@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -190,7 +189,7 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                     onClick = { onClick() },
                     enabled = status !is Downloading && !viewModel.getIsSending(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2563EB) // Navy Blue color
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
 
                 ) {
@@ -198,31 +197,31 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                         is Downloading -> Text(
                             text = buildAnnotatedString {
                                 append("Downloading ")
-                                withStyle(style = SpanStyle(color = Color.Cyan)) {
+                                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.secondary)) {
                                     append("${(progress * 100).toInt()}%")
                                 }
                             },
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
 
                         is Downloaded -> Text(
                             "Load",
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
 
                         is Ready -> Text(
                             "Download",
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
 
                         is Error -> Text(
                             "Download}",
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
 
                         is Stopped -> Text(
                             "Stopped",
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -234,17 +233,17 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                     Button(
                         onClick = { onStop() },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White // Red color for stop button
+                            containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Stop Download", color = Color.Black)
+                        Text("Stop Download", color = MaterialTheme.colorScheme.onError)
                     }
                 }
 
                 totalSize?.let {
                     Text(
                         text = "File size: ${it / (1024 * 1024)} MB",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
