@@ -16,17 +16,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.ui.theme.ComponentStyles
 
 
@@ -44,9 +41,8 @@ fun AboutScreen() {
         item {
             Text(
                 text = "Iris is an offline Android chat application powered by the llama.cpp framework. Designed to operate entirely offline, it ensures privacy and independence from external servers. Whether you're a developer exploring AI applications or a privacy-conscious user, this app provides a seamless and secure way to experience conversational AI. Please note that the app may occasionally generate inaccurate results.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 24.sp
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(ComponentStyles.largePadding))
         }
@@ -77,7 +73,7 @@ private fun SectionHeader(
 ) {
     Text(
         text = text,
-        fontSize = 20.sp,
+        style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground,
         modifier = modifier.padding(bottom = ComponentStyles.defaultSpacing)
@@ -108,7 +104,7 @@ private fun FeatureItem(feature: String) {
         Spacer(modifier = Modifier.width(ComponentStyles.defaultSpacing))
         Text(
             text = feature,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
     }
@@ -123,16 +119,15 @@ private fun FaqItem(question: String, answer: String) {
     ) {
         Text(
             text = question,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = ComponentStyles.smallPadding)
         )
         Text(
             text = answer,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 20.sp,
             modifier = Modifier.padding(start = ComponentStyles.extraLargePadding)
         )
     }
