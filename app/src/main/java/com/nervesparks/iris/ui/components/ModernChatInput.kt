@@ -39,7 +39,6 @@ fun ModernChatInput(
     value: String,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
-    onAttachmentClick: () -> Unit,
     onVoiceClick: () -> Unit,
     onCameraClick: () -> Unit = {},
     onPhotosClick: () -> Unit = {},
@@ -81,7 +80,6 @@ fun ModernChatInput(
                 ModernIconButton(
                     onClick = {
                         showAttachmentDialog = true
-                        onAttachmentClick()
                     },
                     modifier = Modifier.size(ComponentStyles.defaultIconSize),
                     enabled = enabled
