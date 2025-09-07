@@ -163,7 +163,7 @@ private fun ModelSelectionDropdown(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                 ) {
-                    items(availableModels) { model ->
+                    items(availableModels, key = { it }) { model ->
                         val isCurrentModel = model == currentModel
                         
                         Card(

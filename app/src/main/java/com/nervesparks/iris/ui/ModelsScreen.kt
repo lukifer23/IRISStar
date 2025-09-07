@@ -136,7 +136,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
             }
 
             // Show first three suggested models that support reasoning
-            items(suggestedModels) { model ->
+            items(suggestedModels, key = { it["name"] ?: it["source"] ?: "" }) { model ->
                 extFileDir?.let {
                     model["source"]?.let { source ->
                         ModelCard(
@@ -172,7 +172,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
             }
 
             // Display all models not in Suggested Models
-            items(viewModel.allModels.filterNot { suggestedModels.contains(it) }) { model ->
+            items(viewModel.allModels.filterNot { suggestedModels.contains(it) }, key = { it["name"] ?: it["source"] ?: "" }) { model ->
                 extFileDir?.let {
                     model["source"]?.let { source ->
                         ModelCard(

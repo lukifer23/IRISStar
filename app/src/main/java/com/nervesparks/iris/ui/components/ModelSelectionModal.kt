@@ -249,7 +249,7 @@ fun ModelSelectionModal(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                     ) {
-                        items(filteredModels) { model ->
+                        items(filteredModels, key = { it["name"] ?: "" }) { model ->
                             val modelName = model["name"] ?: ""
                             val isSelected = modelName == selectedModel
                             val isCurrentModel = modelName == viewModel.loadedModelName.value
