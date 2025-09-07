@@ -82,7 +82,7 @@ fun ModernTopAppBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = null,
+                            contentDescription = "Current model",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(ComponentStyles.smallIconSize)
                         )
