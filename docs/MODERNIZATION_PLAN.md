@@ -434,7 +434,6 @@ Goals
 - [ ] Split MainViewModel into feature-scoped ViewModels (Chat/Search/Voice/Model/Metrics) with Hilt scopes
 - [ ] Introduce PromptComposer service: centralize prompt assembly, token-reserve enforcement, context trimming
 - [ ] Centralize default model catalog in ModelRepository; remove duplicates in MainViewModel and MainActivity
-- [ ] Keep dev-only screens (ModernTestScreen) behind debug build type
 
 3) Networking
 - [ ] Use DI-provided OkHttpClient everywhere (WebSearchService, ModelUpdateWorker)
