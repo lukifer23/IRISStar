@@ -49,6 +49,7 @@ import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
 import com.nervesparks.iris.data.search.SearchResult
+import com.nervesparks.iris.data.search.SearchResultFormatter
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -302,7 +303,7 @@ class MainViewModel @Inject constructor(
                     searchProgress = "📝 Formatting results for display..."
 
                     // Format and display search results
-                    val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
+                    val formattedResults = SearchResultFormatter.formatResults(searchResponse.results, query)
                     addMessage("assistant", formattedResults)
 
                     // If summarize is true, ask the model to summarize the results
@@ -339,7 +340,7 @@ class MainViewModel @Inject constructor(
                     val androidSearchResponse = androidSearchService.launchBrowserSearch(query)
 
                     if (androidSearchResponse.success) {
-                        val formattedResults = androidSearchService.formatSearchResults(androidSearchResponse.results ?: emptyList(), query)
+                        val formattedResults = SearchResultFormatter.formatResults(androidSearchResponse.results ?: emptyList(), query)
                         addMessage("assistant", formattedResults)
                     } else {
                         // Handle search error
@@ -562,7 +563,7 @@ class MainViewModel @Inject constructor(
                             
                             if (searchResponse.success && searchResponse.results != null) {
                                 // Format and display results
-                                val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
+                                val formattedResults = SearchResultFormatter.formatResults(searchResponse.results, query)
                                 addMessage("assistant", formattedResults)
                             } else {
                                 val errorMessage = searchResponse.error ?: "Unknown search error"

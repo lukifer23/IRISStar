@@ -110,25 +110,4 @@ class AndroidSearchService(private val context: Context) {
         }
     }
 
-    /**
-     * Format search results for display
-     */
-    fun formatSearchResults(results: List<SearchResult>, query: String): String {
-        if (results.isEmpty()) {
-            return "I couldn't launch any search for \"$query\". Please try again."
-        }
-        
-        val sb = StringBuilder()
-        sb.append("🔍 **Browser Search for \"$query\"**\n\n")
-        
-        results.forEachIndexed { index, result ->
-            sb.append("**${index + 1}. ${result.title}**\n")
-            sb.append("${result.snippet}\n")
-            sb.append("URL: ${result.url}\n")
-            sb.append("---\n\n")
-        }
-        
-        sb.append("I've opened the search in your browser. You can copy relevant information back to our conversation.")
-        return sb.toString()
-    }
-} 
+}
