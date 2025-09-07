@@ -36,7 +36,8 @@ fun ModernTopAppBar(
     showModelDropdown: Boolean,
     onModelDropdownDismiss: () -> Unit,
     viewModel: MainViewModel,
-    extFilesDir: File?
+    extFilesDir: File?,
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     TopAppBar(
         title = {
@@ -105,6 +106,7 @@ fun ModernTopAppBar(
                     }
                 }
             }
+            actions()
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
