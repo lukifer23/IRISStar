@@ -18,60 +18,6 @@ class ModernChatInputTest {
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun latestNewsActionTriggered() {
-        var called = false
-        composeTestRule.setContent {
-            ModernChatInput(
-                value = "",
-                onValueChange = {},
-                onSend = {},
-                onAttachmentClick = {},
-                onVoiceClick = {},
-                onLatestNews = { called = true }
-            )
-        }
-
-        composeTestRule.onNodeWithText("Latest news").performClick()
-        assertTrue(called)
-    }
-
-    @Test
-    fun createImagesActionTriggered() {
-        var called = false
-        composeTestRule.setContent {
-            ModernChatInput(
-                value = "",
-                onValueChange = {},
-                onSend = {},
-                onAttachmentClick = {},
-                onVoiceClick = {},
-                onCreateImages = { called = true }
-            )
-        }
-
-        composeTestRule.onNodeWithText("Create images").performClick()
-        assertTrue(called)
-    }
-
-    @Test
-    fun cartoonStyleActionTriggered() {
-        var called = false
-        composeTestRule.setContent {
-            ModernChatInput(
-                value = "",
-                onValueChange = {},
-                onSend = {},
-                onAttachmentClick = {},
-                onVoiceClick = {},
-                onCartoonStyle = { called = true }
-            )
-        }
-
-        composeTestRule.onNodeWithText("Cartoon style").performClick()
-        assertTrue(called)
-    }
-
-    @Test
     fun cameraHandlerTriggered() {
         var called = false
         composeTestRule.setContent {
@@ -79,7 +25,6 @@ class ModernChatInputTest {
                 value = "",
                 onValueChange = {},
                 onSend = {},
-                onAttachmentClick = {},
                 onVoiceClick = {},
                 onCameraClick = { called = true }
             )
@@ -98,7 +43,6 @@ class ModernChatInputTest {
                 value = "",
                 onValueChange = {},
                 onSend = {},
-                onAttachmentClick = {},
                 onVoiceClick = {},
                 onPhotosClick = { called = true }
             )
@@ -117,7 +61,6 @@ class ModernChatInputTest {
                 value = "",
                 onValueChange = {},
                 onSend = {},
-                onAttachmentClick = {},
                 onVoiceClick = {},
                 onFilesClick = { called = true }
             )
@@ -128,4 +71,3 @@ class ModernChatInputTest {
         assertTrue(called)
     }
 }
-

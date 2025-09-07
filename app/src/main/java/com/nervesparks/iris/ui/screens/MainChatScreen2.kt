@@ -1,6 +1,14 @@
 package com.nervesparks.iris.ui.screens
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
@@ -24,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.nervesparks.iris.MainViewModel
-import com.nervesparks.iris.ui.LocalActionHandler
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.ModernChatInput
 import com.nervesparks.iris.ui.components.ModernTopAppBar
@@ -48,6 +55,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
+import androidx.core.content.ContextCompat
+import java.io.File
+import java.io.FileOutputStream
 
 @Composable
 fun NavDrawer(
@@ -163,20 +173,50 @@ fun MainChatScreen2(
 
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
-    val actionHandler = remember { LocalActionHandler(context) }
 
     var showModelDropdown by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel.lastQuickAction) {
-        viewModel.lastQuickAction?.let {
-            actionHandler.handleQuickAction(it, viewModel)
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            viewModel.startVoiceRecognition(context)
         }
     }
 
-    LaunchedEffect(viewModel.lastAttachmentAction) {
-        viewModel.lastAttachmentAction?.let {
-            actionHandler.handleAttachmentAction(it, viewModel)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val bitmap = result.data?.extras?.get("data") as? Bitmap
+            bitmap?.let {
+                val file = File(context.cacheDir, "camera_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(file).use { fos ->
+                    it.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+                }
+                viewModel.sendImage(Uri.fromFile(file))
+            }
         }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+        }
+    }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.sendImage(it) }
+    }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.handleFile(context, it) }
     }
 
     DisposableEffect(Unit) {
@@ -265,15 +305,38 @@ fun MainChatScreen2(
                         value = viewModel.message,
                         onValueChange = { viewModel.updateMessage(it) },
                         onSend = { viewModel.send() },
-                        onAttachmentClick = {},
-                        onVoiceClick = { viewModel.startVoiceRecognition(context) },
-                        onCameraClick = { viewModel.onCameraAttachment() },
-                        onPhotosClick = { viewModel.onPhotosAttachment() },
-                        onFilesClick = { viewModel.onFilesAttachment() },
+                        onVoiceClick = {
+                            if (ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.RECORD_AUDIO
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                viewModel.startVoiceRecognition(context)
+                            } else {
+                                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        },
+                        onCameraClick = {
+                            if (ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.CAMERA
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                cameraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+                            } else {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
+                        onPhotosClick = {
+                            photoPickerLauncher.launch(arrayOf("image/*"))
+                        },
+                        onFilesClick = {
+                            filePickerLauncher.launch(arrayOf("*/*"))
+                        },
                         onCodeClick = { viewModel.toggleCodeMode() },
                         isCodeMode = viewModel.isCodeMode,
                         onTranslateClick = { viewModel.translate(viewModel.message, "English") },
-                        onWebSearchClick = { 
+                        onWebSearchClick = {
                             if (viewModel.message.isNotBlank()) {
                                 viewModel.performWebSearch(viewModel.message)
                             }

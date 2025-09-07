@@ -52,6 +52,9 @@ import com.nervesparks.iris.data.search.SearchResult
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.itextpdf.kernel.pdf.PdfDocument
+import com.itextpdf.kernel.pdf.PdfReader
+import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -394,13 +397,6 @@ class MainViewModel @Inject constructor(
     }
 
     fun startVoiceRecognition(context: Context) {
-        // TODO: Use VoiceViewModel from UI layer
-        Log.d("MainViewModel", "Voice recognition not implemented in MainViewModel")
-    }
-
-    // Legacy voice recognition function
-    private fun legacyStartVoiceRecognition() {
-        val context = getApplication<Application>()
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             voiceError = "Microphone permission not granted"
             return
@@ -448,10 +444,8 @@ class MainViewModel @Inject constructor(
         speechRecognizer?.startListening(intent)
     }
 
-    // Quick action and attachment handlers
+    // Quick action handlers
     var lastQuickAction by mutableStateOf<String?>(null)
-        private set
-    var lastAttachmentAction by mutableStateOf<String?>(null)
         private set
 
     fun onLatestNews() {
@@ -469,17 +463,6 @@ class MainViewModel @Inject constructor(
         performWebSearch("cartoon style art")
     }
 
-    fun onCameraAttachment() {
-        lastAttachmentAction = "camera"
-    }
-
-    fun onPhotosAttachment() {
-        lastAttachmentAction = "photos"
-    }
-
-    fun onFilesAttachment() {
-        lastAttachmentAction = "files"
-    }
 
     fun summarizeDocument(text: String) {
         viewModelScope.launch {
@@ -572,6 +555,47 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(tag, "Error processing image", e)
                 addMessage("assistant", "❌ Unable to process image: ${e.message}")
+            }
+        }
+    }
+
+    fun handleFile(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            try {
+                when (context.contentResolver.getType(uri) ?: "") {
+                    "application/pdf" -> {
+                        val pdfReader = PdfReader(context.contentResolver.openInputStream(uri))
+                        val pdfDocument = PdfDocument(pdfReader)
+                        val numPages = pdfDocument.numberOfPages
+                        val builder = StringBuilder()
+                        for (i in 1..numPages) {
+                            builder.append(PdfTextExtractor.getTextFromPage(pdfDocument.getPage(i)))
+                        }
+                        pdfDocument.close()
+                        val text = builder.toString()
+                        indexDocument(text)
+                        summarizeDocument(text)
+                    }
+                    "image/jpeg", "image/png" -> {
+                        sendImage(uri)
+                    }
+                    "text/plain" -> {
+                        val text = context.contentResolver.openInputStream(uri)?.bufferedReader()
+                            .use { it?.readText() }
+                        if (text != null) {
+                            indexDocument(text)
+                            summarizeDocument(text)
+                        } else {
+                            addMessage("assistant", "❌ Failed to read document")
+                        }
+                    }
+                    else -> {
+                        addMessage("assistant", "❌ Unsupported file format")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error processing document", e)
+                addMessage("assistant", "❌ Failed to process document: ${e.message}")
             }
         }
     }
@@ -853,10 +877,6 @@ class MainViewModel @Inject constructor(
 
     fun clearLastQuickAction() {
         lastQuickAction = null
-    }
-
-    fun clearLastAttachmentAction() {
-        lastAttachmentAction = null
     }
 
     // Performance monitoring variables
