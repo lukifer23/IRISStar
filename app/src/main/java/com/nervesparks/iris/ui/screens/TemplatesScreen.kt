@@ -38,6 +38,8 @@ fun TemplatesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(ComponentStyles.defaultPadding)
         ) {
             // Header

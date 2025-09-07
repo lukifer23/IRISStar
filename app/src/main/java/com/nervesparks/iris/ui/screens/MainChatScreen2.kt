@@ -58,7 +58,12 @@ fun NavDrawer(
     onChatList: () -> Unit,
     viewModel: MainViewModel
 ) {
-    Column(modifier = Modifier.padding(ComponentStyles.defaultPadding)) {
+    Column(
+        modifier = Modifier
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(ComponentStyles.defaultPadding)
+    ) {
         Text(
             text = "IRIS",
             style = MaterialTheme.typography.headlineSmall,

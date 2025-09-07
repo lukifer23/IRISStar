@@ -31,6 +31,8 @@ fun ModernTestScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         // Modern top app bar
         ModernTopAppBar(

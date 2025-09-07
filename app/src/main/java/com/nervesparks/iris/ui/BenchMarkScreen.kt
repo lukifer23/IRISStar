@@ -52,6 +52,8 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
             color = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(innerPadding)
         ) {
             Column(

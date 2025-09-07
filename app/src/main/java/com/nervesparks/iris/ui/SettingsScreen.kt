@@ -68,6 +68,8 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(ComponentStyles.defaultPadding),
         verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)

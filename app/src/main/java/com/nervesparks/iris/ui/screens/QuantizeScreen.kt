@@ -3,8 +3,11 @@ package com.nervesparks.iris.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -47,7 +50,11 @@ fun QuantizeScreen(
     var showProgress by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.padding(ComponentStyles.defaultPadding),
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(ComponentStyles.defaultPadding),
         verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
     ) {
         Text("Select Model", style = MaterialTheme.typography.titleMedium)

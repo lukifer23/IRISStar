@@ -61,7 +61,10 @@ fun ChatListScreen(
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(paddingValues)) {
+                .padding(paddingValues)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+    ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
