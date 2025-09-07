@@ -128,7 +128,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                         models.forEach { model ->
                             Log.d("DownloadModal", "Model: ${model.name}, exists: ${model.destination.exists()}")
                         }
-                        items(filteredModels) { model ->
+                        items(filteredModels, key = { it.name }) { model ->
                             DefaultModelCard(viewModel, dm, model)
                         }
                     }
@@ -243,7 +243,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                             ) {
-                                items(results) { model ->
+                                items(results, key = { it["modelId"] ?: it["modelName"] ?: "" }) { model ->
                                     SearchResultCard(model, dm, context)
                                 }
                             }
@@ -387,7 +387,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                         modifier = Modifier.height(120.dp),
                         verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                     ) {
-                        items(fileList) { file ->
+                        items(fileList, key = { it }) { file ->
                             ThemedModalCard(
                                 modifier = Modifier.fillMaxWidth()
                             ) {

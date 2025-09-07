@@ -55,7 +55,7 @@ fun AboutScreen() {
             SectionHeader(text = "Features")
         }
 
-        items(features) { feature ->
+        items(features, key = { it }) { feature ->
             FeatureItem(feature = feature)
         }
 
@@ -64,7 +64,7 @@ fun AboutScreen() {
             SectionHeader(text = "FAQs")
         }
 
-        items(faqs) { faq ->
+        items(faqs, key = { it.first }) { faq ->
             FaqItem(question = faq.first, answer = faq.second)
         }
     }
