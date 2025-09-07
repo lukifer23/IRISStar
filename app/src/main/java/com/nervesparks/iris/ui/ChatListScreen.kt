@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.db.Chat
 import kotlinx.coroutines.launch
@@ -68,7 +68,7 @@ fun ChatListScreen(
                 placeholder = { Text("Search chats") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(ComponentStyles.defaultPadding),
                 singleLine = true
             )
 
@@ -134,23 +134,23 @@ private fun ChatRow(
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = ComponentStyles.defaultPadding, vertical = ComponentStyles.smallPadding)
             .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(ComponentStyles.defaultPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Chat,
                 contentDescription = "Chat",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(ComponentStyles.defaultIconSize)
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(ComponentStyles.largeSpacing))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = chat.title,

@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.*
 import com.nervesparks.iris.ui.theme.IrisStarTheme
@@ -47,7 +47,7 @@ private fun SettingsSection(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = ComponentStyles.defaultPadding)
         )
         
         items.forEach { item ->
@@ -70,17 +70,17 @@ private fun SettingsItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = ComponentStyles.smallPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = item.icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(ComponentStyles.defaultIconSize)
         )
         
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(ComponentStyles.largeSpacing))
         
         Text(
             text = item.title,
@@ -105,7 +105,7 @@ private fun SettingsItemRow(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Selected",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(ComponentStyles.smallIconSize + ComponentStyles.smallSpacing)
             )
         }
     }
