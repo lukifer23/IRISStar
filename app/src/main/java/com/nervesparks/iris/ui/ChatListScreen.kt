@@ -22,6 +22,8 @@ import com.nervesparks.iris.data.db.Chat
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
+import com.nervesparks.iris.ui.util.rememberWindowClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +37,7 @@ fun ChatListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     val filteredChats = chats.filter { it.title.contains(searchQuery, ignoreCase = true) }
+    val windowClass = rememberWindowClass()
 
     Scaffold(
         topBar = {
@@ -58,38 +61,44 @@ fun ChatListScreen(
             }
         }
     ) { paddingValues ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(paddingValues)) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search chats") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                singleLine = true
-            )
-
-            if (filteredChats.isEmpty()) {
-                Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        if (chats.isEmpty()) "No chats yet." else "No chats found.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+        if (windowClass.width == WindowWidthSizeClass.Compact) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                ChatListContent(
+                    filteredChats = filteredChats,
+                    chats = chats,
+                    searchQuery = searchQuery,
+                    onSearchChange = { searchQuery = it },
+                    onChatSelected = onChatSelected,
+                    onRename = { chat, title -> scope.launch { viewModel.renameChat(chat, title) } },
+                    onDelete = { chat -> scope.launch { viewModel.deleteChat(chat) } }
+                )
+            }
+        } else {
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    ChatListContent(
+                        filteredChats = filteredChats,
+                        chats = chats,
+                        searchQuery = searchQuery,
+                        onSearchChange = { searchQuery = it },
+                        onChatSelected = onChatSelected,
+                        onRename = { chat, title -> scope.launch { viewModel.renameChat(chat, title) } },
+                        onDelete = { chat -> scope.launch { viewModel.deleteChat(chat) } }
                     )
                 }
-            } else {
-                LazyColumn(Modifier.weight(1f)) {
-                    items(filteredChats, key = { it.id }) { chat ->
-                        ChatRow(
-                            chat = chat,
-                            onClick = { onChatSelected(chat.id) },
-                            onRename = { title -> scope.launch { viewModel.renameChat(chat, title) } },
-                            onDelete = { scope.launch { viewModel.deleteChat(chat) } },
-                            modifier = Modifier.animateItemPlacement()
-                        )
-                    }
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Select a chat", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -114,6 +123,48 @@ fun ChatListScreen(
                         }, modifier = Modifier.weight(1f)) { Text("Delete All", color = MaterialTheme.colorScheme.error) }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.ChatListContent(
+    filteredChats: List<Chat>,
+    chats: List<Chat>,
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    onChatSelected: (Long) -> Unit,
+    onRename: (Chat, String) -> Unit,
+    onDelete: (Chat) -> Unit
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchChange,
+        placeholder = { Text("Search chats") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        singleLine = true
+    )
+
+    if (filteredChats.isEmpty()) {
+        Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                if (chats.isEmpty()) "No chats yet." else "No chats found.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        LazyColumn(Modifier.weight(1f)) {
+            items(filteredChats, key = { it.id }) { chat ->
+                ChatRow(
+                    chat = chat,
+                    onClick = { onChatSelected(chat.id) },
+                    onRename = { title -> onRename(chat, title) },
+                    onDelete = { onDelete(chat) },
+                    modifier = Modifier.animateItemPlacement()
+                )
             }
         }
     }

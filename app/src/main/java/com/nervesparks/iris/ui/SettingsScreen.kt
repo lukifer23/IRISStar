@@ -35,6 +35,8 @@ import com.nervesparks.iris.ui.theme.ModernTextField
 import com.nervesparks.iris.ui.animations.BounceButton
 import com.nervesparks.iris.ui.theme.IrisAnimations
 import com.nervesparks.iris.security.BiometricAuthenticator
+import com.nervesparks.iris.ui.util.rememberWindowClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,15 +65,9 @@ fun SettingsScreen(
             showSaveSuccess = false
         }
     }
+    val windowClass = rememberWindowClass()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(ComponentStyles.defaultPadding),
-        verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
-    ) {
+    val sections: @Composable ColumnScope.() -> Unit = {
         // HuggingFace Settings Section
         ModernCard(
             modifier = Modifier.fillMaxWidth()
@@ -457,5 +453,41 @@ fun SettingsScreen(
             viewModel = viewModel,
             modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
         )
+    }
+
+    if (windowClass.width == WindowWidthSizeClass.Compact) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(ComponentStyles.defaultPadding),
+            verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
+        ) {
+            sections()
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(ComponentStyles.defaultPadding),
+            horizontalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(ComponentStyles.defaultSpacing)
+            ) {
+                sections()
+            }
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Settings Preview", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
     }
 }

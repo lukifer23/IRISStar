@@ -34,6 +34,8 @@ import com.nervesparks.iris.ui.components.ModelSelectionModal
 import com.nervesparks.iris.ui.navigation.AppDestinations
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.PrimaryButton
+import com.nervesparks.iris.ui.util.rememberWindowClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -164,6 +166,7 @@ fun MainChatScreen2(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val actionHandler = remember { LocalActionHandler(context) }
+    val windowClass = rememberWindowClass()
 
     var showModelDropdown by remember { mutableStateOf(false) }
 
@@ -185,16 +188,49 @@ fun MainChatScreen2(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
+    if (windowClass.width == WindowWidthSizeClass.Compact) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                NavDrawer(
+                    navController = navController,
+                    onCloseDrawer = {
+                        scope.launch {
+                            drawerState.close()
+                        }
+                    },
+                    onNewChat = {
+                        viewModel.clear()
+                        navController.navigate(AppDestinations.CHAT)
+                    },
+                    onSettings = {
+                        navController.navigate(AppDestinations.SETTINGS)
+                    },
+                    onChatList = {
+                        viewModel.persistChat()
+                        navController.navigate(AppDestinations.CHAT_LIST)
+                    },
+                    viewModel = viewModel
+                )
+            }
+        ) {
+            ChatScaffold(
+                navController = navController,
+                viewModel = viewModel,
+                scrollState = scrollState,
+                drawerState = drawerState,
+                scope = scope,
+                extFilesDir = extFilesDir,
+                showModelDropdown = showModelDropdown,
+                onShowModelDropdownChange = { showModelDropdown = it },
+                context = context
+            )
+        }
+    } else {
+        Row(modifier = Modifier.fillMaxSize()) {
             NavDrawer(
                 navController = navController,
-                onCloseDrawer = {
-                    scope.launch {
-                        drawerState.close()
-                    }
-                },
+                onCloseDrawer = {},
                 onNewChat = {
                     viewModel.clear()
                     navController.navigate(AppDestinations.CHAT)
@@ -206,82 +242,109 @@ fun MainChatScreen2(
                     viewModel.persistChat()
                     navController.navigate(AppDestinations.CHAT_LIST)
                 },
-                viewModel = viewModel
+                viewModel = viewModel,
+                modifier = Modifier.width(240.dp)
+            )
+            ChatScaffold(
+                navController = navController,
+                viewModel = viewModel,
+                scrollState = scrollState,
+                drawerState = drawerState,
+                scope = scope,
+                extFilesDir = extFilesDir,
+                showModelDropdown = showModelDropdown,
+                onShowModelDropdownChange = { showModelDropdown = it },
+                context = context,
+                modifier = Modifier.weight(1f)
             )
         }
-    ) {
-        Scaffold(
-            modifier = Modifier.imePadding(),
-            topBar = {
-                ModernTopAppBar(
-                    title = "Iris ✨",
-                    onMenuClick = {
-                        scope.launch {
-                            drawerState.open()
-                        }
-                    },
-                    onModelClick = { showModelDropdown = true },
-                    currentModel = viewModel.loadedModelName.value,
-                    availableModels = viewModel.allModels.map { it["name"] ?: "" },
-                    showModelDropdown = showModelDropdown,
-                    onModelDropdownDismiss = { showModelDropdown = false },
-                    viewModel = viewModel,
-                    extFilesDir = extFilesDir
-                )
-            },
-            content = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(it)
-                ) {
-                    ChatMessageList(viewModel = viewModel, scrollState = scrollState)
-                    
-                    // Show search loading modal when searching
-                    if (viewModel.isSearching) {
-                        SearchLoadingModal(
-                            message = viewModel.searchProgress,
-                            searchQuery = viewModel.currentSearchQuery,
-                            onDismiss = { }
-                        )
+    }
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatScaffold(
+    navController: NavController,
+    viewModel: MainViewModel,
+    scrollState: androidx.compose.foundation.lazy.LazyListState,
+    drawerState: androidx.compose.material3.DrawerState,
+    scope: kotlinx.coroutines.CoroutineScope,
+    extFilesDir: java.io.File?,
+    showModelDropdown: Boolean,
+    onShowModelDropdownChange: (Boolean) -> Unit,
+    context: android.content.Context,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier.imePadding(),
+        topBar = {
+            ModernTopAppBar(
+                title = "Iris ✨",
+                onMenuClick = {
+                    scope.launch {
+                        drawerState.open()
                     }
-                    
-                    // Show model selection modal when models are available
-                    if (viewModel.showModelSelection) {
-                        ModelSelectionModal(
-                            viewModel = viewModel,
-                            onDismiss = { viewModel.hideModelSelectionDialog() },
-                            onNavigateToModels = { navController.navigate(AppDestinations.MODELS) }
-                        )
-                    }
+                },
+                onModelClick = { onShowModelDropdownChange(true) },
+                currentModel = viewModel.loadedModelName.value,
+                availableModels = viewModel.allModels.map { it["name"] ?: "" },
+                showModelDropdown = showModelDropdown,
+                onModelDropdownDismiss = { onShowModelDropdownChange(false) },
+                viewModel = viewModel,
+                extFilesDir = extFilesDir
+            )
+        },
+        content = {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(it)
+            ) {
+                ChatMessageList(viewModel = viewModel, scrollState = scrollState)
+
+                if (viewModel.isSearching) {
+                    SearchLoadingModal(
+                        message = viewModel.searchProgress,
+                        searchQuery = viewModel.currentSearchQuery,
+                        onDismiss = { }
+                    )
                 }
-            },
-            bottomBar = {
-                Column(
-                    modifier = Modifier.navigationBarsPadding()
-                ) {
-                    PerformanceMonitor(viewModel = viewModel)
-                    ModernChatInput(
-                        value = viewModel.message,
-                        onValueChange = { viewModel.updateMessage(it) },
-                        onSend = { viewModel.send() },
-                        onAttachmentClick = {},
-                        onVoiceClick = { viewModel.startVoiceRecognition(context) },
-                        onCameraClick = { viewModel.onCameraAttachment() },
-                        onPhotosClick = { viewModel.onPhotosAttachment() },
-                        onFilesClick = { viewModel.onFilesAttachment() },
-                        onCodeClick = { viewModel.toggleCodeMode() },
-                        isCodeMode = viewModel.isCodeMode,
-                        onTranslateClick = { viewModel.translate(viewModel.message, "English") },
-                        onWebSearchClick = { 
-                            if (viewModel.message.isNotBlank()) {
-                                viewModel.performWebSearch(viewModel.message)
-                            }
-                        },
-                        enabled = !viewModel.isGenerating
+
+                if (viewModel.showModelSelection) {
+                    ModelSelectionModal(
+                        viewModel = viewModel,
+                        onDismiss = { viewModel.hideModelSelectionDialog() },
+                        onNavigateToModels = { navController.navigate(AppDestinations.MODELS) }
                     )
                 }
             }
-        )
-    }
+        },
+        bottomBar = {
+            Column(
+                modifier = Modifier.navigationBarsPadding()
+            ) {
+                PerformanceMonitor(viewModel = viewModel)
+                ModernChatInput(
+                    value = viewModel.message,
+                    onValueChange = { viewModel.updateMessage(it) },
+                    onSend = { viewModel.send() },
+                    onAttachmentClick = {},
+                    onVoiceClick = { viewModel.startVoiceRecognition(context) },
+                    onCameraClick = { viewModel.onCameraAttachment() },
+                    onPhotosClick = { viewModel.onPhotosAttachment() },
+                    onFilesClick = { viewModel.onFilesAttachment() },
+                    onCodeClick = { viewModel.toggleCodeMode() },
+                    isCodeMode = viewModel.isCodeMode,
+                    onTranslateClick = { viewModel.translate(viewModel.message, "English") },
+                    onWebSearchClick = {
+                        if (viewModel.message.isNotBlank()) {
+                            viewModel.performWebSearch(viewModel.message)
+                        }
+                    },
+                    enabled = !viewModel.isGenerating
+                )
+            }
+        }
+    )
 }
