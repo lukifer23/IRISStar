@@ -1,6 +1,6 @@
 package com.nervesparks.iris.viewmodel
 
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -61,9 +61,9 @@ class SettingsViewModel @Inject constructor(
                 loadUISettings()
                 loadSecuritySettings()
                 loadThinkingTokenSettings()
-                Log.d(tag, "All settings loaded")
+                Timber.tag(tag).d("All settings loaded")
             } catch (e: Exception) {
-                Log.e(tag, "Error loading settings", e)
+                Timber.tag(tag).e(e, "Error loading settings")
             }
         }
     }
@@ -74,25 +74,25 @@ class SettingsViewModel @Inject constructor(
             huggingFaceToken = userPreferencesRepository.huggingFaceToken
             huggingFaceUsername = userPreferencesRepository.huggingFaceUsername
         } catch (e: Exception) {
-            Log.e(tag, "Error loading model settings", e)
+            Timber.tag(tag).e(e, "Error loading model settings")
         }
     }
 
     private suspend fun loadPerformanceSettings() {
         try {
             // TODO: Load performance settings from repository
-            Log.d(tag, "Performance settings loaded")
+            Timber.tag(tag).d("Performance settings loaded")
         } catch (e: Exception) {
-            Log.e(tag, "Error loading performance settings", e)
+            Timber.tag(tag).e(e, "Error loading performance settings")
         }
     }
 
     private suspend fun loadUISettings() {
         try {
             // TODO: Load UI settings from repository
-            Log.d(tag, "UI settings loaded")
+            Timber.tag(tag).d("UI settings loaded")
         } catch (e: Exception) {
-            Log.e(tag, "Error loading UI settings", e)
+            Timber.tag(tag).e(e, "Error loading UI settings")
         }
     }
 
@@ -100,16 +100,16 @@ class SettingsViewModel @Inject constructor(
         try {
             securityBiometricEnabled = userPreferencesRepository.securityBiometricEnabled
         } catch (e: Exception) {
-            Log.e(tag, "Error loading security settings", e)
+            Timber.tag(tag).e(e, "Error loading security settings")
         }
     }
 
     private suspend fun loadThinkingTokenSettings() {
         try {
             // TODO: Load thinking token settings from repository
-            Log.d(tag, "Thinking token settings loaded")
+            Timber.tag(tag).d("Thinking token settings loaded")
         } catch (e: Exception) {
-            Log.e(tag, "Error loading thinking token settings", e)
+            Timber.tag(tag).e(e, "Error loading thinking token settings")
         }
     }
 
@@ -117,7 +117,7 @@ class SettingsViewModel @Inject constructor(
     fun updateDefaultModelName(modelName: String) {
         defaultModelName = modelName
         userPreferencesRepository.defaultModelName = modelName
-        Log.d(tag, "Default model name updated: $modelName")
+        Timber.tag(tag).d("Default model name updated: $modelName")
     }
 
     fun updateHuggingFaceToken(token: String) {
@@ -125,9 +125,9 @@ class SettingsViewModel @Inject constructor(
         if (validation.isValid) {
             huggingFaceToken = validation.sanitizedValue ?: token
             userPreferencesRepository.huggingFaceToken = huggingFaceToken
-            Log.d(tag, "HuggingFace token updated and validated")
+            Timber.tag(tag).d("HuggingFace token updated and validated")
         } else {
-            Log.w(tag, "Invalid HuggingFace token: ${validation.errorMessage}")
+            Timber.tag(tag).w("Invalid HuggingFace token: ${validation.errorMessage}")
         }
     }
 
@@ -136,9 +136,9 @@ class SettingsViewModel @Inject constructor(
         if (validation.isValid) {
             huggingFaceUsername = validation.sanitizedValue ?: username
             userPreferencesRepository.huggingFaceUsername = huggingFaceUsername
-            Log.d(tag, "HuggingFace username updated and validated: $huggingFaceUsername")
+            Timber.tag(tag).d("HuggingFace username updated and validated: $huggingFaceUsername")
         } else {
-            Log.w(tag, "Invalid username: ${validation.errorMessage}")
+            Timber.tag(tag).w("Invalid username: ${validation.errorMessage}")
         }
     }
 
@@ -149,7 +149,7 @@ class SettingsViewModel @Inject constructor(
         perfEnableMemoryOptimization = enableMemoryOptimization
         perfEnableBackgroundProcessing = enableBackgroundProcessing
         // TODO: Save to repository
-        Log.d(tag, "Performance settings updated")
+        Timber.tag(tag).d("Performance settings updated")
     }
 
     fun updateUISettings(
@@ -163,20 +163,20 @@ class SettingsViewModel @Inject constructor(
         uiEnableAnimations = enableAnimations
         uiEnableHapticFeedback = enableHapticFeedback
         // TODO: Save to repository
-        Log.d(tag, "UI settings updated")
+        Timber.tag(tag).d("UI settings updated")
     }
 
     fun updateSecuritySettings(enableBiometric: Boolean) {
         securityBiometricEnabled = enableBiometric
         userPreferencesRepository.securityBiometricEnabled = enableBiometric
-        Log.d(tag, "Security settings updated: biometric=$enableBiometric")
+        Timber.tag(tag).d("Security settings updated: biometric=$enableBiometric")
     }
 
     fun updateThinkingTokenSettings(showThinking: Boolean, style: String) {
         showThinkingTokens = showThinking
         thinkingTokenStyle = style
         // TODO: Save to repository
-        Log.d(tag, "Thinking token settings updated")
+        Timber.tag(tag).d("Thinking token settings updated")
     }
 
     // Template management
@@ -185,10 +185,10 @@ class SettingsViewModel @Inject constructor(
             val templates = userPreferencesRepository.getTemplates().toMutableList()
             templates.add(template)
             userPreferencesRepository.saveTemplates(templates)
-            Log.d(tag, "Template added: ${template.name}")
+            Timber.tag(tag).d("Template added: ${template.name}")
             true
         } catch (e: Exception) {
-            Log.e(tag, "Error adding template", e)
+            Timber.tag(tag).e(e, "Error adding template")
             false
         }
     }
@@ -200,14 +200,14 @@ class SettingsViewModel @Inject constructor(
             if (index >= 0) {
                 templates[index] = updated
                 userPreferencesRepository.saveTemplates(templates)
-                Log.d(tag, "Template edited: ${updated.name}")
+                Timber.tag(tag).d("Template edited: ${updated.name}")
                 true
             } else {
-                Log.e(tag, "Template not found for editing: ${updated.name}")
+                Timber.tag(tag).e("Template not found for editing: ${updated.name}")
                 false
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error editing template", e)
+            Timber.tag(tag).e(e, "Error editing template")
             false
         }
     }
@@ -217,10 +217,10 @@ class SettingsViewModel @Inject constructor(
             val templates = userPreferencesRepository.getTemplates().toMutableList()
             templates.removeIf { it.name == template.name }
             userPreferencesRepository.saveTemplates(templates)
-            Log.d(tag, "Template deleted: ${template.name}")
+            Timber.tag(tag).d("Template deleted: ${template.name}")
             true
         } catch (e: Exception) {
-            Log.e(tag, "Error deleting template", e)
+            Timber.tag(tag).e(e, "Error deleting template")
             false
         }
     }
@@ -229,7 +229,7 @@ class SettingsViewModel @Inject constructor(
         return try {
             userPreferencesRepository.getTemplates()
         } catch (e: Exception) {
-            Log.e(tag, "Error getting templates", e)
+            Timber.tag(tag).e(e, "Error getting templates")
             emptyList()
         }
     }
@@ -239,7 +239,7 @@ class SettingsViewModel @Inject constructor(
         return try {
             userPreferencesRepository.exportConfiguration()
         } catch (e: Exception) {
-            Log.e(tag, "Error exporting configuration", e)
+            Timber.tag(tag).e(e, "Error exporting configuration")
             "{}"
         }
     }
@@ -249,11 +249,11 @@ class SettingsViewModel @Inject constructor(
             val success = userPreferencesRepository.importConfiguration(jsonString)
             if (success) {
                 loadSettings() // Reload all settings after import
-                Log.d(tag, "Configuration imported successfully")
+                Timber.tag(tag).d("Configuration imported successfully")
             }
             success
         } catch (e: Exception) {
-            Log.e(tag, "Error importing configuration", e)
+            Timber.tag(tag).e(e, "Error importing configuration")
             false
         }
     }
@@ -268,9 +268,9 @@ class SettingsViewModel @Inject constructor(
             try {
                 userPreferencesRepository.clearAll()
                 loadSettings() // Reset to defaults
-                Log.d(tag, "All settings cleared")
+                Timber.tag(tag).d("All settings cleared")
             } catch (e: Exception) {
-                Log.e(tag, "Error clearing settings", e)
+                Timber.tag(tag).e(e, "Error clearing settings")
             }
         }
     }

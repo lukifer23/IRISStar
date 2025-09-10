@@ -1,6 +1,6 @@
 package com.nervesparks.iris.viewmodel
 
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,9 +44,9 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 chatRepository.updateChatTitle(chat.id, title)
-                Log.d(tag, "Chat renamed: ${chat.id} -> $title")
+                Timber.tag(tag).d("Chat renamed: ${chat.id} -> $title")
             } catch (e: Exception) {
-                Log.e(tag, "Error renaming chat", e)
+                Timber.tag(tag).e(e, "Error renaming chat")
             }
         }
     }
@@ -55,9 +55,9 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 chatRepository.deleteChat(chat)
-                Log.d(tag, "Chat deleted: ${chat.id}")
+                Timber.tag(tag).d("Chat deleted: ${chat.id}")
             } catch (e: Exception) {
-                Log.e(tag, "Error deleting chat", e)
+                Timber.tag(tag).e(e, "Error deleting chat")
             }
         }
     }
@@ -76,10 +76,10 @@ class ChatViewModel @Inject constructor(
                             "timestamp" to message.timestamp
                         ))
                     }
-                    Log.d(tag, "Loaded chat: $chatId with ${messages.size} messages")
+                    Timber.tag(tag).d("Loaded chat: $chatId with ${messages.size} messages")
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Error loading chat: $chatId", e)
+                Timber.tag(tag).e(e, "Error loading chat: $chatId")
             }
         }
     }
@@ -100,9 +100,9 @@ class ChatViewModel @Inject constructor(
                 }
 
                 currentChat = chatRepository.getChat(chatId)
-                Log.d(tag, "Chat saved: $chatId")
+                Timber.tag(tag).d("Chat saved: $chatId")
             } catch (e: Exception) {
-                Log.e(tag, "Error saving chat", e)
+                Timber.tag(tag).e(e, "Error saving chat")
             }
         }
     }
@@ -122,7 +122,7 @@ class ChatViewModel @Inject constructor(
     fun clearChat() {
         messages.clear()
         currentChat = null
-        Log.d(tag, "Chat cleared")
+        Timber.tag(tag).d("Chat cleared")
     }
 
     fun addMessage(role: String, content: String) {
@@ -132,7 +132,7 @@ class ChatViewModel @Inject constructor(
             "timestamp" to System.currentTimeMillis()
         )
         messages.add(message)
-        Log.d(tag, "Message added: $role")
+        Timber.tag(tag).d("Message added: $role")
     }
 
     fun updateLastMessage(content: String) {
@@ -147,9 +147,9 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // TODO: Implement document indexing
-                Log.d(tag, "Document indexing not yet implemented")
+                Timber.tag(tag).d("Document indexing not yet implemented")
             } catch (e: Exception) {
-                Log.e(tag, "Error indexing document", e)
+                Timber.tag(tag).e(e, "Error indexing document")
             }
         }
     }
@@ -157,16 +157,16 @@ class ChatViewModel @Inject constructor(
     // Thinking tokens settings
     fun updateShowThinkingTokens(show: Boolean) {
         showThinkingTokens = show
-        Log.d(tag, "Show thinking tokens: $show")
+        Timber.tag(tag).d("Show thinking tokens: $show")
     }
 
     fun updateThinkingTokenStyle(style: String) {
         thinkingTokenStyle = style
-        Log.d(tag, "Thinking token style: $style")
+        Timber.tag(tag).d("Thinking token style: $style")
     }
 
     fun updateSupportsReasoning(supports: Boolean) {
         supportsReasoning = supports
-        Log.d(tag, "Supports reasoning: $supports")
+        Timber.tag(tag).d("Supports reasoning: $supports")
     }
 }

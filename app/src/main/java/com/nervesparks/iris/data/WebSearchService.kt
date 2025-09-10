@@ -1,6 +1,6 @@
 package com.nervesparks.iris.data
 
-import android.util.Log
+import timber.log.Timber
 import com.nervesparks.iris.data.search.SearchResponse
 import com.nervesparks.iris.data.search.SearchResult
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,7 @@ class WebSearchService(
      */
     suspend fun searchWeb(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
-            Log.d(tag, "Searching web for: $query")
+            Timber.tag(tag).d("Searching web for: $query")
             val apiKey = userPreferencesRepository.googleApiKey
             val cseId = userPreferencesRepository.googleCseId
             if (apiKey.isNotBlank() && cseId.isNotBlank()) {
@@ -30,7 +30,7 @@ class WebSearchService(
                 performDuckDuckGoSearch(query)
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error performing web search", e)
+                Timber.tag(tag).e(e, "Error performing web search")
             SearchResponse(
                 success = false,
                 error = "Search error: ${e.message}"
@@ -42,7 +42,7 @@ class WebSearchService(
      * Perform search using Google Custom Search API
      */
     private suspend fun performGoogleSearch(query: String, apiKey: String, cseId: String): SearchResponse = withContext(Dispatchers.IO) {
-        Log.d(tag, "Using Google Custom Search API")
+        Timber.tag(tag).d("Using Google Custom Search API")
         
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
         val url = "https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cseId&q=$encodedQuery&num=5"
@@ -54,21 +54,21 @@ class WebSearchService(
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                Log.e(tag, "Google search failed with code: ${response.code}")
+                Timber.tag(tag).e("Google search failed with code: ${response.code}")
                 SearchResponse(
                     success = false,
                     error = "Google search failed: HTTP ${response.code}"
                 )
             } else {
                 val jsonString = response.body?.string() ?: ""
-                Log.d(tag, "Google API response: $jsonString")
+                Timber.tag(tag).d("Google API response: $jsonString")
                 
                 val json = JSONObject(jsonString)
                 val results = mutableListOf<SearchResult>()
                 
                 if (json.has("items")) {
                     val items = json.getJSONArray("items")
-                    Log.d(tag, "Found ${items.length()} Google search results")
+                    Timber.tag(tag).d("Found ${items.length()} Google search results")
                     
                     for (i in 0 until minOf(items.length(), 5)) {
                         val item = items.getJSONObject(i)
@@ -80,7 +80,7 @@ class WebSearchService(
                         ))
                     }
                 } else {
-                    Log.d(tag, "No items found in Google search response")
+                    Timber.tag(tag).d("No items found in Google search response")
                 }
                 
                 SearchResponse(
@@ -96,7 +96,7 @@ class WebSearchService(
      * Fallback search using DuckDuckGo (with better error handling)
      */
     private suspend fun performDuckDuckGoSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
-        Log.d(tag, "Using DuckDuckGo fallback search")
+        Timber.tag(tag).d("Using DuckDuckGo fallback search")
         
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
         val url = "https://api.duckduckgo.com/?q=$encodedQuery&format=json&no_html=1&skip_disambig=1&t=IrisAI"
@@ -109,20 +109,20 @@ class WebSearchService(
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                Log.e(tag, "DuckDuckGo search failed with code: ${response.code}")
+                Timber.tag(tag).e("DuckDuckGo search failed with code: ${response.code}")
                 SearchResponse(
                     success = false,
                     error = "DuckDuckGo search failed: HTTP ${response.code}"
                 )
             } else {
                 val jsonString = response.body?.string() ?: ""
-                Log.d(tag, "DuckDuckGo API response: $jsonString")
+                Timber.tag(tag).d("DuckDuckGo API response: $jsonString")
                 
                 // Check if response is empty or contains test data
                 if (jsonString.contains("\"production_state\":\"offline\"") || 
                     jsonString.contains("\"Just Another Test\"") ||
                     jsonString.isEmpty()) {
-                    Log.d(tag, "Detected test API response, using fallback search")
+                    Timber.tag(tag).d("Detected test API response, using fallback search")
                     performFallbackSearch(query)
                 } else {
                     val json = JSONObject(jsonString)
@@ -130,7 +130,7 @@ class WebSearchService(
                     
                     // Extract Abstract (main result)
                     if (json.has("Abstract") && json.getString("Abstract").isNotEmpty()) {
-                        Log.d(tag, "Found Abstract: ${json.getString("Abstract")}")
+                        Timber.tag(tag).d("Found Abstract: ${json.getString("Abstract")}")
                         results.add(SearchResult(
                             title = json.getString("AbstractSource"),
                             snippet = json.getString("Abstract"),
@@ -138,18 +138,18 @@ class WebSearchService(
                             source = "DuckDuckGo Abstract"
                         ))
                     } else {
-                        Log.d(tag, "No Abstract found in response")
+                        Timber.tag(tag).d("No Abstract found in response")
                     }
                     
                     // Extract Related Topics
                     if (json.has("RelatedTopics")) {
-                        Log.d(tag, "Found RelatedTopics array")
+                        Timber.tag(tag).d("Found RelatedTopics array")
                         val relatedTopics = json.getJSONArray("RelatedTopics")
-                        Log.d(tag, "RelatedTopics length: ${relatedTopics.length()}")
+                        Timber.tag(tag).d("RelatedTopics length: ${relatedTopics.length()}")
                         for (i in 0 until minOf(relatedTopics.length(), 3)) {
                             val topic = relatedTopics.getJSONObject(i)
                             if (topic.has("Text")) {
-                                Log.d(tag, "Found RelatedTopic: ${topic.getString("Text")}")
+                                Timber.tag(tag).d("Found RelatedTopic: ${topic.getString("Text")}")
                                 results.add(SearchResult(
                                     title = topic.getString("FirstURL").substringAfterLast("/"),
                                     snippet = topic.getString("Text"),
@@ -159,12 +159,12 @@ class WebSearchService(
                             }
                         }
                     } else {
-                        Log.d(tag, "No RelatedTopics found in response")
+                        Timber.tag(tag).d("No RelatedTopics found in response")
                     }
                     
                     // Extract Answer (if available)
                     if (json.has("Answer") && json.getString("Answer").isNotEmpty()) {
-                        Log.d(tag, "Found Answer: ${json.getString("Answer")}")
+                        Timber.tag(tag).d("Found Answer: ${json.getString("Answer")}")
                         results.add(SearchResult(
                             title = "Direct Answer",
                             snippet = json.getString("Answer"),
@@ -172,14 +172,14 @@ class WebSearchService(
                             source = "DuckDuckGo Answer"
                         ))
                     } else {
-                        Log.d(tag, "No Answer found in response")
+                        Timber.tag(tag).d("No Answer found in response")
                     }
 
-                    Log.d(tag, "Found ${results.size} DuckDuckGo search results")
+                    Timber.tag(tag).d("Found ${results.size} DuckDuckGo search results")
                     
                     // If no results from DuckDuckGo, try a fallback approach
                     if (results.isEmpty()) {
-                        Log.d(tag, "No results from DuckDuckGo, trying fallback search")
+                        Timber.tag(tag).d("No results from DuckDuckGo, trying fallback search")
                         performFallbackSearch(query)
                     } else {
                         SearchResponse(
@@ -197,7 +197,7 @@ class WebSearchService(
      * Fallback search method that provides basic information and search tips
      */
     private suspend fun performFallbackSearch(query: String): SearchResponse {
-        Log.d(tag, "Performing fallback search for: $query")
+        Timber.tag(tag).d("Performing fallback search for: $query")
         
         // Create a more helpful fallback response
         val results = listOf(

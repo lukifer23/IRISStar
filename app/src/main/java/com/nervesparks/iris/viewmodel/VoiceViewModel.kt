@@ -8,7 +8,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -44,12 +44,12 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
 
     private val recognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
-            Log.d(tag, "Ready for speech")
+            Timber.tag(tag).d("Ready for speech")
             isListening = true
         }
 
         override fun onBeginningOfSpeech() {
-            Log.d(tag, "Beginning of speech")
+            Timber.tag(tag).d("Beginning of speech")
         }
 
         override fun onRmsChanged(rmsdB: Float) {
@@ -57,17 +57,17 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
         }
 
         override fun onBufferReceived(buffer: ByteArray?) {
-            Log.d(tag, "Buffer received")
+            Timber.tag(tag).d("Buffer received")
         }
 
         override fun onEndOfSpeech() {
-            Log.d(tag, "End of speech")
+            Timber.tag(tag).d("End of speech")
             isListening = false
         }
 
         override fun onError(error: Int) {
             val errorMessage = getErrorMessage(error)
-            Log.e(tag, "Speech recognition error: $errorMessage")
+            Timber.tag(tag).e("Speech recognition error: $errorMessage")
             speechRecognitionError = errorMessage
             isListening = false
         }
@@ -77,7 +77,7 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
             if (!matches.isNullOrEmpty()) {
                 speechRecognitionResult = matches[0]
                 speechRecognitionError = null
-                Log.d(tag, "Speech recognition result: $speechRecognitionResult")
+                Timber.tag(tag).d("Speech recognition result: $speechRecognitionResult")
             }
             isListening = false
         }
@@ -86,28 +86,28 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
             val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             if (!matches.isNullOrEmpty()) {
                 speechRecognitionResult = matches[0]
-                Log.d(tag, "Partial speech recognition result: $speechRecognitionResult")
+                Timber.tag(tag).d("Partial speech recognition result: $speechRecognitionResult")
             }
         }
 
         override fun onEvent(eventType: Int, params: Bundle?) {
-            Log.d(tag, "Speech recognition event: $eventType")
+            Timber.tag(tag).d("Speech recognition event: $eventType")
         }
     }
 
     private val ttsProgressListener = object : UtteranceProgressListener() {
         override fun onStart(utteranceId: String?) {
-            Log.d(tag, "TTS started: $utteranceId")
+            Timber.tag(tag).d("TTS started: $utteranceId")
             isSpeaking = true
         }
 
         override fun onDone(utteranceId: String?) {
-            Log.d(tag, "TTS done: $utteranceId")
+            Timber.tag(tag).d("TTS done: $utteranceId")
             isSpeaking = false
         }
 
         override fun onError(utteranceId: String?) {
-            Log.e(tag, "TTS error: $utteranceId")
+            Timber.tag(tag).e("TTS error: $utteranceId")
             ttsError = "Text-to-speech failed"
             isSpeaking = false
         }
@@ -120,9 +120,9 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
                 if (status == TextToSpeech.SUCCESS) {
                     textToSpeech?.language = Locale.getDefault()
                     textToSpeech?.setOnUtteranceProgressListener(ttsProgressListener)
-                    Log.d(tag, "TTS initialized successfully")
+                    Timber.tag(tag).d("TTS initialized successfully")
                 } else {
-                    Log.e(tag, "TTS initialization failed")
+                    Timber.tag(tag).e("TTS initialization failed")
                     ttsError = "Text-to-speech initialization failed"
                 }
             }
@@ -146,10 +146,10 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
 
             speechRecognizer?.startListening(intent)
             speechRecognitionError = null
-            Log.d(tag, "Started voice recognition")
+            Timber.tag(tag).d("Started voice recognition")
 
         } catch (e: Exception) {
-            Log.e(tag, "Error starting voice recognition", e)
+            Timber.tag(tag).e(e, "Error starting voice recognition")
             speechRecognitionError = "Failed to start voice recognition: ${e.message}"
         }
     }
@@ -158,9 +158,9 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
         try {
             speechRecognizer?.stopListening()
             isListening = false
-            Log.d(tag, "Stopped voice recognition")
+            Timber.tag(tag).d("Stopped voice recognition")
         } catch (e: Exception) {
-            Log.e(tag, "Error stopping voice recognition", e)
+            Timber.tag(tag).e(e, "Error stopping voice recognition")
         }
     }
 
@@ -174,14 +174,14 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
 
             if (result == TextToSpeech.SUCCESS) {
                 ttsError = null
-                Log.d(tag, "TTS started for text: ${text.take(50)}...")
+                Timber.tag(tag).d("TTS started for text: ${text.take(50)}...")
             } else {
                 ttsError = "Text-to-speech failed to start"
-                Log.e(tag, "TTS failed to start")
+                Timber.tag(tag).e("TTS failed to start")
             }
 
         } catch (e: Exception) {
-            Log.e(tag, "Error in text-to-speech", e)
+            Timber.tag(tag).e(e, "Error in text-to-speech")
             ttsError = "Text-to-speech error: ${e.message}"
         }
     }
@@ -190,9 +190,9 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
         try {
             textToSpeech?.stop()
             isSpeaking = false
-            Log.d(tag, "TTS stopped")
+            Timber.tag(tag).d("TTS stopped")
         } catch (e: Exception) {
-            Log.e(tag, "Error stopping TTS", e)
+            Timber.tag(tag).e(e, "Error stopping TTS")
         }
     }
 
@@ -221,9 +221,9 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
             textToSpeech?.shutdown()
             textToSpeech = null
 
-            Log.d(tag, "VoiceViewModel shutdown")
+            Timber.tag(tag).d("VoiceViewModel shutdown")
         } catch (e: Exception) {
-            Log.e(tag, "Error during VoiceViewModel shutdown", e)
+            Timber.tag(tag).e(e, "Error during VoiceViewModel shutdown")
         }
     }
 

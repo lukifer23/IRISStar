@@ -1,5 +1,6 @@
 package com.nervesparks.iris.data
 
+import timber.log.Timber
 import android.content.Context
 import android.util.Base64
 import androidx.datastore.core.DataStore
@@ -275,7 +276,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             if (json.has("perfEnableBackgroundProcessing")) perfEnableBackgroundProcessing = json.getBoolean("perfEnableBackgroundProcessing")
             true
         } catch (e: Exception) {
-            android.util.Log.e("UserPreferencesRepository", "Error importing configuration", e)
+            Timber.tag("UserPreferencesRepository").e(e, "Error importing configuration")
             false
         }
     }

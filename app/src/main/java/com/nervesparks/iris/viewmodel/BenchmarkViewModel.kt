@@ -1,7 +1,7 @@
 package com.nervesparks.iris.viewmodel
 
 import android.llama.cpp.LLamaAndroid
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -59,7 +59,7 @@ class BenchmarkViewModel @Inject constructor(
                 benchmarkError = null
                 resetMetrics()
 
-                Log.d(tag, "Starting standard benchmark")
+                Timber.tag(tag).d("Starting standard benchmark")
 
                 // Phase 1: Warm-up (20%)
                 benchmarkProgress = 0.2f
@@ -74,10 +74,10 @@ class BenchmarkViewModel @Inject constructor(
                 benchmarkProgress = 1.0f
 
                 benchmarkResults = results
-                Log.d(tag, "Benchmark completed: $results")
+                Timber.tag(tag).d("Benchmark completed: $results")
 
             } catch (e: Exception) {
-                Log.e(tag, "Benchmark failed", e)
+                Timber.tag(tag).e(e, "Benchmark failed")
                 benchmarkError = "Benchmark failed: ${e.message}"
             } finally {
                 isBenchmarkRunning = false
@@ -104,7 +104,7 @@ class BenchmarkViewModel @Inject constructor(
                     }
             }
         } catch (e: Exception) {
-            Log.w(tag, "Token generation test completed or timed out", e)
+            Timber.tag(tag).w(e, "Token generation test completed or timed out")
         }
 
         val endTime = System.currentTimeMillis()
@@ -123,14 +123,14 @@ class BenchmarkViewModel @Inject constructor(
         try {
             // Get memory usage
             memoryUsage = llamaAndroid.getMemoryUsage()
-            Log.d(tag, "Memory usage: $memoryUsage bytes")
+            Timber.tag(tag).d("Memory usage: $memoryUsage bytes")
 
             // Get offload information
             val offloadCounts = llamaAndroid.getOffloadCounts()
-            Log.d(tag, "GPU offload: $offloadCounts")
+            Timber.tag(tag).d("GPU offload: $offloadCounts")
 
         } catch (e: Exception) {
-            Log.w(tag, "Performance analysis failed", e)
+            Timber.tag(tag).w(e, "Performance analysis failed")
         }
     }
 
@@ -142,7 +142,7 @@ class BenchmarkViewModel @Inject constructor(
                 benchmarkProgress = 0f
                 benchmarkError = null
 
-                Log.d(tag, "Starting comparative benchmark")
+                Timber.tag(tag).d("Starting comparative benchmark")
 
                 // Test different configurations
                 val configs = listOf(
@@ -158,24 +158,24 @@ class BenchmarkViewModel @Inject constructor(
                         // Switch backend
                         val success = llamaAndroid.setBackend(backend)
                         if (success) {
-                            Log.d(tag, "Testing backend: $backend")
+                            Timber.tag(tag).d("Testing backend: $backend")
                             val result = runTokenGenerationTest()
                             results[name] = result
                         } else {
-                            Log.w(tag, "Backend $backend not available")
+                            Timber.tag(tag).w("Backend $backend not available")
                         }
                     } catch (e: Exception) {
-                        Log.w(tag, "Failed to test backend: $backend", e)
+                        Timber.tag(tag).w(e, "Failed to test backend: $backend")
                     }
 
                     benchmarkProgress += 1f / configs.size
                 }
 
                 benchmarkResults = mapOf("comparative" to results)
-                Log.d(tag, "Comparative benchmark completed")
+                Timber.tag(tag).d("Comparative benchmark completed")
 
             } catch (e: Exception) {
-                Log.e(tag, "Comparative benchmark failed", e)
+                Timber.tag(tag).e(e, "Comparative benchmark failed")
                 benchmarkError = "Comparative benchmark failed: ${e.message}"
             } finally {
                 isBenchmarkRunning = false
@@ -191,7 +191,7 @@ class BenchmarkViewModel @Inject constructor(
                 benchmarkProgress = 0f
                 benchmarkError = null
 
-                Log.d(tag, "Running benchmark with model: $modelName")
+                Timber.tag(tag).d("Running benchmark with model: $modelName")
 
                 // Load the model if not already loaded
                 val modelPath = File(directory, modelName).absolutePath
@@ -205,10 +205,10 @@ class BenchmarkViewModel @Inject constructor(
                     "results" to results
                 )
 
-                Log.d(tag, "Model benchmark completed for: $modelName")
+                Timber.tag(tag).d("Model benchmark completed for: $modelName")
 
             } catch (e: Exception) {
-                Log.e(tag, "Model benchmark failed", e)
+                Timber.tag(tag).e(e, "Model benchmark failed")
                 benchmarkError = "Model benchmark failed: ${e.message}"
             } finally {
                 isBenchmarkRunning = false
@@ -224,7 +224,7 @@ class BenchmarkViewModel @Inject constructor(
                     updatePerformanceMetrics()
                     delay(1000) // Update every second
                 } catch (e: Exception) {
-                    Log.w(tag, "Performance monitoring error", e)
+                    Timber.tag(tag).w(e, "Performance monitoring error")
                 }
             }
         }
@@ -235,7 +235,7 @@ class BenchmarkViewModel @Inject constructor(
             memoryUsage = llamaAndroid.getMemoryUsage()
             contextLimit = llamaAndroid.countTokens(benchmarkPrompt)
         } catch (e: Exception) {
-            Log.w(tag, "Failed to update performance metrics", e)
+            Timber.tag(tag).w(e, "Failed to update performance metrics")
         }
     }
 
@@ -250,23 +250,23 @@ class BenchmarkViewModel @Inject constructor(
 
     fun showBenchmarkModelSelection() {
         showModelSelection = true
-        Log.d(tag, "Showing model selection for benchmark")
+        Timber.tag(tag).d("Showing model selection for benchmark")
     }
 
     fun hideBenchmarkModelSelection() {
         showModelSelection = false
         selectedModelForBenchmark = ""
-        Log.d(tag, "Hiding model selection")
+        Timber.tag(tag).d("Hiding model selection")
     }
 
     fun selectModelForBenchmark(modelName: String) {
         selectedModelForBenchmark = modelName
-        Log.d(tag, "Selected model for benchmark: $modelName")
+        Timber.tag(tag).d("Selected model for benchmark: $modelName")
     }
 
     fun updateAvailableModelsForBenchmark(models: List<Map<String, String>>) {
         availableModelsForBenchmark = models
-        Log.d(tag, "Set ${models.size} models available for benchmark")
+        Timber.tag(tag).d("Set ${models.size} models available for benchmark")
     }
 
     fun resetBenchmark() {
@@ -274,7 +274,7 @@ class BenchmarkViewModel @Inject constructor(
         benchmarkError = null
         benchmarkProgress = 0f
         resetMetrics()
-        Log.d(tag, "Benchmark reset")
+        Timber.tag(tag).d("Benchmark reset")
     }
 
     // Get benchmark summary

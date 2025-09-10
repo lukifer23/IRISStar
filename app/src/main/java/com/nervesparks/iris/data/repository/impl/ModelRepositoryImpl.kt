@@ -2,7 +2,7 @@ package com.nervesparks.iris.data.repository.impl
 
 import android.content.Context
 import android.llama.cpp.LLamaAndroid
-import android.util.Log
+import timber.log.Timber
 import com.nervesparks.iris.data.HuggingFaceApiService
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.exceptions.ModelNotFoundException
@@ -63,7 +63,7 @@ class ModelRepositoryImpl @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Error loading default models config", e)
+                Timber.tag(tag).e(e, "Error loading default models config")
                 emptyList()
             }
         }
@@ -120,10 +120,10 @@ class ModelRepositoryImpl @Inject constructor(
 
             allModels
         } catch (e: NetworkException) {
-            Log.e(tag, "Network error refreshing model catalogue", e)
+            Timber.tag(tag).e(e, "Network error refreshing model catalogue")
             throw e
         } catch (e: Exception) {
-            Log.e(tag, "Error refreshing model catalogue", e)
+            Timber.tag(tag).e(e, "Error refreshing model catalogue")
             // Return curated default models even if API fails
             curatedDefaultModels()
         }
@@ -155,7 +155,7 @@ class ModelRepositoryImpl @Inject constructor(
                 destinationPath.exists()
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error getting available models", e)
+            Timber.tag(tag).e(e, "Error getting available models")
             emptyList()
         }
     }
@@ -180,7 +180,7 @@ class ModelRepositoryImpl @Inject constructor(
             val config = runCatching { getModelConfiguration(modelFile.name) }
                 .getOrElse { ModelConfiguration() }
 
-            Log.d(tag, "Loading model: $modelPath")
+            Timber.tag(tag).d("Loading model: $modelPath")
             llamaAndroid.load(
                 modelPath,
                 userThreads = config.threadCount,
@@ -190,16 +190,16 @@ class ModelRepositoryImpl @Inject constructor(
                 gpuLayers = config.gpuLayers
             )
             currentLoadedModel = modelFile.name
-            Log.i(tag, "Successfully loaded model: $currentLoadedModel")
+            Timber.tag(tag).i("Successfully loaded model: $currentLoadedModel")
             Result.success(Unit)
         } catch (e: ModelNotFoundException) {
-            Log.e(tag, "Model not found: $modelPath", e)
+            Timber.tag(tag).e(e, "Model not found: $modelPath")
             Result.failure(e)
         } catch (e: InvalidModelException) {
-            Log.e(tag, "Invalid model: $modelPath", e)
+            Timber.tag(tag).e(e, "Invalid model: $modelPath")
             Result.failure(e)
         } catch (e: Exception) {
-            Log.e(tag, "Error loading model: $modelPath", e)
+            Timber.tag(tag).e(e, "Error loading model: $modelPath")
             Result.failure(e)
         }
     }
@@ -227,11 +227,11 @@ class ModelRepositoryImpl @Inject constructor(
             if (modelFile.exists()) {
                 loadModel(modelFile.absolutePath)
             } else {
-                Log.e(tag, "Model file not found: ${modelFile.absolutePath}")
+                Timber.tag(tag).e("Model file not found: ${modelFile.absolutePath}")
                 Result.failure(Exception("Model file not found: $modelName"))
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error loading model by name: $modelName", e)
+            Timber.tag(tag).e(e, "Error loading model by name: $modelName")
             Result.failure(e)
         }
     }
@@ -248,7 +248,7 @@ class ModelRepositoryImpl @Inject constructor(
         return try {
             userPreferencesRepository.getModelConfiguration(modelName)
         } catch (e: Exception) {
-            Log.e(tag, "Error getting model configuration for $modelName", e)
+            Timber.tag(tag).e(e, "Error getting model configuration for $modelName")
             ModelConfiguration()
         }
     }
@@ -256,9 +256,9 @@ class ModelRepositoryImpl @Inject constructor(
     override suspend fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
         try {
             userPreferencesRepository.saveModelConfiguration(modelName, config)
-            Log.d(tag, "Saving configuration for model: $modelName")
+            Timber.tag(tag).d("Saving configuration for model: $modelName")
         } catch (e: Exception) {
-            Log.e(tag, "Error saving model configuration for $modelName", e)
+            Timber.tag(tag).e(e, "Error saving model configuration for $modelName")
         }
     }
     
@@ -267,7 +267,7 @@ class ModelRepositoryImpl @Inject constructor(
             val modelFile = File(directory, modelName)
             modelFile.exists()
         } catch (e: Exception) {
-            Log.e(tag, "Error checking if model exists: $modelName", e)
+            Timber.tag(tag).e(e, "Error checking if model exists: $modelName")
             false
         }
     }
@@ -281,7 +281,7 @@ class ModelRepositoryImpl @Inject constructor(
                 0L
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error getting model file size: $modelName", e)
+            Timber.tag(tag).e(e, "Error getting model file size: $modelName")
             0L
         }
     }
@@ -292,7 +292,7 @@ class ModelRepositoryImpl @Inject constructor(
             if (modelFile.exists()) {
                 val deleted = modelFile.delete()
                 if (deleted) {
-                    Log.i(tag, "Successfully deleted model: $modelName")
+                    Timber.tag(tag).i("Successfully deleted model: $modelName")
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Failed to delete model file"))
@@ -301,7 +301,7 @@ class ModelRepositoryImpl @Inject constructor(
                 Result.failure(Exception("Model file not found"))
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error deleting model: $modelName", e)
+            Timber.tag(tag).e(e, "Error deleting model: $modelName")
             Result.failure(e)
         }
     }

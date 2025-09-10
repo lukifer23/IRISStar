@@ -1,7 +1,7 @@
 package com.nervesparks.iris.ui
 
 import android.app.DownloadManager
-import android.util.Log
+import timber.log.Timber
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -226,7 +226,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                             errorMessage = response.error ?: "Failed to search models"
                         }
                     } catch (e: Exception) {
-                        Log.e("SearchResultScreen", "Error searching models", e)
+                        Timber.tag("SearchResultScreen").e(e, "Error searching models")
                         errorMessage = "Error: ${e.localizedMessage}"
                     } finally {
                         isLoading = false

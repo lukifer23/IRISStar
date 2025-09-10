@@ -1,6 +1,6 @@
 package com.nervesparks.iris.data.repository.impl
 
-import android.util.Log
+import timber.log.Timber
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.SettingsRepository
 import com.nervesparks.iris.data.repository.ThinkingTokenSettings
@@ -25,7 +25,7 @@ class SettingsRepositoryImpl @Inject constructor(
             try {
                 userPreferencesRepository.defaultModelName
             } catch (e: Exception) {
-                Log.e(tag, "Error getting default model name", e)
+                Timber.tag(tag).e(e, "Error getting default model name")
                 ""
             }
         }
@@ -35,9 +35,9 @@ class SettingsRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 userPreferencesRepository.defaultModelName = modelName
-                Log.d(tag, "Default model name set to: $modelName")
+                Timber.tag(tag).d("Default model name set to: $modelName")
             } catch (e: Exception) {
-                Log.e(tag, "Error setting default model name", e)
+                Timber.tag(tag).e(e, "Error setting default model name")
             }
         }
     }
@@ -52,7 +52,7 @@ class SettingsRepositoryImpl @Inject constructor(
                     thinkingTokenStyle = thinkingTokenStyle
                 )
             } catch (e: Exception) {
-                Log.e(tag, "Error getting thinking token settings", e)
+                Timber.tag(tag).e(e, "Error getting thinking token settings")
                 ThinkingTokenSettings()
             }
         }
@@ -63,9 +63,9 @@ class SettingsRepositoryImpl @Inject constructor(
             try {
                 userPreferencesRepository.showThinkingTokens = settings.showThinkingTokens
                 userPreferencesRepository.thinkingTokenStyle = settings.thinkingTokenStyle
-                Log.d(tag, "Thinking token settings saved")
+                Timber.tag(tag).d("Thinking token settings saved")
             } catch (e: Exception) {
-                Log.e(tag, "Error saving thinking token settings", e)
+                Timber.tag(tag).e(e, "Error saving thinking token settings")
             }
         }
     }
@@ -80,7 +80,7 @@ class SettingsRepositoryImpl @Inject constructor(
                     enableBackgroundProcessing = userPreferencesRepository.perfEnableBackgroundProcessing
                 )
             } catch (e: Exception) {
-                Log.e(tag, "Error getting performance settings", e)
+                Timber.tag(tag).e(e, "Error getting performance settings")
                 PerformanceSettings()
             }
         }
@@ -93,9 +93,9 @@ class SettingsRepositoryImpl @Inject constructor(
                 userPreferencesRepository.modelContextLength = settings.maxContextLength
                 userPreferencesRepository.perfEnableMemoryOptimization = settings.enableMemoryOptimization
                 userPreferencesRepository.perfEnableBackgroundProcessing = settings.enableBackgroundProcessing
-                Log.d(tag, "Performance settings saved")
+                Timber.tag(tag).d("Performance settings saved")
             } catch (e: Exception) {
-                Log.e(tag, "Error saving performance settings", e)
+                Timber.tag(tag).e(e, "Error saving performance settings")
             }
         }
     }
@@ -110,7 +110,7 @@ class SettingsRepositoryImpl @Inject constructor(
                     enableHapticFeedback = userPreferencesRepository.uiEnableHapticFeedback
                 )
             } catch (e: Exception) {
-                Log.e(tag, "Error getting UI settings", e)
+                Timber.tag(tag).e(e, "Error getting UI settings")
                 UISettings()
             }
         }
@@ -123,9 +123,9 @@ class SettingsRepositoryImpl @Inject constructor(
                 userPreferencesRepository.uiFontSize = settings.fontSize
                 userPreferencesRepository.uiEnableAnimations = settings.enableAnimations
                 userPreferencesRepository.uiEnableHapticFeedback = settings.enableHapticFeedback
-                Log.d(tag, "UI settings saved")
+                Timber.tag(tag).d("UI settings saved")
             } catch (e: Exception) {
-                Log.e(tag, "Error saving UI settings", e)
+                Timber.tag(tag).e(e, "Error saving UI settings")
             }
         }
     }
@@ -135,7 +135,7 @@ class SettingsRepositoryImpl @Inject constructor(
             try {
                 userPreferencesRepository.exportConfiguration()
             } catch (e: Exception) {
-                Log.e(tag, "Error exporting settings", e)
+                Timber.tag(tag).e(e, "Error exporting settings")
                 "{}"
             }
         }
@@ -146,13 +146,13 @@ class SettingsRepositoryImpl @Inject constructor(
             try {
                 val success = userPreferencesRepository.importConfiguration(json)
                 if (success) {
-                    Log.d(tag, "Settings imported successfully")
+                    Timber.tag(tag).d("Settings imported successfully")
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Failed to import settings"))
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Error importing settings", e)
+                Timber.tag(tag).e(e, "Error importing settings")
                 Result.failure(e)
             }
         }
@@ -162,9 +162,9 @@ class SettingsRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 userPreferencesRepository.clearAll()
-                Log.d(tag, "Settings reset to defaults")
+                Timber.tag(tag).d("Settings reset to defaults")
             } catch (e: Exception) {
-                Log.e(tag, "Error resetting settings", e)
+                Timber.tag(tag).e(e, "Error resetting settings")
             }
         }
     }

@@ -1,7 +1,7 @@
 package com.nervesparks.iris.workers
 
 import android.content.Context
-import android.util.Log
+import timber.log.Timber
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -67,7 +67,7 @@ class ModelUpdateWorker(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("ModelUpdateWorker", "Error updating ${model.name}", e)
+                Timber.tag("ModelUpdateWorker").e(e, "Error updating ${model.name}")
                 allSuccess = false
             }
         }

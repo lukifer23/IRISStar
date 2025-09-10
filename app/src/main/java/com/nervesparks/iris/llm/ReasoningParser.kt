@@ -1,5 +1,7 @@
 package com.nervesparks.iris.llm
 
+import timber.log.Timber
+
 /**
  * Splits a model response into reasoning/thinking content and final answer.
  * The logic is centralised here so UI and other layers share identical parsing.
@@ -72,22 +74,22 @@ object ReasoningParser {
     fun parse(message: String, supportsReasoning: Boolean = false): Pair<String, String> {
         // If the model doesn't support reasoning, return the message as-is without parsing
         if (!supportsReasoning) {
-            android.util.Log.d("ReasoningParser", "Model doesn't support reasoning - returning message as-is")
-            android.util.Log.d("ReasoningParser", "Message preview: ${message.take(100)}...")
+            Timber.tag("ReasoningParser").d("Model doesn't support reasoning - returning message as-is")
+            Timber.tag("ReasoningParser").d("Message preview: ${message.take(100)}...")
             return Pair("", message.trim())
         }
         
-        android.util.Log.d("ReasoningParser", "Model supports reasoning - parsing for thinking content")
-        android.util.Log.d("ReasoningParser", "Message preview: ${message.take(100)}...")
+        Timber.tag("ReasoningParser").d("Model supports reasoning - parsing for thinking content")
+        Timber.tag("ReasoningParser").d("Message preview: ${message.take(100)}...")
         
         // Debug logging
-        android.util.Log.d("ReasoningParser", "Parsing message: $message")
+        Timber.tag("ReasoningParser").d("Parsing message: $message")
         
         // First try to find complete <think>...</think> tags
         tagRegex.find(message)?.let { m ->
             val reasoning = m.groupValues[1].trim()
             val answer = message.substring(m.range.last + 1).trim()
-            android.util.Log.d("ReasoningParser", "Found complete thinking tags - reasoning: '$reasoning', answer: '$answer'")
+            Timber.tag("ReasoningParser").d("Found complete thinking tags - reasoning: '$reasoning', answer: '$answer'")
             return Pair(reasoning, answer)
         }
         
@@ -97,7 +99,7 @@ object ReasoningParser {
             if (parts.size >= 2) {
                 val thinkingContent = parts[0].trim()
                 val answerContent = parts[1].trim()
-                android.util.Log.d("ReasoningParser", "Found incomplete thinking tags - thinking: '$thinkingContent', answer: '$answerContent'")
+                Timber.tag("ReasoningParser").d("Found incomplete thinking tags - thinking: '$thinkingContent', answer: '$answerContent'")
                 return Pair(thinkingContent, answerContent)
             }
         }
@@ -112,11 +114,11 @@ object ReasoningParser {
             val actualAnswer = findActualAnswer(message)
             if (actualAnswer.isNotEmpty()) {
                 val reasoning = message.substring(0, message.indexOf(actualAnswer)).trim()
-                android.util.Log.d("ReasoningParser", "Found jumbled thinking with actual answer - reasoning: '$reasoning', answer: '$actualAnswer'")
+                Timber.tag("ReasoningParser").d("Found jumbled thinking with actual answer - reasoning: '$reasoning', answer: '$actualAnswer'")
                 return Pair(reasoning, actualAnswer)
             } else {
                 // If no clear answer found, treat the entire message as thinking content
-                android.util.Log.d("ReasoningParser", "Found jumbled thinking patterns but no clear answer - treating entire message as thinking")
+                Timber.tag("ReasoningParser").d("Found jumbled thinking patterns but no clear answer - treating entire message as thinking")
                 return Pair(message.trim(), "")
             }
         }
@@ -126,7 +128,7 @@ object ReasoningParser {
         if (splitterMatch != null) {
             val reasoning = message.substring(0, splitterMatch.range.first).trim()
             val answer = message.substring(splitterMatch.range.last + 1).trim()
-            android.util.Log.d("ReasoningParser", "Found splitter - reasoning: '$reasoning', answer: '$answer'")
+            Timber.tag("ReasoningParser").d("Found splitter - reasoning: '$reasoning', answer: '$answer'")
             return Pair(reasoning, answer)
         }
         
@@ -157,18 +159,18 @@ object ReasoningParser {
             if (answerStart != null) {
                 val reasoning = message.substring(thinkingStart, answerStart).trim()
                 val answer = message.substring(answerStart).trim()
-                android.util.Log.d("ReasoningParser", "Found thinking indicator - reasoning: '$reasoning', answer: '$answer'")
+                Timber.tag("ReasoningParser").d("Found thinking indicator - reasoning: '$reasoning', answer: '$answer'")
                 return Pair(reasoning, answer)
             } else {
                 // If no clear answer pattern found, treat everything after thinking indicator as reasoning
                 val reasoning = message.substring(thinkingStart).trim()
-                android.util.Log.d("ReasoningParser", "Found thinking indicator but no clear answer - treating as reasoning only")
+                Timber.tag("ReasoningParser").d("Found thinking indicator but no clear answer - treating as reasoning only")
                 return Pair(reasoning, "")
             }
         }
         
         // If no thinking detected, treat as output only
-        android.util.Log.d("ReasoningParser", "No thinking detected - treating as output only")
+        Timber.tag("ReasoningParser").d("No thinking detected - treating as output only")
         return Pair("", message.trim())
     }
     
@@ -182,7 +184,7 @@ object ReasoningParser {
             if (index >= 0) {
                 // Return everything from the answer pattern to the end
                 val answer = message.substring(index).trim()
-                android.util.Log.d("ReasoningParser", "Found actual answer: '$answer'")
+                Timber.tag("ReasoningParser").d("Found actual answer: '$answer'")
                 return answer
             }
         }
@@ -192,7 +194,7 @@ object ReasoningParser {
         for (sentence in sentences.reversed()) {
             val trimmed = sentence.trim()
             if (trimmed.contains("2") && trimmed.contains("4") && trimmed.length < 50) {
-                android.util.Log.d("ReasoningParser", "Found answer-like sentence: '$trimmed'")
+                Timber.tag("ReasoningParser").d("Found answer-like sentence: '$trimmed'")
                 return trimmed
             }
         }

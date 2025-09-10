@@ -11,6 +11,7 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.lang.ref.WeakReference
+import timber.log.Timber
 
 /**
  * PHASE 3.4: Performance Optimization Utilities
@@ -92,7 +93,7 @@ fun logPerformanceWarning(context: Context) {
     val memoryMonitor = MemoryMonitor(context)
     val stats = memoryMonitor.getMemoryStats()
     if (stats.memoryUsagePercent > 80f) {
-        android.util.Log.w("PerformanceMonitor", "High memory usage: ${stats.memoryUsagePercent}%")
+        Timber.tag("PerformanceMonitor").w("High memory usage: ${stats.memoryUsagePercent}%")
     }
 }
 
