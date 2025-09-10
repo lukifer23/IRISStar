@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Cache NDK
+        uses: actions/cache@v4
+        with:
+          path: ~/android-sdk/ndk
+          key: ${{ runner.os }}-ndk-${{ hashFiles('**/build.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-ndk-
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          ndk: 26.1.10909125
+      - name: Run lint and tests
+        run: ./gradlew lint test
+      - name: Build native
+        run: ./gradlew assemble
+
