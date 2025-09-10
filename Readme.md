@@ -8,33 +8,25 @@
 
 ## Images
 
-<div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-  <div style="text-align: center; width: 200px;">
-    <img src="./images/main_screen.png" alt="Main Screen Screenshot" width="200">
-    <p><strong>Main Screen</strong></p>
-    <p>This is the main interface of the app where users can access all core functionalities.</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="./images/chat_screen.png" alt="Chat Screen Screenshot" width="200">
-    <p><strong>Chat Screen</strong></p>
-    <p>The chat feature allows users to interact in real-time and access AI-driven responses.</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="./images/settings_screen.png" alt="Settings Screen Screenshot" width="200">
-    <p><strong>Settings Screen</strong></p>
-    <p>Users can customize app preferences and configure their account settings here.</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="./images/models_screen.png" alt="Models Screen Screenshot" width="200">
-    <p><strong>Models Screen</strong></p>
-    <p>This screen displays available AI models and allows users to manage them efficiently.</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="./images/parameters_screen.png" alt="Parameters Screen Screenshot" width="200">
-    <p><strong>Parameters Screen</strong></p>
-    <p>Users can adjust parameters to fine-tune the app's performance based on their needs.</p>
-  </div>
-</div>
+![Main Screen Screenshot](./images/main_screen.png)
+**Main Screen**  
+This is the main interface of the app where users can access all core functionalities.
+
+![Chat Screen Screenshot](./images/chat_screen.png)
+**Chat Screen**  
+The chat feature allows users to interact in real-time and access AI-driven responses.
+
+![Settings Screen Screenshot](./images/settings_screen.png)
+**Settings Screen**  
+Users can customize app preferences and configure their account settings here.
+
+![Models Screen Screenshot](./images/models_screen.png)
+**Models Screen**  
+This screen displays available AI models and allows users to manage them efficiently.
+
+![Parameters Screen Screenshot](./images/parameters_screen.png)
+**Parameters Screen**  
+Users can adjust parameters to fine-tune the app's performance based on their needs.
 
 ## Run
 
@@ -52,6 +44,12 @@
 - Text To Speech: Support for Text-to-Speech functionality.
 - Speech To Text: Support for Speech-to-Text functionality.
 - Default Model Selection: Set a default model to load automatically on startup.
+
+## Security & Privacy
+
+- All model inference is performed locally on your device; no prompts or responses are sent to external servers.
+- User data and chat history remain on the device and are not collected or transmitted.
+- Network access is only required for downloading models. Once models are installed, the app can run fully offline.
 
 ## GPU Backends (Vulkan/OpenCL) on Android
 
@@ -107,19 +105,23 @@ On opening the app, users can download suggested models to optimize performance 
 - Iris may produce **inaccurate results** depending on the complexity of queries and model limitations.
 - Performance and accuracy are influenced by the size and type of model selected.
 
+## Prerequisites
+
+- Install [JDK 17](https://adoptium.net/).
+- Install [Android Studio](https://developer.android.com/studio).
+- Initialize the `llama.cpp` submodule:
+
+```bash
+git submodule update --init --recursive
+```
+
 ## Build
 
-- Download Android studio
 - Clone this repository and import into Android Studio
 
 ```bash
- git clone https://github.com/lukifer23/IRISStar.git
-```
-
-- Clone the llama.cpp repository in the same folder as IRISStar
-
-```bash
- git clone https://github.com/ggerganov/llama.cpp
+git clone https://github.com/lukifer23/IRISStar.git
+cd IRISStar
 ```
 
 ### Building with GPU backends
