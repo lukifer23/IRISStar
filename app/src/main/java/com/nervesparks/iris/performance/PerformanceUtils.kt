@@ -3,6 +3,9 @@ package com.nervesparks.iris.performance
 import android.content.Context
 import android.os.Build
 import android.os.Debug
+import android.util.LruCache
+import android.content.ComponentCallbacks2
+import android.content.res.Configuration
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -10,7 +13,6 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.data.UserPreferencesRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import java.lang.ref.WeakReference
 
 /**
  * PHASE 3.4: Performance Optimization Utilities
@@ -56,34 +58,37 @@ class MemoryMonitor(private val context: Context) {
     }
 }
 
-// Smart memory manager with automatic cleanup
-class SmartMemoryManager(private val context: Context) {
+// Smart memory manager backed by an LruCache
+class SmartMemoryManager<K, V>(
+    maxSize: Int = (Runtime.getRuntime().maxMemory() / 1024L).toInt() / 8
+) : ComponentCallbacks2 {
 
-    private val weakReferences = mutableListOf<WeakReference<Any>>()
-    private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val cache = object : LruCache<K, V>(maxSize) {}
 
-    fun registerForCleanup(obj: Any) {
-        weakReferences.add(WeakReference(obj))
+    fun put(key: K, value: V) {
+        cache.put(key, value)
     }
 
-    fun triggerCleanup() {
-        coroutineScope.launch {
-            // Clean up weak references
-            weakReferences.removeAll { it.get() == null }
+    fun get(key: K): V? = cache.get(key)
 
-            // Force garbage collection if memory is low
-            val memoryMonitor = MemoryMonitor(context)
-            if (memoryMonitor.shouldOptimizeMemory()) {
-                System.gc()
-                delay(100) // Allow GC to complete
-                System.runFinalization()
-            }
+    fun size(): Int = cache.size()
+
+    fun clear() {
+        cache.evictAll()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+            clear()
         }
     }
 
-    fun cleanup() {
-        coroutineScope.cancel()
-        weakReferences.clear()
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        // no-op
+    }
+
+    override fun onLowMemory() {
+        clear()
     }
 }
 
@@ -157,13 +162,12 @@ abstract class OptimizedViewModel(private val context: Context) : ViewModel() {
     protected fun optimizeForLowMemory(): Boolean {
         val runtime = Runtime.getRuntime()
         val usedMemory = runtime.totalMemory() - runtime.freeMemory()
-        val totalMemory = runtime.totalMemory()
-        val usagePercent = (usedMemory.toFloat() / totalMemory.toFloat()) * 100
+        val maxMemory = runtime.maxMemory()
+        val usagePercent = (usedMemory.toFloat() / maxMemory.toFloat()) * 100
 
         return if (usagePercent > 80f) {
             // Trigger cleanup
             cacheManager.clearExpiredCache()
-            System.gc()
             true
         } else {
             false

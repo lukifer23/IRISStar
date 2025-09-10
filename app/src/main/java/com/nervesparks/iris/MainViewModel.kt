@@ -2463,11 +2463,11 @@ class MainViewModel @Inject constructor(
                     Log.d(tag, "Cleared message history, kept last $keepCount messages")
                 }
                 
-                // Force garbage collection if memory usage is high
+                // Check memory usage against max memory and log if high
                 val memoryUsage = getMemoryUsage()
-                if (memoryUsage > 500 * 1024 * 1024) { // 500MB threshold
-                    System.gc()
-                    Log.d(tag, "Forced garbage collection due to high memory usage: ${memoryUsage / (1024 * 1024)}MB")
+                val maxMemory = Runtime.getRuntime().maxMemory()
+                if (memoryUsage > maxMemory * 0.8) {
+                    Log.d(tag, "High memory usage: ${memoryUsage / (1024 * 1024)}MB")
                 }
             } catch (e: Exception) {
                 Log.e(tag, "Error optimizing memory", e)
