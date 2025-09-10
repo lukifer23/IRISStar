@@ -8,6 +8,7 @@ import com.nervesparks.iris.data.AndroidSearchService
 import com.nervesparks.iris.data.network.CacheControlInterceptor
 import com.nervesparks.iris.data.network.NetworkConfig
 import com.nervesparks.iris.data.network.RequestDeduplicationInterceptor
+import com.nervesparks.iris.data.network.CertificatePins
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -51,20 +52,19 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideCertificatePinner(): CertificatePinner = CertificatePins.build()
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
         config: NetworkConfig,
         dedupe: RequestDeduplicationInterceptor,
-        cacheControlInterceptor: CacheControlInterceptor
+        cacheControlInterceptor: CacheControlInterceptor,
+        certificatePinner: CertificatePinner
     ): OkHttpClient {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = Cache(cacheDir, config.cacheSizeBytes)
-
-        // SSL Pinning for security - pin HuggingFace and other critical services
-        val certificatePinner = CertificatePinner.Builder()
-            .add("huggingface.co", "sha256/4a6cPehI7JG911yo0RVYjBwhsBzSnr70kSGTHNuX2xI=") // Example pin - UPDATE WITH REAL PIN
-            .add("api.github.com", "sha256/4a6cPehI7JG911yo0RVYjBwhsBzSnr70kSGTHNuX2xI=") // Example pin - UPDATE WITH REAL PIN
-            .build()
 
         return OkHttpClient.Builder()
             .cache(cache)
