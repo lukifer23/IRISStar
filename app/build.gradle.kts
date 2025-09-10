@@ -71,8 +71,8 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.compose.material:material:1.6.0")
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.6.0")
+    implementation("androidx.compose.material:material")
+    implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
@@ -80,7 +80,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(project(":llama"))
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
@@ -88,7 +88,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.navigation:navigation-runtime-ktx:2.7.7")
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation("androidx.compose.foundation:foundation-layout-android:1.6.0")
+    implementation("androidx.compose.foundation:foundation-layout-android")
     implementation("androidx.games:games-activity:3.0.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.5.0") {
