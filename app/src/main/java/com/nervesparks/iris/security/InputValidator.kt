@@ -10,10 +10,10 @@ import java.util.regex.Pattern
 object InputValidator {
 
     // Regular expressions for validation
-    private val ALPHA_NUMERIC_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\-\\.]+$")
-    private val SAFE_TEXT_PATTERN = Pattern.compile("^[a-zA-Z0-9\\s_\\-\\.\\,\\!\\?\\:\\;\\'\\\"\\(\\)\\[\\]\\{\\}]+$")
-    private val API_KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\-]{20,}$")
-    private val URL_PATTERN = Pattern.compile("^(https?://)?[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/.*)?$")
+    private val alphaNumericPattern = Pattern.compile("^[a-zA-Z0-9_\\-\\.]+$")
+    private val safeTextPattern = Pattern.compile("^[a-zA-Z0-9\\s_\\-\\.\\,\\!\\?\\:\\;\\'\\\"\\(\\)\\[\\]\\{\\}]+$")
+    private val apiKeyPattern = Pattern.compile("^[a-zA-Z0-9_\\-]{20,}$")
+    private val urlPattern = Pattern.compile("^(https?://)?[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/.*)?$")
 
     /**
      * Validates API keys/tokens
@@ -21,7 +21,7 @@ object InputValidator {
     fun isValidApiKey(apiKey: String): Boolean {
         return apiKey.isNotBlank() &&
                apiKey.length >= 20 &&
-               API_KEY_PATTERN.matcher(apiKey).matches()
+               apiKeyPattern.matcher(apiKey).matches()
     }
 
     /**
@@ -31,7 +31,7 @@ object InputValidator {
         return token.isNotBlank() &&
                token.startsWith("hf_") &&
                token.length >= 40 &&
-               ALPHA_NUMERIC_PATTERN.matcher(token.substring(3)).matches()
+               alphaNumericPattern.matcher(token.substring(3)).matches()
     }
 
     /**
@@ -40,14 +40,14 @@ object InputValidator {
     fun isValidUsername(username: String): Boolean {
         return username.isNotBlank() &&
                username.length in 3..50 &&
-               ALPHA_NUMERIC_PATTERN.matcher(username).matches()
+               alphaNumericPattern.matcher(username).matches()
     }
 
     /**
      * Validates URLs
      */
     fun isValidUrl(url: String): Boolean {
-        return url.isNotBlank() && URL_PATTERN.matcher(url).matches()
+        return url.isNotBlank() && urlPattern.matcher(url).matches()
     }
 
     /**
