@@ -15,6 +15,7 @@
 #include "chat.h"
 #define JSON_ASSERT GGML_ASSERT
 #include "nlohmann/json.hpp"
+#include "jni_utils.h"
 
 using json = nlohmann::ordered_json;
 
@@ -119,71 +120,72 @@ bool is_valid_utf8(const char * string) {
 std::string mapListToJSONString(JNIEnv *env, jobjectArray allMessages) {
     json jsonArray = json::array();
 
-    jclass mapClass = env->FindClass("java/util/Map");
-    if (!mapClass) {
+    LocalRef<jclass> mapClass(env, env->FindClass("java/util/Map"));
+    if (checkAndClearException(env) || !mapClass.get()) {
         LOGe("Error: Could not find java/util/Map class");
         return jsonArray.dump();
     }
 
-    jmethodID getMethod = env->GetMethodID(mapClass, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
-    jmethodID keySetMethod = env->GetMethodID(mapClass, "keySet", "()Ljava/util/Set;");
-    if (!getMethod || !keySetMethod) {
+    jmethodID getMethod = env->GetMethodID(mapClass.get(), "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jmethodID keySetMethod = env->GetMethodID(mapClass.get(), "keySet", "()Ljava/util/Set;");
+    if (checkAndClearException(env) || !getMethod || !keySetMethod) {
         LOGe("Error: Could not find Map methods");
-        env->DeleteLocalRef(mapClass);
         return jsonArray.dump();
     }
 
     jsize arrayLength = env->GetArrayLength(allMessages);
+    if (checkAndClearException(env)) {
+        return jsonArray.dump();
+    }
     for (jsize i = 0; i < arrayLength; ++i) {
-        // Get the individual message from the array
-        jobject messageObj = env->GetObjectArrayElement(allMessages, i);
-        if (!messageObj) {
+        LocalRef<jobject> messageObj(env, env->GetObjectArrayElement(allMessages, i));
+        if (checkAndClearException(env) || !messageObj.get()) {
             LOGe("Error: Received null jobject at index %d", i);
             continue;
         }
 
-        // Check if the object is a Map
-        if (!env->IsInstanceOf(messageObj, mapClass)) {
+        if (!env->IsInstanceOf(messageObj.get(), mapClass.get())) {
+            checkAndClearException(env);
             LOGe("Error: Object is not a Map at index %d", i);
-            env->DeleteLocalRef(messageObj);
             continue;
         }
 
-        // Create a JSON object for this map
         json jsonMsg;
 
-        // Get role
-        jstring roleKey = env->NewStringUTF("role");
-        jobject roleObj = env->CallObjectMethod(messageObj, getMethod, roleKey);
-        if (roleObj) {
-            const char* roleStr = env->GetStringUTFChars((jstring)roleObj, nullptr);
+        LocalRef<jstring> roleKey(env, env->NewStringUTF("role"));
+        checkAndClearException(env);
+        LocalRef<jobject> roleObj(env, env->CallObjectMethod(messageObj.get(), getMethod, roleKey.get()));
+        if (checkAndClearException(env)) {
+            // if an exception occurred, skip this message
+            continue;
+        }
+        if (roleObj.get()) {
+            const char* roleStr = env->GetStringUTFChars((jstring)roleObj.get(), nullptr);
+            checkAndClearException(env);
             jsonMsg["role"] = roleStr;
-            env->ReleaseStringUTFChars((jstring)roleObj, roleStr);
-            env->DeleteLocalRef(roleObj);
+            env->ReleaseStringUTFChars((jstring)roleObj.get(), roleStr);
+            checkAndClearException(env);
         }
-        env->DeleteLocalRef(roleKey);
 
-        // Get content
-        jstring contentKey = env->NewStringUTF("content");
-        jobject contentObj = env->CallObjectMethod(messageObj, getMethod, contentKey);
-        if (contentObj) {
-            const char* contentStr = env->GetStringUTFChars((jstring)contentObj, nullptr);
+        LocalRef<jstring> contentKey(env, env->NewStringUTF("content"));
+        checkAndClearException(env);
+        LocalRef<jobject> contentObj(env, env->CallObjectMethod(messageObj.get(), getMethod, contentKey.get()));
+        if (checkAndClearException(env)) {
+            continue;
+        }
+        if (contentObj.get()) {
+            const char* contentStr = env->GetStringUTFChars((jstring)contentObj.get(), nullptr);
+            checkAndClearException(env);
             jsonMsg["content"] = contentStr;
-            env->ReleaseStringUTFChars((jstring)contentObj, contentStr);
-            env->DeleteLocalRef(contentObj);
+            env->ReleaseStringUTFChars((jstring)contentObj.get(), contentStr);
+            checkAndClearException(env);
         }
-        env->DeleteLocalRef(contentKey);
 
-        // Add to array if both role and content were successfully extracted
         if (!jsonMsg.empty()) {
             jsonArray.push_back(jsonMsg);
         }
-
-        // Clean up local references
-        env->DeleteLocalRef(messageObj);
     }
 
-    env->DeleteLocalRef(mapClass);
     return jsonArray.dump();
 }
 
