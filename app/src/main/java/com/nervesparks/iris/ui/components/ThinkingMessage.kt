@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.components.MarkdownTextComponent
 import com.nervesparks.iris.ui.theme.ComponentStyles
+import timber.log.Timber
 
 @Composable
 fun ThinkingMessage(
@@ -47,17 +48,17 @@ fun ThinkingMessage(
     
     // Debug logging
     LaunchedEffect(message) {
-        android.util.Log.d("ThinkingMessage", "=== THINKING MESSAGE DEBUG ===")
-        android.util.Log.d("ThinkingMessage", "Message length: ${message.length}")
-        android.util.Log.d("ThinkingMessage", "Message preview: ${message.take(200)}...")
-        android.util.Log.d("ThinkingMessage", "Thinking content: '$thinkingContent'")
-        android.util.Log.d("ThinkingMessage", "Output content: '$outputContent'")
-        android.util.Log.d("ThinkingMessage", "Thinking content length: ${thinkingContent.length}")
-        android.util.Log.d("ThinkingMessage", "Contains <think>: ${message.contains("<think>")}")
-        android.util.Log.d("ThinkingMessage", "Contains </think>: ${message.contains("</think>")}")
-        android.util.Log.d("ThinkingMessage", "showThinkingTokens: $showThinkingTokens")
-        android.util.Log.d("ThinkingMessage", "isThinkingExpanded: $isThinkingExpanded")
-        android.util.Log.d("ThinkingMessage", "=== END THINKING DEBUG ===")
+        Timber.tag("ThinkingMessage").d("=== THINKING MESSAGE DEBUG ===")
+        Timber.tag("ThinkingMessage").d("Message length: ${message.length}")
+        Timber.tag("ThinkingMessage").d("Message preview: ${message.take(200)}...")
+        Timber.tag("ThinkingMessage").d("Thinking content: '$thinkingContent'")
+        Timber.tag("ThinkingMessage").d("Output content: '$outputContent'")
+        Timber.tag("ThinkingMessage").d("Thinking content length: ${thinkingContent.length}")
+        Timber.tag("ThinkingMessage").d("Contains <think>: ${message.contains("<think>")}")
+        Timber.tag("ThinkingMessage").d("Contains </think>: ${message.contains("</think>")}")
+        Timber.tag("ThinkingMessage").d("showThinkingTokens: $showThinkingTokens")
+        Timber.tag("ThinkingMessage").d("isThinkingExpanded: $isThinkingExpanded")
+        Timber.tag("ThinkingMessage").d("=== END THINKING DEBUG ===")
     }
     
     Card(
@@ -121,7 +122,7 @@ fun ThinkingMessage(
                 enter = expandVertically(animationSpec = tween(ComponentStyles.defaultAnimationDuration)),
                 exit = shrinkVertically(animationSpec = tween(ComponentStyles.defaultAnimationDuration))
             ) {
-                android.util.Log.d("ThinkingMessage", "Rendering thinking content: expanded=$isThinkingExpanded, hasContent=${thinkingContent.isNotEmpty()}")
+                Timber.tag("ThinkingMessage").d("Rendering thinking content: expanded=$isThinkingExpanded, hasContent=${thinkingContent.isNotEmpty()}")
                 if (thinkingContent.isNotEmpty()) {
                     Card(
                         modifier = Modifier

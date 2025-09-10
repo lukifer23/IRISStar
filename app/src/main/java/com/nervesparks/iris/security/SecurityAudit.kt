@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import com.nervesparks.iris.data.UserPreferencesRepository
+import timber.log.Timber
 /**
  * PHASE 2.5: Security Audit - Comprehensive security monitoring and reporting
  * Provides security auditing capabilities and recommendations
@@ -40,7 +40,7 @@ class SecurityAudit(
      * Performs comprehensive security audit
      */
     fun performSecurityAudit(): SecurityReport {
-        Log.d(tag, "Performing comprehensive security audit")
+        Timber.tag(tag).d("Performing comprehensive security audit")
 
         val issues = mutableListOf<SecurityIssue>()
         val recommendations = mutableListOf<String>()
@@ -69,7 +69,7 @@ class SecurityAudit(
             recommendations = recommendations
         )
 
-        Log.d(tag, "Security audit completed. Level: $overallLevel, Issues: ${issues.size}")
+        Timber.tag(tag).d("Security audit completed. Level: $overallLevel, Issues: ${issues.size}")
         return report
     }
 
@@ -104,7 +104,7 @@ class SecurityAudit(
             }
 
         } catch (e: Exception) {
-            Log.e(tag, "Error checking encrypted data integrity", e)
+            Timber.tag(tag).e(e, "Error checking encrypted data integrity")
             issues.add(SecurityIssue(
                 SecurityLevel.HIGH,
                 "Encrypted Storage Error",
@@ -171,7 +171,7 @@ class SecurityAudit(
                 ))
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error checking network permissions", e)
+            Timber.tag(tag).e(e, "Error checking network permissions")
         }
     }
 
@@ -208,7 +208,7 @@ class SecurityAudit(
             }
 
         } catch (e: Exception) {
-            Log.e(tag, "Error checking app permissions", e)
+            Timber.tag(tag).e(e, "Error checking app permissions")
         }
     }
 

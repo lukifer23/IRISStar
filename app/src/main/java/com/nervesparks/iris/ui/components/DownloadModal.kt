@@ -6,7 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
+import timber.log.Timber
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -123,10 +123,10 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                         verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
                     ) {
                         val filteredModels = models.filter { !it.destination.exists() }
-                        Log.d("DownloadModal", "Total models: ${models.size}")
-                        Log.d("DownloadModal", "Filtered models: ${filteredModels.size}")
+                        Timber.tag("DownloadModal").d("Total models: ${models.size}")
+                        Timber.tag("DownloadModal").d("Filtered models: ${filteredModels.size}")
                         models.forEach { model ->
-                            Log.d("DownloadModal", "Model: ${model.name}, exists: ${model.destination.exists()}")
+                            Timber.tag("DownloadModal").d("Model: ${model.name}, exists: ${model.destination.exists()}")
                         }
                         items(filteredModels, key = { it.name }) { model ->
                             DefaultModelCard(viewModel, dm, model)
@@ -422,10 +422,10 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                                                 Toast.makeText(context, "Download started for: $file", Toast.LENGTH_SHORT).show()
                                                 
                                                 // Log download info for debugging
-                                                Log.d("DownloadModal", "Started download: $downloadUrl")
-                                                Log.d("DownloadModal", "Download ID: $downloadId")
+                                                Timber.tag("DownloadModal").d("Started download: $downloadUrl")
+                                                Timber.tag("DownloadModal").d("Download ID: $downloadId")
                                             } catch (e: Exception) {
-                                                Log.e("DownloadModal", "Download failed for $file", e)
+                                                Timber.tag("DownloadModal").e(e, "Download failed for $file")
                                                 Toast.makeText(context, "Download failed: ${e.message}", Toast.LENGTH_LONG).show()
                                             }
                                         }

@@ -1,7 +1,7 @@
 package com.nervesparks.iris.viewmodel
 
 import android.llama.cpp.LLamaAndroid
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,7 +65,7 @@ class ModelViewModel @Inject constructor(
     fun load(pathToModel: String, userThreads: Int, backend: String = "cpu") {
         viewModelScope.launch {
             try {
-                Log.d(tag, "Loading model: $pathToModel with backend: $backend")
+                Timber.tag(tag).d("Loading model: $pathToModel with backend: $backend")
 
                 // Set backend before loading
                 selectBackend(backend)
@@ -77,9 +77,9 @@ class ModelViewModel @Inject constructor(
                 isModelLoaded = true
                 modelLoadingProgress = 1f
 
-                Log.d(tag, "Model loaded successfully: $currentModelName")
+                Timber.tag(tag).d("Model loaded successfully: $currentModelName")
             } catch (e: Exception) {
-                Log.e(tag, "Error loading model: $pathToModel", e)
+                Timber.tag(tag).e(e, "Error loading model: $pathToModel")
                 isModelLoaded = false
                 backendError = "Failed to load model: ${e.message}"
             }
@@ -96,7 +96,7 @@ class ModelViewModel @Inject constructor(
             loadModel(modelFile.absolutePath)
             true
         } else {
-            Log.e(tag, "Model not found: $modelName")
+            Timber.tag(tag).e("Model not found: $modelName")
             false
         }
     }
@@ -107,9 +107,9 @@ class ModelViewModel @Inject constructor(
                 llamaAndroid.unload()
                 isModelLoaded = false
                 currentModelName = ""
-                Log.d(tag, "Model unloaded")
+                Timber.tag(tag).d("Model unloaded")
             } catch (e: Exception) {
-                Log.e(tag, "Error unloading model", e)
+                Timber.tag(tag).e(e, "Error unloading model")
             }
         }
     }
@@ -119,9 +119,9 @@ class ModelViewModel @Inject constructor(
             try {
                 unloadModel()
                 loadModelByName(modelName, directory)
-                Log.d(tag, "Switched to model: $modelName")
+                Timber.tag(tag).d("Switched to model: $modelName")
             } catch (e: Exception) {
-                Log.e(tag, "Error switching model", e)
+                Timber.tag(tag).e(e, "Error switching model")
                 backendError = "Failed to switch model: ${e.message}"
             }
         }
@@ -135,13 +135,13 @@ class ModelViewModel @Inject constructor(
                 if (success) {
                     currentBackend = backend
                     backendError = null
-                    Log.d(tag, "Backend changed to: $backend")
+                    Timber.tag(tag).d("Backend changed to: $backend")
                 } else {
                     backendError = "Failed to switch backend to $backend"
-                    Log.e(tag, "Failed to set backend: $backend")
+                    Timber.tag(tag).e("Failed to set backend: $backend")
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Exception when setting backend to $backend", e)
+                Timber.tag(tag).e(e, "Exception when setting backend to $backend")
                 backendError = "Failed to switch backend: ${e.message}"
             }
         }
@@ -157,11 +157,11 @@ class ModelViewModel @Inject constructor(
                 optimalBackend = if (isAdrenoGpu) "opencl" else "cpu"
 
                 backendError = null
-                Log.d(tag, "Hardware detection: Available backends: $availableBackends")
-                Log.d(tag, "Hardware detection: Optimal backend: $optimalBackend")
-                Log.d(tag, "Hardware detection: Is Adreno GPU: $isAdrenoGpu")
+                Timber.tag(tag).d("Hardware detection: Available backends: $availableBackends")
+                Timber.tag(tag).d("Hardware detection: Optimal backend: $optimalBackend")
+                Timber.tag(tag).d("Hardware detection: Is Adreno GPU: $isAdrenoGpu")
             } catch (e: Exception) {
-                Log.e(tag, "Hardware detection failed", e)
+                Timber.tag(tag).e(e, "Hardware detection failed")
                 isAdrenoGpu = false
                 backendError = "Hardware detection failed: ${e.message}"
             }
@@ -202,9 +202,9 @@ class ModelViewModel @Inject constructor(
             modelGpuLayers = gpuLayers
 
             saveModelSettings()
-            Log.d(tag, "Model settings updated and validated")
+            Timber.tag(tag).d("Model settings updated and validated")
         } else {
-            Log.w(tag, "Invalid model settings provided - validation failed")
+            Timber.tag(tag).w("Invalid model settings provided - validation failed")
         }
     }
 
@@ -219,9 +219,9 @@ class ModelViewModel @Inject constructor(
             modelChatFormat = userPreferencesRepository.modelChatFormat
             modelThreadCount = userPreferencesRepository.modelThreadCount
             modelGpuLayers = userPreferencesRepository.modelGpuLayers
-            Log.d(tag, "Model settings loaded")
+            Timber.tag(tag).d("Model settings loaded")
         } catch (e: Exception) {
-            Log.e(tag, "Error loading model settings", e)
+            Timber.tag(tag).e(e, "Error loading model settings")
         }
     }
 
@@ -235,7 +235,7 @@ class ModelViewModel @Inject constructor(
         userPreferencesRepository.modelChatFormat = modelChatFormat
         userPreferencesRepository.modelThreadCount = modelThreadCount
         userPreferencesRepository.modelGpuLayers = modelGpuLayers
-        Log.d(tag, "Model settings saved")
+        Timber.tag(tag).d("Model settings saved")
     }
 
     // Available models management
@@ -243,9 +243,9 @@ class ModelViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 availableModels = modelRepository.getAvailableModels(directory)
-                Log.d(tag, "Loaded ${availableModels.size} existing models")
+                Timber.tag(tag).d("Loaded ${availableModels.size} existing models")
             } catch (e: Exception) {
-                Log.e(tag, "Error loading existing models", e)
+                Timber.tag(tag).e(e, "Error loading existing models")
             }
         }
     }
@@ -255,7 +255,7 @@ class ModelViewModel @Inject constructor(
             // TODO: This should be called from a coroutine
             emptyList()
         } catch (e: Exception) {
-            Log.e(tag, "Error getting available models", e)
+            Timber.tag(tag).e(e, "Error getting available models")
             emptyList()
         }
     }

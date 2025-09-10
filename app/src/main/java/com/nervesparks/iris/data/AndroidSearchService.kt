@@ -3,7 +3,7 @@ package com.nervesparks.iris.data
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import timber.log.Timber
 import com.nervesparks.iris.data.search.SearchResponse
 import com.nervesparks.iris.data.search.SearchResult
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,7 @@ class AndroidSearchService(private val context: Context) {
      */
     suspend fun launchBrowserSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
-            Log.d(tag, "Launching browser search for: $query")
+            Timber.tag(tag).d("Launching browser search for: $query")
             
             val encodedQuery = URLEncoder.encode(query, "UTF-8")
             val searchUrl = "https://www.google.com/search?q=$encodedQuery"
@@ -53,7 +53,7 @@ class AndroidSearchService(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error launching browser search", e)
+            Timber.tag(tag).e(e, "Error launching browser search")
             return@withContext SearchResponse(
                 success = false,
                 error = "Failed to launch browser search: ${e.message}"
@@ -66,7 +66,7 @@ class AndroidSearchService(private val context: Context) {
      */
     suspend fun launchMultiSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
-            Log.d(tag, "Launching multi-search for: $query")
+            Timber.tag(tag).d("Launching multi-search for: $query")
             
             val encodedQuery = URLEncoder.encode(query, "UTF-8")
             val searchEngines = listOf(
@@ -102,7 +102,7 @@ class AndroidSearchService(private val context: Context) {
                 query = query
             )
         } catch (e: Exception) {
-            Log.e(tag, "Error launching multi-search", e)
+            Timber.tag(tag).e(e, "Error launching multi-search")
             return@withContext SearchResponse(
                 success = false,
                 error = "Failed to launch multi-search: ${e.message}"

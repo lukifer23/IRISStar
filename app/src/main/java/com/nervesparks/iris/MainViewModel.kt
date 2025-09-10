@@ -12,7 +12,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -85,7 +85,7 @@ class MainViewModel @Inject constructor(
     fun indexDocument(text: String) {
         viewModelScope.launch {
             // TODO: Implement document indexing
-            Log.d("MainViewModel", "Document indexing not yet implemented")
+            Timber.tag("MainViewModel").d("Document indexing not yet implemented")
         }
     }
 
@@ -202,9 +202,9 @@ class MainViewModel @Inject constructor(
             try {
                 val models = modelRepository.refreshAvailableModels()
                 allModels = models
-                Log.d(tag, "Loaded ${models.size} models from repository (defaults + API)")
+                Timber.d("Loaded ${models.size} models from repository (defaults + API)")
             } catch (e: Exception) {
-                Log.e(tag, "Error refreshing available models from API; repository will provide curated defaults", e)
+                Timber.e(e, "Error refreshing available models from API; repository will provide curated defaults")
                 allModels = emptyList()
             }
         }
@@ -213,7 +213,7 @@ class MainViewModel @Inject constructor(
         try {
             _defaultModelName.value = userPreferencesRepository.defaultModelName
         } catch (e: Exception) {
-            Log.e("MainViewModel", "Error loading default model name, using empty string", e)
+            Timber.tag("MainViewModel").e(e, "Error loading default model name, using empty string")
             _defaultModelName.value = ""
         }
     }
@@ -295,7 +295,7 @@ class MainViewModel @Inject constructor(
                     addMessage("assistant", "No search results found")
                 }
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error performing web search", e)
+                Timber.tag("MainViewModel").e(e, "Error performing web search")
                 addMessage("assistant", "Search failed: ${e.message}")
             }
         }
@@ -350,7 +350,7 @@ class MainViewModel @Inject constructor(
                 var generatedTokens = 0
                 llamaAndroid.send(finalPrompt)
                     .catch {
-                        Log.e(tag, "processWebSearch() failed", it)
+                        Timber.e(it, "processWebSearch() failed")
                         addMessage("error", it.message ?: "")
                     }
                     .collect {
@@ -386,7 +386,7 @@ class MainViewModel @Inject constructor(
                         persistChat()
                     }
             } catch (e: Exception) {
-                Log.e(tag, "Error in processWebSearch", e)
+                Timber.e(e, "Error in processWebSearch")
                 addMessage("error", "Failed to process web search: ${e.message}")
                 endGeneration()
             }
@@ -395,7 +395,7 @@ class MainViewModel @Inject constructor(
 
     fun startVoiceRecognition(context: Context) {
         // TODO: Use VoiceViewModel from UI layer
-        Log.d("MainViewModel", "Voice recognition not implemented in MainViewModel")
+        Timber.tag("MainViewModel").d("Voice recognition not implemented in MainViewModel")
     }
 
     // Legacy voice recognition function
@@ -491,7 +491,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun handleToolCall(toolCall: com.nervesparks.iris.data.ToolCall) {
-        Log.d(tag, "Handling tool call: $toolCall")
+        Timber.d("Handling tool call: $toolCall")
         
         viewModelScope.launch {
             try {
@@ -499,7 +499,7 @@ class MainViewModel @Inject constructor(
                     "web_search", "brave_search" -> {
                         val query = toolCall.args["query"] as? String
                         if (query != null) {
-                            Log.d(tag, "Executing web search for: $query")
+                            Timber.d("Executing web search for: $query")
                             
                             // Show tool execution in progress
                             addMessage("assistant", "🔍 Executing web search for \"$query\"...")
@@ -540,7 +540,7 @@ class MainViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Error handling tool call", e)
+                Timber.e(e, "Error handling tool call")
                 addMessage("assistant", "❌ Tool execution error: ${e.message}")
             }
         }
@@ -566,11 +566,11 @@ class MainViewModel @Inject constructor(
                         }
                     }
                     .addOnFailureListener { e ->
-                        Log.e(tag, "OCR failed", e)
+                        Timber.e(e, "OCR failed")
                         addMessage("assistant", "❌ OCR failed: ${e.message}")
                     }
             } catch (e: Exception) {
-                Log.e(tag, "Error processing image", e)
+                Timber.e(e, "Error processing image")
                 addMessage("assistant", "❌ Unable to process image: ${e.message}")
             }
         }
@@ -643,7 +643,7 @@ class MainViewModel @Inject constructor(
                 var generatedTokens = 0
                 llamaAndroid.send(finalPrompt)
                     .catch {
-                        Log.e(tag, "processCodeAnalysis() failed", it)
+                        Timber.e(it, "processCodeAnalysis() failed")
                         addMessage("error", it.message ?: "")
                     }
                     .collect {
@@ -662,7 +662,7 @@ class MainViewModel @Inject constructor(
                         persistChat()
                     }
             } catch (e: Exception) {
-                Log.e(tag, "Error in processCodeAnalysis", e)
+                Timber.e(e, "Error in processCodeAnalysis")
                 addMessage("error", "Failed to analyze code: ${e.message}")
                 endGeneration()
             }
@@ -759,7 +759,7 @@ class MainViewModel @Inject constructor(
                 var generatedTokens = 0
                 llamaAndroid.send(finalPrompt)
                     .catch {
-                        Log.e(tag, "processTranslation() failed", it)
+                        Timber.e(it, "processTranslation() failed")
                         addMessage("error", it.message ?: "")
                     }
                     .collect {
@@ -778,7 +778,7 @@ class MainViewModel @Inject constructor(
                         persistChat()
                     }
             } catch (e: Exception) {
-                Log.e(tag, "Error in processTranslation", e)
+                Timber.e(e, "Error in processTranslation")
                 addMessage("error", "Failed to translate: ${e.message}")
                 endGeneration()
             }
@@ -930,7 +930,7 @@ class MainViewModel @Inject constructor(
                 val memoryUsage = getMemoryUsage()
                 updateMemoryUsage(memoryUsage / (1024 * 1024)) // Convert to MB
             } catch (e: Exception) {
-                Log.e(tag, "Error updating memory usage", e)
+                Timber.e(e, "Error updating memory usage")
             }
         }
     }
@@ -948,7 +948,7 @@ class MainViewModel @Inject constructor(
             val usage = llamaAndroid.getMemoryUsage()
             updateMemoryUsage(usage)
         } catch (e: Exception) {
-            Log.e(tag, "Error getting memory usage: ${e.message}")
+            Timber.e("Error getting memory usage: ${e.message}")
             updateMemoryUsage(0)
         }
     }
@@ -1041,85 +1041,85 @@ class MainViewModel @Inject constructor(
     // Legacy load model settings function
     private fun legacyLoadModelSettings() {
         try {
-            Log.d("MainViewModel", "Loading model settings...")
+            Timber.tag("MainViewModel").d("Loading model settings...")
             
             // Try to load each setting with individual try-catch blocks
             try {
                 modelTemperature = userPreferencesRepository.modelTemperature
-                Log.d("MainViewModel", "Loaded temperature: $modelTemperature")
+                Timber.tag("MainViewModel").d("Loaded temperature: $modelTemperature")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading temperature, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading temperature, using default")
                 modelTemperature = 0.7f
             }
             
             try {
                 modelTopP = userPreferencesRepository.modelTopP
-                Log.d("MainViewModel", "Loaded topP: $modelTopP")
+                Timber.tag("MainViewModel").d("Loaded topP: $modelTopP")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading topP, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading topP, using default")
                 modelTopP = 0.9f
             }
             
             try {
                 modelTopK = userPreferencesRepository.modelTopK
-                Log.d("MainViewModel", "Loaded topK: $modelTopK")
+                Timber.tag("MainViewModel").d("Loaded topK: $modelTopK")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading topK, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading topK, using default")
                 modelTopK = 40
             }
             
             try {
                 modelMaxTokens = userPreferencesRepository.modelMaxTokens
-                Log.d("MainViewModel", "Loaded maxTokens: $modelMaxTokens")
+                Timber.tag("MainViewModel").d("Loaded maxTokens: $modelMaxTokens")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading maxTokens, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading maxTokens, using default")
                 modelMaxTokens = 2048
             }
             
             try {
                 modelContextLength = userPreferencesRepository.modelContextLength
-                Log.d("MainViewModel", "Loaded contextLength: $modelContextLength")
+                Timber.tag("MainViewModel").d("Loaded contextLength: $modelContextLength")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading contextLength, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading contextLength, using default")
                 modelContextLength = 32768  // Increased for Qwen3 support
             }
             maxContextLimit = modelContextLength
             
             try {
                 modelSystemPrompt = userPreferencesRepository.modelSystemPrompt
-                Log.d("MainViewModel", "Loaded systemPrompt: $modelSystemPrompt")
+                Timber.tag("MainViewModel").d("Loaded systemPrompt: $modelSystemPrompt")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading systemPrompt, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading systemPrompt, using default")
                 modelSystemPrompt = "You are a helpful AI assistant."
             }
             
             try {
                 modelChatFormat = userPreferencesRepository.modelChatFormat
-                Log.d("MainViewModel", "Loaded chatFormat: $modelChatFormat")
+                Timber.tag("MainViewModel").d("Loaded chatFormat: $modelChatFormat")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading chatFormat, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading chatFormat, using default")
                 modelChatFormat = "CHATML"
             }
             
             try {
                 modelThreadCount = userPreferencesRepository.modelThreadCount
-                Log.d("MainViewModel", "Loaded threadCount: $modelThreadCount")
+                Timber.tag("MainViewModel").d("Loaded threadCount: $modelThreadCount")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading threadCount, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading threadCount, using default")
                 modelThreadCount = 4
             }
 
             try {
                 modelGpuLayers = userPreferencesRepository.modelGpuLayers
-                Log.d("MainViewModel", "Loaded gpuLayers: $modelGpuLayers")
+                Timber.tag("MainViewModel").d("Loaded gpuLayers: $modelGpuLayers")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading gpuLayers, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading gpuLayers, using default")
                 modelGpuLayers = -1
             }
             
-            Log.d("MainViewModel", "Model settings loaded successfully")
+            Timber.tag("MainViewModel").d("Model settings loaded successfully")
         } catch (e: Exception) {
-            Log.e("MainViewModel", "Error in loadModelSettings", e)
+            Timber.tag("MainViewModel").e(e, "Error in loadModelSettings")
         }
     }
 
@@ -1150,27 +1150,27 @@ class MainViewModel @Inject constructor(
     // Legacy thinking token settings functions
     private fun legacyLoadThinkingTokenSettings() {
         try {
-            Log.d("MainViewModel", "Loading thinking token settings...")
+            Timber.tag("MainViewModel").d("Loading thinking token settings...")
             
             try {
                 showThinkingTokens = userPreferencesRepository.showThinkingTokens
-                Log.d("MainViewModel", "Loaded showThinkingTokens: $showThinkingTokens")
+                Timber.tag("MainViewModel").d("Loaded showThinkingTokens: $showThinkingTokens")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading showThinkingTokens, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading showThinkingTokens, using default")
                 showThinkingTokens = true
             }
             
             try {
                 thinkingTokenStyle = userPreferencesRepository.thinkingTokenStyle
-                Log.d("MainViewModel", "Loaded thinkingTokenStyle: $thinkingTokenStyle")
+                Timber.tag("MainViewModel").d("Loaded thinkingTokenStyle: $thinkingTokenStyle")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading thinkingTokenStyle, using default", e)
+                Timber.tag("MainViewModel").e(e, "Error loading thinkingTokenStyle, using default")
                 thinkingTokenStyle = "COLLAPSIBLE"
             }
             
-            Log.d("MainViewModel", "Thinking token settings loaded successfully")
+            Timber.tag("MainViewModel").d("Thinking token settings loaded successfully")
         } catch (e: Exception) {
-            Log.e("MainViewModel", "Error in loadThinkingTokenSettings", e)
+            Timber.tag("MainViewModel").e(e, "Error in loadThinkingTokenSettings")
         }
     }
 
@@ -1178,24 +1178,24 @@ class MainViewModel @Inject constructor(
     var refresh by mutableStateOf(false)
 
     fun loadExistingModels(directory: File) {
-        Log.d(tag, "loadExistingModels called with directory: ${directory.absolutePath}")
-        Log.d(tag, "Directory exists: ${directory.exists()}")
-        Log.d(tag, "Directory is readable: ${directory.canRead()}")
+        Timber.d("loadExistingModels called with directory: ${directory.absolutePath}")
+        Timber.d("Directory exists: ${directory.exists()}")
+        Timber.d("Directory is readable: ${directory.canRead()}")
         
         // List all files in directory first
         val allFiles = directory.listFiles()
-        Log.d(tag, "All files in directory: ${allFiles?.size ?: 0}")
+        Timber.d("All files in directory: ${allFiles?.size ?: 0}")
         allFiles?.forEach { file ->
-            Log.d(tag, "File: ${file.name}, extension: ${file.extension}, isFile: ${file.isFile}")
+            Timber.d("File: ${file.name}, extension: ${file.extension}, isFile: ${file.isFile}")
         }
         
         // List models in the directory that end with .gguf
         val ggufFiles = directory.listFiles { file -> file.extension == "gguf" }
-        Log.d(tag, "Found ${ggufFiles?.size ?: 0} .gguf files")
+        Timber.d("Found ${ggufFiles?.size ?: 0} .gguf files")
         
         ggufFiles?.forEach { file ->
             val modelName = file.name
-            Log.i("This is the modelname", modelName)
+            Timber.tag("This is the modelname").i(modelName)
             if (!allModels.any { it["name"] == modelName }) {
                 allModels += mapOf(
                     "name" to modelName,
@@ -1203,13 +1203,13 @@ class MainViewModel @Inject constructor(
                     "destination" to file.name,
                     "supportsReasoning" to "false"
                 )
-                Log.d(tag, "Added model to allModels: $modelName")
+                Timber.d("Added model to allModels: $modelName")
             } else {
-                Log.d(tag, "Model already in allModels: $modelName")
+                Timber.d("Model already in allModels: $modelName")
             }
         }
         
-        Log.d(tag, "Found ${allModels.size} total models")
+        Timber.d("Found ${allModels.size} total models")
         
         // Check if we have any models available
         val availableModels = allModels.filter { model ->
@@ -1217,13 +1217,13 @@ class MainViewModel @Inject constructor(
             destinationPath.exists()
         }
         
-        Log.d(tag, "Available models: ${availableModels.size}")
+        Timber.d("Available models: ${availableModels.size}")
         availableModels.forEach { model ->
-            Log.d(tag, "Available model: ${model["name"]}")
+            Timber.d("Available model: ${model["name"]}")
         }
 
         if (availableModels.isNotEmpty()) {
-            Log.d(tag, "Models available, setting up UI for model selection")
+            Timber.d("Models available, setting up UI for model selection")
             
             // Set the first available model as currentDownloadable but don't auto-load
             val firstModel = availableModels.first()
@@ -1250,9 +1250,9 @@ class MainViewModel @Inject constructor(
             // DON'T show download modal when models exist - show model selection instead
             showModal = false
             showModelSelection = true
-            Log.d(tag, "Set showModal=false, showModelSelection=true")
+            Timber.d("Set showModal=false, showModelSelection=true")
         } else {
-            Log.d(tag, "No models available, showing download modal")
+            Timber.d("No models available, showing download modal")
             // No models available, show download modal
             showModal = true
             showModelSelection = false
@@ -1266,23 +1266,23 @@ class MainViewModel @Inject constructor(
             val destinationPath = File(directory, model["destination"].toString())
             if (destinationPath.exists()) {
                 // Set reasoning support based on model configuration
-                Log.d(tag, "=== SWITCH MODEL REASONING DEBUG ===")
-                Log.d(tag, "Switching to model: $modelName")
-                Log.d(tag, "Model configuration: $model")
+                Timber.d("=== SWITCH MODEL REASONING DEBUG ===")
+                Timber.d("Switching to model: $modelName")
+                Timber.d("Model configuration: $model")
                 
                 val reasoningSupport = model["supportsReasoning"]
-                Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+                Timber.d("Raw reasoning support value: $reasoningSupport")
                 
                 supportsReasoning = reasoningSupport == "true"
-                Log.d(tag, "Final supportsReasoning: $supportsReasoning")
-                Log.d(tag, "=== END SWITCH MODEL DEBUG ===")
+                Timber.d("Final supportsReasoning: $supportsReasoning")
+                Timber.d("=== END SWITCH MODEL DEBUG ===")
                 
                 // Unload current model if any
                 viewModelScope.launch {
                     try {
                         llamaAndroid.unload()
                     } catch (e: Exception) {
-                        Log.e("MainViewModel", "Error unloading model", e)
+                        Timber.tag("MainViewModel").e(e, "Error unloading model")
                     }
                 }
                 
@@ -1294,13 +1294,13 @@ class MainViewModel @Inject constructor(
                 )
                 
                 // Load the new model with CPU backend to avoid OpenCL issues
-                Log.d(tag, "Loading model with CPU backend to avoid OpenCL issues")
+                Timber.d("Loading model with CPU backend to avoid OpenCL issues")
                 load(destinationPath.path, modelThreadCount, backend = "cpu")
                 
                 // Update default model name
                 setDefaultModelName(modelName)
                 
-                Log.i("MainViewModel", "Switched to model: $modelName")
+                Timber.tag("MainViewModel").i("Switched to model: $modelName")
             }
         }
     }
@@ -1338,7 +1338,7 @@ class MainViewModel @Inject constructor(
 
     fun textToSpeech(context: Context, text: String) {
         // TODO: Use VoiceViewModel from UI layer
-        Log.d("MainViewModel", "Text-to-speech not implemented in MainViewModel")
+        Timber.tag("MainViewModel").d("Text-to-speech not implemented in MainViewModel")
     }
 
     // Legacy text-to-speech function
@@ -1479,7 +1479,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun send() {
-        Log.d(tag, "Send button clicked")
+        Timber.d("Send button clicked")
         val reserveTokens = 256
         val userMessage = removeExtraWhiteSpaces(message)
         message = ""
@@ -1491,7 +1491,7 @@ class MainViewModel @Inject constructor(
 
         // Add to messages console.
         if (userMessage.isNotBlank()) {
-            Log.d(tag, "User message is not blank: $userMessage")
+            Timber.d("User message is not blank: $userMessage")
             if(first){
                 addMessage("system", "This is a conversation between User and Iris, a friendly chatbot. Iris is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision. When responding, Iris should use <think> tags to show its reasoning process before providing the final answer.")
                 addMessage("user", "Hi")
@@ -1566,7 +1566,7 @@ class MainViewModel @Inject constructor(
                     var generatedTokens = 0
                     llamaAndroid.send(prompt)
                         .catch {
-                            Log.e(tag, "send() failed", it)
+                            Timber.e(it, "send() failed")
                             addMessage("error", it.message ?: "")
                         }
                         .collect {
@@ -1607,7 +1607,7 @@ class MainViewModel @Inject constructor(
 
             }
         } else {
-            Log.d(tag, "User message is blank")
+            Timber.d("User message is blank")
         }
     }
 
@@ -1630,7 +1630,7 @@ class MainViewModel @Inject constructor(
 //
 //                messages += llamaAndroid.bench(512, 128, 1, 3)
 //            } catch (exc: IllegalStateException) {
-//                Log.e(tag, "bench() failed", exc)
+//                Timber.e(exc, "bench() failed")
 //                messages += exc.message!!
 //            }
 //        }
@@ -1673,15 +1673,15 @@ class MainViewModel @Inject constructor(
                     .collect { emittedString ->
                         if (emittedString != null) {
                             tokensList.add(emittedString) // Add each token to the list
-                            Log.d(tag, "Token collected: $emittedString")
+                            Timber.d("Token collected: $emittedString")
                         }
                     }
             } catch (exc: IllegalStateException) {
-                Log.e(tag, "myCustomBenchmark() failed", exc)
+                Timber.e(exc, "myCustomBenchmark() failed")
             } catch (exc: kotlinx.coroutines.TimeoutCancellationException) {
-                Log.e(tag, "myCustomBenchmark() timed out", exc)
+                Timber.e(exc, "myCustomBenchmark() timed out")
             } catch (exc: Exception) {
-                Log.e(tag, "Unexpected error during myCustomBenchmark()", exc)
+                Timber.e(exc, "Unexpected error during myCustomBenchmark()")
             } finally {
                 // Benchmark complete, log the final tokens per second value
                 val elapsedTime = System.currentTimeMillis() - benchmarkStartTime
@@ -1690,7 +1690,7 @@ class MainViewModel @Inject constructor(
                 } else {
                     0.0
                 }
-                Log.d(tag, "Benchmark complete. Tokens/sec: $finalTokensPerSecond")
+                Timber.d("Benchmark complete. Tokens/sec: $finalTokensPerSecond")
 
                 // Update the final tokens per second and stop updating the value
                 tokensPerSecondsFinal = finalTokensPerSecond
@@ -1702,22 +1702,22 @@ class MainViewModel @Inject constructor(
     fun runComparativeBenchmark() {
         viewModelScope.launch {
             try {
-                Log.d(tag, "Starting comparative benchmark...")
+                Timber.d("Starting comparative benchmark...")
                 isComparativeBenchmarkRunning = true
                 comparativeBenchmarkResults = null
                 
                                     // Use actual model and context handles for real benchmarking
-                    Log.d(tag, "Calling native benchmark function with real model...")
+                    Timber.d("Calling native benchmark function with real model...")
                     val modelHandle = llamaAndroid.getModel()
                     val contextHandle = llamaAndroid.getContext()
                     val batchHandle = llamaAndroid.getBatch()
                     val samplerHandle = llamaAndroid.getSampler()
 
-                    Log.d(tag, "Model handle: $modelHandle, Context handle: $contextHandle")
+                    Timber.d("Model handle: $modelHandle, Context handle: $contextHandle")
 
                     // Verify that all handles are valid before proceeding
                     if (modelHandle == 0L || contextHandle == 0L || batchHandle == 0L || samplerHandle == 0L) {
-                        Log.e(tag, "Model not loaded. Skipping comparative benchmark.")
+                        Timber.e("Model not loaded. Skipping comparative benchmark.")
                         comparativeBenchmarkResults = mapOf("error" to "Model not loaded.")
                         return@launch
                     }
@@ -1728,15 +1728,15 @@ class MainViewModel @Inject constructor(
                             llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
                         }
                     } catch (e: IllegalStateException) {
-                        Log.e(tag, "Comparative benchmark failed", e)
+                        Timber.e(e, "Comparative benchmark failed")
                         comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
                         return@launch
                     } catch (e: Exception) {
-                        Log.e(tag, "Comparative benchmark failed", e)
+                        Timber.e(e, "Comparative benchmark failed")
                         comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
                         return@launch
                     }
-                Log.d(tag, "Native benchmark returned: $resultsJson")
+                Timber.d("Native benchmark returned: $resultsJson")
                 
                 // Parse the JSON results
                 try {
@@ -1767,16 +1767,16 @@ class MainViewModel @Inject constructor(
                     }
                     
                     comparativeBenchmarkResults = results
-                    Log.d(tag, "Comparative benchmark completed: $results")
-                    Log.d(tag, "Setting comparativeBenchmarkResults to: $comparativeBenchmarkResults")
+                    Timber.d("Comparative benchmark completed: $results")
+                    Timber.d("Setting comparativeBenchmarkResults to: $comparativeBenchmarkResults")
                     
                 } catch (e: Exception) {
-                    Log.e(tag, "Error parsing benchmark results", e)
+                    Timber.e(e, "Error parsing benchmark results")
                     comparativeBenchmarkResults = mapOf("error" to "Failed to parse results: ${e.message}")
                 }
                 
             } catch (e: Exception) {
-                Log.e(tag, "Comparative benchmark failed", e)
+                Timber.e(e, "Comparative benchmark failed")
                 comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
             } finally {
                 isComparativeBenchmarkRunning = false
@@ -1804,7 +1804,7 @@ class MainViewModel @Inject constructor(
                 ?.let { File(directory, it["destination"].toString()).path }
 
             try {
-                Log.d(tag, "Starting benchmark with model: $modelName")
+                Timber.d("Starting benchmark with model: $modelName")
 
                 // Attempt to load the user selected model
                 val loaded = loadModelByName(modelName, directory)
@@ -1827,11 +1827,11 @@ class MainViewModel @Inject constructor(
                     batchHandle = llamaAndroid.getBatch()
                     samplerHandle = llamaAndroid.getSampler()
                     attempts++
-                    Log.d(tag, "Attempt $attempts: Model=$modelHandle, Context=$contextHandle, Batch=$batchHandle, Sampler=$samplerHandle")
+                    Timber.d("Attempt $attempts: Model=$modelHandle, Context=$contextHandle, Batch=$batchHandle, Sampler=$samplerHandle")
                 }
                 
                 if (modelHandle == 0L || contextHandle == 0L || batchHandle == 0L || samplerHandle == 0L) {
-                    Log.e(tag, "Model handles still invalid after $attempts attempts")
+                    Timber.e("Model handles still invalid after $attempts attempts")
                     comparativeBenchmarkResults = mapOf("error" to "Model not properly loaded after $attempts attempts")
                     return@launch
                 }
@@ -1840,7 +1840,7 @@ class MainViewModel @Inject constructor(
                 try {
                     runComparativeBenchmark()
                 } catch (benchExc: Exception) {
-                    Log.e(tag, "Benchmark with model failed", benchExc)
+                    Timber.e(benchExc, "Benchmark with model failed")
                     comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${benchExc.message}")
                 }
 
@@ -1851,7 +1851,7 @@ class MainViewModel @Inject constructor(
                         val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
                         load(previousModelPath, userThreads = modelThreadCount, backend = backend)
                     } catch (restoreExc: Exception) {
-                        Log.e(tag, "Failed to reload previous model", restoreExc)
+                        Timber.e(restoreExc, "Failed to reload previous model")
                     }
                 }
                 isComparativeBenchmarkRunning = false
@@ -1869,9 +1869,9 @@ class MainViewModel @Inject constructor(
                 llamaAndroid.unload()
                 // Basic model loading - full implementation in ModelViewModel
                 llamaAndroid.load(pathToModel, userThreads, 40, 0.9f, 0.7f, -1)
-                Log.d("MainViewModel", "Model loaded: $pathToModel")
+                Timber.tag("MainViewModel").d("Model loaded: $pathToModel")
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading model", e)
+                Timber.tag("MainViewModel").e(e, "Error loading model")
             }
         }
     }
@@ -1882,7 +1882,7 @@ class MainViewModel @Inject constructor(
             try{
                 llamaAndroid.unload()
             } catch (exc: IllegalStateException){
-                Log.e(tag, "load() failed", exc)
+                Timber.e(exc, "load() failed")
             }
                             try {
                 // Set desired backend prior to loading model/context
@@ -1891,30 +1891,30 @@ class MainViewModel @Inject constructor(
                     val success = llamaAndroid.setBackend(requested)
                     if (success) {
                         currentBackend = if (requested == "vulkan") "Vulkan" else if (requested == "opencl") "OpenCL" else "CPU"
-                        Log.d(tag, "Backend set OK: $currentBackend")
+                        Timber.d("Backend set OK: $currentBackend")
                     } else {
                         currentBackend = "CPU"
-                        Log.e(tag, "Backend set failed for '$requested', falling back to CPU")
+                        Timber.e("Backend set failed for '$requested', falling back to CPU")
                     }
                 } catch (be: Exception) {
                     currentBackend = "CPU"
-                    Log.e(tag, "Exception when setting backend to $backend: ${be.message}")
+                    Timber.e("Exception when setting backend to $backend: ${be.message}")
                 }
                 
                 var modelName = pathToModel.split("/")
                 loadedModelName.value = modelName.last()
                 
                 // Add reasoning support detection here
-                Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
-                Log.d(tag, "Loading model: ${loadedModelName.value}")
-                Log.d(tag, "All models count: ${allModels.size}")
-                Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
+                Timber.d("=== REASONING SUPPORT DEBUG ===")
+                Timber.d("Loading model: ${loadedModelName.value}")
+                Timber.d("All models count: ${allModels.size}")
+                Timber.d("All model names: ${allModels.map { it["name"] }}")
                 
                 val foundModel = allModels.find { it["name"] == loadedModelName.value }
-                Log.d(tag, "Found model in allModels: $foundModel")
+                Timber.d("Found model in allModels: $foundModel")
                 
                 val reasoningSupport = foundModel?.get("supportsReasoning")
-                Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+                Timber.d("Raw reasoning support value: $reasoningSupport")
                 
                 // Fallback logic: if model not found, check if it's a known reasoning model
                 supportsReasoning = if (reasoningSupport == "true") {
@@ -1925,7 +1925,7 @@ class MainViewModel @Inject constructor(
                     val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                         loadedModelName.value.lowercase().contains(keyword.lowercase())
                     }
-                    Log.d(tag, "Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+                    Timber.d("Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
                     hasReasoningKeyword
                 } else {
                     false
@@ -1933,16 +1933,16 @@ class MainViewModel @Inject constructor(
                 
                 // Remove forced reasoning; trust metadata / keyword fallback only
                 
-                Log.d(tag, "Final supportsReasoning: $supportsReasoning")
-                Log.d(tag, "=== END REASONING DEBUG ===")
+                Timber.d("Final supportsReasoning: $supportsReasoning")
+                Timber.d("=== END REASONING DEBUG ===")
                 
                 showModal = false
                 showAlert = true
                 
-                Log.d(tag, "Loading model with settings: backend=$currentBackend, threads=$modelThreadCount, ngl=${modelGpuLayers}, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
+                Timber.d("Loading model with settings: backend=$currentBackend, threads=$modelThreadCount, ngl=${modelGpuLayers}, topK=$modelTopK, topP=$modelTopP, temp=$modelTemperature")
                 // Ensure native library is loaded before first JNI call
                 if (!llamaAndroid.isNativeLibraryLoaded()) {
-                    Log.w(tag, "Native lib not yet loaded; attempting sync load")
+                    Timber.w("Native lib not yet loaded; attempting sync load")
                     llamaAndroid.ensureLibraryLoaded()
                 }
                 
@@ -1956,7 +1956,7 @@ class MainViewModel @Inject constructor(
                     gpuLayers = modelGpuLayers
                 )
                 
-                Log.d(tag, "Model loaded successfully: ${loadedModelName.value}")
+                Timber.d("Model loaded successfully: ${loadedModelName.value}")
                 showAlert = false
                 applyThinkStripGate()
                 // Keep native token logs quiet in normal operation
@@ -1967,21 +1967,21 @@ class MainViewModel @Inject constructor(
                     if (counts.size == 2) {
                         offloadedLayers = counts[0]
                         totalLayers = counts[1]
-                        Log.d(tag, "Offload counts: ${counts[0]}/${counts[1]}")
+                        Timber.d("Offload counts: ${counts[0]}/${counts[1]}")
                     }
                 } catch (_: Exception) {}
                 // Export runtime diagnostics
                 try {
                     val diag = llamaAndroid.exportDiag()
-                    Log.d(tag, "Runtime diag: $diag")
+                    Timber.d("Runtime diag: $diag")
                 } catch (_: Exception) {}
 
             } catch (exc: IllegalStateException) {
-                Log.e(tag, "load() failed", exc)
+                Timber.e(exc, "load() failed")
                 // Since OpenCL is disabled, just report the error
                 addMessage("error", "Failed to load model: ${exc.message}")
             } catch (exc: Exception) {
-                Log.e(tag, "load() failed with exception", exc)
+                Timber.e(exc, "load() failed with exception")
                 addMessage("error", "Failed to load model: ${exc.message}")
             }
             showModal = false
@@ -1995,16 +1995,16 @@ class MainViewModel @Inject constructor(
      */
     fun loadModel(modelPath: String) {
         val modelName = modelPath.substringAfterLast("/")
-        Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
-        Log.d(tag, "Loading model: $modelName")
-        Log.d(tag, "All models count: ${allModels.size}")
-        Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
+        Timber.d("=== REASONING SUPPORT DEBUG ===")
+        Timber.d("Loading model: $modelName")
+        Timber.d("All models count: ${allModels.size}")
+        Timber.d("All model names: ${allModels.map { it["name"] }}")
         
         val foundModel = allModels.find { it["name"] == modelName }
-        Log.d(tag, "Found model in allModels: $foundModel")
+        Timber.d("Found model in allModels: $foundModel")
         
         val reasoningSupport = foundModel?.get("supportsReasoning")
-        Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+        Timber.d("Raw reasoning support value: $reasoningSupport")
         
         // Fallback logic: if model not found, check if it's a known reasoning model
         supportsReasoning = if (reasoningSupport == "true") {
@@ -2015,23 +2015,23 @@ class MainViewModel @Inject constructor(
             val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                 modelName.lowercase().contains(keyword.lowercase())
             }
-            Log.d(tag, "Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+            Timber.d("Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
             hasReasoningKeyword
         } else {
             false
         }
-        Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+        Timber.d("Final supportsReasoning: $supportsReasoning")
         
         // Set chat template from model definition
         val chatTemplate = foundModel?.get("chatTemplate")
         if (chatTemplate != null) {
-            Log.d(tag, "Setting chat template from model definition: $chatTemplate")
+            Timber.d("Setting chat template from model definition: $chatTemplate")
             modelChatFormat = chatTemplate
         } else {
-            Log.d(tag, "No chat template found in model definition, using default: $modelChatFormat")
+            Timber.d("No chat template found in model definition, using default: $modelChatFormat")
         }
         
-        Log.d(tag, "=== END REASONING DEBUG ===")
+        Timber.d("=== END REASONING DEBUG ===")
         
         // Prefer Vulkan, then OpenCL, else CPU
         val backend = when {
@@ -2046,24 +2046,24 @@ class MainViewModel @Inject constructor(
      * Load a model by name from the external files directory
      */
     fun loadModelByName(modelName: String, directory: File): Boolean {
-        Log.d(tag, "Loading model by name: $modelName from directory: ${directory.absolutePath}")
+        Timber.d("Loading model by name: $modelName from directory: ${directory.absolutePath}")
         // Hint native where to scan for ggml backends (directory that contains libggml-*.so)
         try {
             val nativeLibDir = getApplication<Application>().applicationInfo.nativeLibraryDir
             LLamaAndroid.instance().setBackendSearchDir(nativeLibDir)
-            Log.d(tag, "Set backend search dir to $nativeLibDir")
+            Timber.d("Set backend search dir to $nativeLibDir")
         } catch (e: Exception) {
-            Log.w(tag, "Failed to set backend search dir: ${e.message}")
+            Timber.w("Failed to set backend search dir: ${e.message}")
         }
-        Log.d(tag, "=== REASONING SUPPORT DEBUG ===")
-        Log.d(tag, "All models count: ${allModels.size}")
-        Log.d(tag, "All model names: ${allModels.map { it["name"] }}")
+        Timber.d("=== REASONING SUPPORT DEBUG ===")
+        Timber.d("All models count: ${allModels.size}")
+        Timber.d("All model names: ${allModels.map { it["name"] }}")
 
         val foundModel = allModels.find { it["name"] == modelName }
-        Log.d(tag, "Found model in allModels: $foundModel")
+        Timber.d("Found model in allModels: $foundModel")
 
         val reasoningSupport = foundModel?.get("supportsReasoning")
-        Log.d(tag, "Raw reasoning support value: $reasoningSupport")
+        Timber.d("Raw reasoning support value: $reasoningSupport")
 
         // Fallback logic: if model not found, check if it's a known reasoning model
         supportsReasoning = if (reasoningSupport == "true") {
@@ -2073,23 +2073,23 @@ class MainViewModel @Inject constructor(
             val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                 modelName.lowercase().contains(keyword.lowercase())
             }
-            Log.d(tag, "Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+            Timber.d("Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
             hasReasoningKeyword
         } else {
             false
         }
-        Log.d(tag, "Final supportsReasoning: $supportsReasoning")
+        Timber.d("Final supportsReasoning: $supportsReasoning")
 
         // Set chat template from model definition
         val chatTemplate = foundModel?.get("chatTemplate")
         if (chatTemplate != null) {
-            Log.d(tag, "Setting chat template from model definition: $chatTemplate")
+            Timber.d("Setting chat template from model definition: $chatTemplate")
             modelChatFormat = chatTemplate
         } else {
-            Log.d(tag, "No chat template found in model definition, using default: $modelChatFormat")
+            Timber.d("No chat template found in model definition, using default: $modelChatFormat")
         }
 
-        Log.d(tag, "=== END REASONING DEBUG ===")
+        Timber.d("=== END REASONING DEBUG ===")
 
         // Remove forced reasoning; trust metadata / keyword fallback only
 
@@ -2108,18 +2108,18 @@ class MainViewModel @Inject constructor(
                     true
                 } else {
                     val msg = "Model file not found: ${destinationPath.path}"
-                    Log.e(tag, msg)
+                    Timber.e(msg)
                     addMessage("error", msg)
                     false
                 }
             } else {
                 val msg = "Model not found: $modelName"
-                Log.e(tag, msg)
+                Timber.e(msg)
                 addMessage("error", msg)
                 false
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error loading model by name: ${e.message}", e)
+            Timber.e(e, "Error loading model by name: ${e.message}")
             addMessage("error", "Failed to load model: ${e.message}")
             false
         }
@@ -2133,11 +2133,11 @@ class MainViewModel @Inject constructor(
                 if (success) {
                     currentBackend = backend
                     backendError = null
-                    Log.d(tag, "Backend changed to: $backend")
+                    Timber.d("Backend changed to: $backend")
 
                     // If a model is already loaded, recreate with the new backend
                     if (llamaAndroid.getModel() != 0L) {
-                        Log.d(tag, "Recreating model/context for backend=$backend")
+                        Timber.d("Recreating model/context for backend=$backend")
                         try { llamaAndroid.unload() } catch (_: Exception) {}
                         // Ensure backend search dir remains set
                         try {
@@ -2154,10 +2154,10 @@ class MainViewModel @Inject constructor(
                 } else {
                     backendError = "Failed to switch backend to $backend"
                     currentBackend = "CPU"
-                    Log.e(tag, "Backend switch failed, reverted to CPU")
+                    Timber.e("Backend switch failed, reverted to CPU")
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Failed to set backend to $backend: ${e.message}")
+                Timber.e("Failed to set backend to $backend: ${e.message}")
                 backendError = "Failed to switch backend to $backend: ${e.message}"
                 currentBackend = "CPU"
                 try {
@@ -2171,23 +2171,23 @@ class MainViewModel @Inject constructor(
     fun detectHardwareCapabilities() {
         viewModelScope.launch {
             try {
-                Log.d(tag, "Starting hardware detection...")
+                Timber.d("Starting hardware detection...")
 
                 // Force initialization of native library by using the dispatcher
                 try {
-                    Log.d(tag, "Forcing native library initialization...")
+                    Timber.d("Forcing native library initialization...")
                     withContext(llamaAndroid.runLoop) {
-                        Log.d(tag, "Native library initialization triggered")
+                        Timber.d("Native library initialization triggered")
                     }
                 } catch (e: Exception) {
-                    Log.e(tag, "Error during native library initialization: ${e.message}")
+                    Timber.e("Error during native library initialization: ${e.message}")
                 }
 
                 // Check if native library is loaded before calling native functions
                 if (!llamaAndroid.isNativeLibraryLoaded()) {
-                    Log.w(tag, "Native library not loaded, attempting synchronous load...")
+                    Timber.w("Native library not loaded, attempting synchronous load...")
                     if (!llamaAndroid.ensureLibraryLoaded()) {
-                        Log.w(tag, "Synchronous library load failed, using CPU-only mode")
+                        Timber.w("Synchronous library load failed, using CPU-only mode")
                         availableBackends = "CPU"
                         currentBackend = "CPU"
                         optimalBackend = "CPU"
@@ -2207,12 +2207,12 @@ class MainViewModel @Inject constructor(
                 currentBackend = optimalBackend
                 backendError = null
 
-                Log.d(tag, "Hardware detection: Available backends: $availableBackends")
-                Log.d(tag, "Hardware detection: Optimal backend: $optimalBackend")
-                Log.d(tag, "Hardware detection: GPU info: $gpuInfo")
-                Log.d(tag, "Hardware detection: Is Adreno GPU: $isAdrenoGpu")
+                Timber.d("Hardware detection: Available backends: $availableBackends")
+                Timber.d("Hardware detection: Optimal backend: $optimalBackend")
+                Timber.d("Hardware detection: GPU info: $gpuInfo")
+                Timber.d("Hardware detection: Is Adreno GPU: $isAdrenoGpu")
             } catch (e: Exception) {
-                Log.e(tag, "Error detecting hardware capabilities: ${e.message}")
+                Timber.e("Error detecting hardware capabilities: ${e.message}")
                 // Fallback to CPU-only
                 availableBackends = "CPU"
                 currentBackend = "CPU"
@@ -2249,7 +2249,7 @@ class MainViewModel @Inject constructor(
         messages = messages.toMutableList().apply {
             set(messages.lastIndex, updatedLastMessage)
         }
-        messages.last()["content"]?.let { Log.e(tag, it) }
+        messages.last()["content"]?.let { Timber.e(it) }
     }
 
     private fun removeExtraWhiteSpaces(input: String): String {
@@ -2358,7 +2358,7 @@ class MainViewModel @Inject constructor(
                 error = null
             )
         } catch (e: Exception) {
-            Log.e(tag, "Error searching models", e)
+            Timber.e(e, "Error searching models")
             SearchResponse(
                 success = false,
                 data = null,
@@ -2405,7 +2405,7 @@ class MainViewModel @Inject constructor(
                 error = null
             )
         } catch (e: Exception) {
-            Log.e(tag, "Error getting model details", e)
+            Timber.e(e, "Error getting model details")
             ModelDetailsResponse(
                 success = false,
                 data = null,
@@ -2418,7 +2418,7 @@ class MainViewModel @Inject constructor(
         // SECURITY: Removed hardcoded test token
         // In production, tokens should only be set by user input
         // This function now serves as a placeholder for proper token management
-        Log.w(tag, "Test token setting is disabled for security. Please set HuggingFace token through settings.")
+        Timber.w("Test token setting is disabled for security. Please set HuggingFace token through settings.")
     }
 
     // Memory management functions
@@ -2428,9 +2428,9 @@ class MainViewModel @Inject constructor(
                 llamaAndroid.unload()
                 loadedModelName.value = ""
                 selectedModel = ""
-                Log.d(tag, "Current model unloaded successfully")
+                Timber.d("Current model unloaded successfully")
             } catch (e: Exception) {
-                Log.e(tag, "Error unloading model", e)
+                Timber.e(e, "Error unloading model")
             }
         }
     }
@@ -2439,7 +2439,7 @@ class MainViewModel @Inject constructor(
         return try {
             llamaAndroid.getMemoryUsage()
         } catch (e: Exception) {
-            Log.e(tag, "Error getting memory usage", e)
+            Timber.e(e, "Error getting memory usage")
             0L
         }
     }
@@ -2460,17 +2460,17 @@ class MainViewModel @Inject constructor(
                 if (messages.size > 100) {
                     val keepCount = 50
                     messages = messages.takeLast(keepCount)
-                    Log.d(tag, "Cleared message history, kept last $keepCount messages")
+                    Timber.d("Cleared message history, kept last $keepCount messages")
                 }
                 
                 // Force garbage collection if memory usage is high
                 val memoryUsage = getMemoryUsage()
                 if (memoryUsage > 500 * 1024 * 1024) { // 500MB threshold
                     System.gc()
-                    Log.d(tag, "Forced garbage collection due to high memory usage: ${memoryUsage / (1024 * 1024)}MB")
+                    Timber.d("Forced garbage collection due to high memory usage: ${memoryUsage / (1024 * 1024)}MB")
                 }
             } catch (e: Exception) {
-                Log.e(tag, "Error optimizing memory", e)
+                Timber.e(e, "Error optimizing memory")
             }
         }
     }

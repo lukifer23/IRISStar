@@ -1,6 +1,6 @@
 package com.nervesparks.iris.viewmodel
 
-import android.util.Log
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -36,7 +36,7 @@ class SearchViewModel @Inject constructor(
                 isSearching = true
                 searchError = null
 
-                Log.d(tag, "Performing web search for: $query")
+                Timber.tag(tag).d("Performing web search for: $query")
                 val response = webSearchService.searchWeb(query)
 
                 if (response.success && response.results?.isNotEmpty() == true) {
@@ -50,7 +50,7 @@ class SearchViewModel @Inject constructor(
 
                     if (summarize && searchResults.isNotEmpty()) {
                         // TODO: Implement summarization
-                        Log.d(tag, "Search completed with ${searchResults.size} results")
+                        Timber.tag(tag).d("Search completed with ${searchResults.size} results")
                     }
                 } else {
                     searchResults = emptyList()
@@ -58,7 +58,7 @@ class SearchViewModel @Inject constructor(
                 }
 
             } catch (e: Exception) {
-                Log.e(tag, "Error performing web search", e)
+                Timber.tag(tag).e(e, "Error performing web search")
                 searchError = "Search failed: ${e.message}"
                 searchResults = emptyList()
             } finally {
@@ -74,14 +74,14 @@ class SearchViewModel @Inject constructor(
                 isSearching = true
                 searchError = null
 
-                Log.d(tag, "Searching documents for: $query")
+                Timber.tag(tag).d("Searching documents for: $query")
                 // TODO: Implement document search
                 // This would integrate with documentRepository for semantic search
 
-                Log.d(tag, "Document search completed")
+                Timber.tag(tag).d("Document search completed")
 
             } catch (e: Exception) {
-                Log.e(tag, "Error searching documents", e)
+                Timber.tag(tag).e(e, "Error searching documents")
                 searchError = "Document search failed: ${e.message}"
             } finally {
                 isSearching = false
@@ -93,11 +93,11 @@ class SearchViewModel @Inject constructor(
     fun performAndroidSearch(query: String) {
         viewModelScope.launch {
             try {
-                Log.d(tag, "Performing Android search for: $query")
+                Timber.tag(tag).d("Performing Android search for: $query")
                 // TODO: Implement Android system search
-                Log.d(tag, "Android search not yet implemented")
+                Timber.tag(tag).d("Android search not yet implemented")
             } catch (e: Exception) {
-                Log.e(tag, "Error performing Android search", e)
+                Timber.tag(tag).e(e, "Error performing Android search")
             }
         }
     }
@@ -106,7 +106,7 @@ class SearchViewModel @Inject constructor(
     fun clearSearchResults() {
         searchResults = emptyList()
         searchError = null
-        Log.d(tag, "Search results cleared")
+        Timber.tag(tag).d("Search results cleared")
     }
 
     // Get search result summary
