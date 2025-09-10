@@ -11,15 +11,12 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("llama-android")
 
-#include(FetchContent)
-#FetchContent_Declare(
-#        llama
-#        GIT_REPOSITORY https://github.com/ggerganov/llama.cpp
-#        GIT_TAG        master
-#)
+find_package(Vulkan REQUIRED)
+find_path(VULKAN_HEADER_PATH "vulkan/vulkan.h" PATHS ${Vulkan_INCLUDE_DIRS})
+if(NOT VULKAN_HEADER_PATH)
+    message(FATAL_ERROR "Vulkan headers not found. Please install Vulkan-Headers (e.g., apt install vulkan-headers).")
+endif()
 
-# Also provides "common"
-#FetchContent_MakeAvailable(llama)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.

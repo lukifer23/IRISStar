@@ -110,6 +110,9 @@ On opening the app, users can download suggested models to optimize performance 
 ## Build
 
 - Download Android studio
+- Install required host tools:
+  - `glslc` (Vulkan shader compiler)
+  - Vulkan headers (e.g., `vulkan-headers` package)
 - Clone this repository and import into Android Studio
 
 ```bash
