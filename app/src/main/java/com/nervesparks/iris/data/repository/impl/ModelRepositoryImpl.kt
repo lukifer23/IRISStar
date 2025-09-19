@@ -85,7 +85,11 @@ class ModelRepositoryImpl @Inject constructor(
                 throw ValidationException("Search query cannot be blank")
             }
             
-            val token = userPreferencesRepository.huggingFaceToken.takeIf { it.isNotEmpty() }
+            val token = userPreferencesRepository.huggingFaceToken
+                .takeIf { it.isNotEmpty() }
+                ?.let { storedToken ->
+                    if (storedToken.startsWith("Bearer ")) storedToken else "Bearer $storedToken"
+                }
             val models = huggingFaceApiService.searchModels(searchQuery, token)
             val mapped = models.flatMap { info ->
                 info.siblings.filter { it.filename.endsWith(".gguf") }.map { file ->
