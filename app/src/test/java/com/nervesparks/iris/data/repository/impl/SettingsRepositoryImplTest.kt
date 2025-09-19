@@ -6,7 +6,7 @@ import com.nervesparks.iris.data.FakeUserPreferencesRepository
 import com.nervesparks.iris.data.repository.PerformanceSettings
 import com.nervesparks.iris.data.repository.ThinkingTokenSettings
 import com.nervesparks.iris.data.repository.UISettings
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -25,17 +25,17 @@ class SettingsRepositoryImplTest {
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
         userPrefs = FakeUserPreferencesRepository(context)
-        userPrefs.clearAll()
+        runTest { userPrefs.clearAll() }
         repository = SettingsRepositoryImpl(userPrefs)
     }
 
     @After
     fun tearDown() {
-        userPrefs.clearAll()
+        runTest { userPrefs.clearAll() }
     }
 
     @Test
-    fun performanceSettingsRoundTrip() = runBlocking {
+    fun performanceSettingsRoundTrip() = runTest {
         val settings = PerformanceSettings(
             threadCount = 6,
             maxContextLength = 2048,
@@ -48,7 +48,7 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun uiSettingsRoundTrip() = runBlocking {
+    fun uiSettingsRoundTrip() = runTest {
         val settings = UISettings(
             theme = "LIGHT",
             fontSize = 1.5f,
@@ -61,7 +61,7 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun exportImportRoundTrip() = runBlocking {
+    fun exportImportRoundTrip() = runTest {
         val defaultModelName = "modelX"
         val thinking = ThinkingTokenSettings(false, "ALWAYS_VISIBLE")
         val perf = PerformanceSettings(
@@ -93,7 +93,7 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun resetToDefaultsClearsPreferences() = runBlocking {
+    fun resetToDefaultsClearsPreferences() = runTest {
         repository.savePerformanceSettings(
             PerformanceSettings(
                 threadCount = 6,

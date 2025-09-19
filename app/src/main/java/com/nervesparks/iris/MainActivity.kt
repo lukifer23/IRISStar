@@ -72,6 +72,8 @@ import com.nervesparks.iris.ui.navigation.AppNavigation
 import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
@@ -142,13 +144,16 @@ class MainActivity : FragmentActivity() {
             }
         }
 
-        if (preferencesRepository.securityBiometricEnabled) {
-            val biometricAuthenticator = BiometricAuthenticator(this)
-            biometricAuthenticator.authenticate(this) {
+        lifecycleScope.launch {
+            val biometricEnabled = preferencesRepository.getSecurityBiometricEnabled()
+            if (biometricEnabled) {
+                val biometricAuthenticator = BiometricAuthenticator(this@MainActivity)
+                biometricAuthenticator.authenticate(this@MainActivity) {
+                    setContent { content() }
+                }
+            } else {
                 setContent { content() }
             }
-        } else {
-            setContent { content() }
         }
     }
 }

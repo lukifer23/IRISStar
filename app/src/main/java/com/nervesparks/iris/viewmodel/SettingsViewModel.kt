@@ -68,9 +68,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun loadModelSettings() {
+    private suspend fun loadModelSettings() {
         try {
-            defaultModelName = userPreferencesRepository.defaultModelName
+            defaultModelName = userPreferencesRepository.getDefaultModelName()
             huggingFaceToken = userPreferencesRepository.huggingFaceToken
             huggingFaceUsername = userPreferencesRepository.huggingFaceUsername
         } catch (e: Exception) {
@@ -96,9 +96,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun loadSecuritySettings() {
+    private suspend fun loadSecuritySettings() {
         try {
-            securityBiometricEnabled = userPreferencesRepository.securityBiometricEnabled
+            securityBiometricEnabled = userPreferencesRepository.getSecurityBiometricEnabled()
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading security settings")
         }
@@ -116,7 +116,9 @@ class SettingsViewModel @Inject constructor(
     // Update functions
     fun updateDefaultModelName(modelName: String) {
         defaultModelName = modelName
-        userPreferencesRepository.defaultModelName = modelName
+        viewModelScope.launch {
+            userPreferencesRepository.setDefaultModelName(modelName)
+        }
         Timber.tag(tag).d("Default model name updated: $modelName")
     }
 
@@ -168,7 +170,9 @@ class SettingsViewModel @Inject constructor(
 
     fun updateSecuritySettings(enableBiometric: Boolean) {
         securityBiometricEnabled = enableBiometric
-        userPreferencesRepository.securityBiometricEnabled = enableBiometric
+        viewModelScope.launch {
+            userPreferencesRepository.setSecurityBiometricEnabled(enableBiometric)
+        }
         Timber.tag(tag).d("Security settings updated: biometric=$enableBiometric")
     }
 
@@ -180,7 +184,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     // Template management
-    fun addTemplate(template: Template): Boolean {
+    suspend fun addTemplate(template: Template): Boolean {
         return try {
             val templates = userPreferencesRepository.getTemplates().toMutableList()
             templates.add(template)
@@ -193,7 +197,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun editTemplate(updated: Template): Boolean {
+    suspend fun editTemplate(updated: Template): Boolean {
         return try {
             val templates = userPreferencesRepository.getTemplates().toMutableList()
             val index = templates.indexOfFirst { it.name == updated.name }
@@ -212,7 +216,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun deleteTemplate(template: Template): Boolean {
+    suspend fun deleteTemplate(template: Template): Boolean {
         return try {
             val templates = userPreferencesRepository.getTemplates().toMutableList()
             templates.removeIf { it.name == template.name }
@@ -225,7 +229,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun getTemplates(): List<Template> {
+    suspend fun getTemplates(): List<Template> {
         return try {
             userPreferencesRepository.getTemplates()
         } catch (e: Exception) {

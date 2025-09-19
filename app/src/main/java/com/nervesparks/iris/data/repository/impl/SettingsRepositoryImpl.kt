@@ -23,7 +23,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun getDefaultModelName(): String {
         return withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.defaultModelName
+                userPreferencesRepository.getDefaultModelName()
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error getting default model name")
                 ""
@@ -34,7 +34,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setDefaultModelName(modelName: String) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.defaultModelName = modelName
+                userPreferencesRepository.setDefaultModelName(modelName)
                 Timber.tag(tag).d("Default model name set to: $modelName")
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error setting default model name")
@@ -45,8 +45,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun getThinkingTokenSettings(): ThinkingTokenSettings {
         return withContext(Dispatchers.IO) {
             try {
-                val showThinkingTokens = userPreferencesRepository.showThinkingTokens
-                val thinkingTokenStyle = userPreferencesRepository.thinkingTokenStyle
+                val showThinkingTokens = userPreferencesRepository.getShowThinkingTokens()
+                val thinkingTokenStyle = userPreferencesRepository.getThinkingTokenStyle()
                 ThinkingTokenSettings(
                     showThinkingTokens = showThinkingTokens,
                     thinkingTokenStyle = thinkingTokenStyle
@@ -61,8 +61,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveThinkingTokenSettings(settings: ThinkingTokenSettings) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.showThinkingTokens = settings.showThinkingTokens
-                userPreferencesRepository.thinkingTokenStyle = settings.thinkingTokenStyle
+                userPreferencesRepository.setShowThinkingTokens(settings.showThinkingTokens)
+                userPreferencesRepository.setThinkingTokenStyle(settings.thinkingTokenStyle)
                 Timber.tag(tag).d("Thinking token settings saved")
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error saving thinking token settings")
@@ -74,10 +74,10 @@ class SettingsRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 PerformanceSettings(
-                    threadCount = userPreferencesRepository.modelThreadCount,
-                    maxContextLength = userPreferencesRepository.modelContextLength,
-                    enableMemoryOptimization = userPreferencesRepository.perfEnableMemoryOptimization,
-                    enableBackgroundProcessing = userPreferencesRepository.perfEnableBackgroundProcessing
+                    threadCount = userPreferencesRepository.getModelThreadCount(),
+                    maxContextLength = userPreferencesRepository.getModelContextLength(),
+                    enableMemoryOptimization = userPreferencesRepository.getPerfEnableMemoryOptimization(),
+                    enableBackgroundProcessing = userPreferencesRepository.getPerfEnableBackgroundProcessing()
                 )
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error getting performance settings")
@@ -89,10 +89,10 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun savePerformanceSettings(settings: PerformanceSettings) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.modelThreadCount = settings.threadCount
-                userPreferencesRepository.modelContextLength = settings.maxContextLength
-                userPreferencesRepository.perfEnableMemoryOptimization = settings.enableMemoryOptimization
-                userPreferencesRepository.perfEnableBackgroundProcessing = settings.enableBackgroundProcessing
+                userPreferencesRepository.setModelThreadCount(settings.threadCount)
+                userPreferencesRepository.setModelContextLength(settings.maxContextLength)
+                userPreferencesRepository.setPerfEnableMemoryOptimization(settings.enableMemoryOptimization)
+                userPreferencesRepository.setPerfEnableBackgroundProcessing(settings.enableBackgroundProcessing)
                 Timber.tag(tag).d("Performance settings saved")
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error saving performance settings")
@@ -104,10 +104,10 @@ class SettingsRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 UISettings(
-                    theme = userPreferencesRepository.uiTheme,
-                    fontSize = userPreferencesRepository.uiFontSize,
-                    enableAnimations = userPreferencesRepository.uiEnableAnimations,
-                    enableHapticFeedback = userPreferencesRepository.uiEnableHapticFeedback
+                    theme = userPreferencesRepository.getUITheme(),
+                    fontSize = userPreferencesRepository.getUIFontSize(),
+                    enableAnimations = userPreferencesRepository.getUIEnableAnimations(),
+                    enableHapticFeedback = userPreferencesRepository.getUIEnableHapticFeedback()
                 )
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error getting UI settings")
@@ -119,10 +119,10 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun saveUISettings(settings: UISettings) {
         withContext(Dispatchers.IO) {
             try {
-                userPreferencesRepository.uiTheme = settings.theme
-                userPreferencesRepository.uiFontSize = settings.fontSize
-                userPreferencesRepository.uiEnableAnimations = settings.enableAnimations
-                userPreferencesRepository.uiEnableHapticFeedback = settings.enableHapticFeedback
+                userPreferencesRepository.setUITheme(settings.theme)
+                userPreferencesRepository.setUIFontSize(settings.fontSize)
+                userPreferencesRepository.setUIEnableAnimations(settings.enableAnimations)
+                userPreferencesRepository.setUIEnableHapticFeedback(settings.enableHapticFeedback)
                 Timber.tag(tag).d("UI settings saved")
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error saving UI settings")

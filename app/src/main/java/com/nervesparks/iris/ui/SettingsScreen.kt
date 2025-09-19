@@ -35,6 +35,7 @@ import com.nervesparks.iris.ui.theme.ModernTextField
 import com.nervesparks.iris.ui.animations.BounceButton
 import com.nervesparks.iris.ui.theme.IrisAnimations
 import com.nervesparks.iris.security.BiometricAuthenticator
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +51,8 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val biometricAuthenticator = remember { BiometricAuthenticator(context) }
-    var biometricEnabled by remember { mutableStateOf(preferencesRepository.securityBiometricEnabled) }
+    val coroutineScope = rememberCoroutineScope()
+    val biometricEnabled by preferencesRepository.securityBiometricEnabledFlow.collectAsState(initial = false)
     
     var huggingFaceToken by remember { mutableStateOf(preferencesRepository.huggingFaceToken) }
     var huggingFaceUsername by remember { mutableStateOf(preferencesRepository.huggingFaceUsername) }
@@ -328,8 +330,9 @@ fun SettingsScreen(
                         checked = biometricEnabled,
                         onCheckedChange = {
                             if (biometricAuthenticator.isBiometricAuthAvailable()) {
-                                biometricEnabled = it
-                                preferencesRepository.securityBiometricEnabled = it
+                                coroutineScope.launch {
+                                    preferencesRepository.setSecurityBiometricEnabled(it)
+                                }
                             }
                         }
                     )

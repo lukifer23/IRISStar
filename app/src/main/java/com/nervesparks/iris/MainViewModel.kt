@@ -29,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import java.io.File
@@ -209,18 +210,24 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-    private fun loadDefaultModelName(){
-        try {
-            _defaultModelName.value = userPreferencesRepository.defaultModelName
-        } catch (e: Exception) {
-            Timber.tag("MainViewModel").e(e, "Error loading default model name, using empty string")
-            _defaultModelName.value = ""
+    private fun loadDefaultModelName() {
+        viewModelScope.launch {
+            userPreferencesRepository.defaultModelNameFlow
+                .catch { e ->
+                    Timber.tag("MainViewModel").e(e, "Error loading default model name, using empty string")
+                    _defaultModelName.value = ""
+                }
+                .collectLatest { name ->
+                    _defaultModelName.value = name
+                }
         }
     }
 
-    fun setDefaultModelName(modelName: String){
-        userPreferencesRepository.defaultModelName = modelName
+    fun setDefaultModelName(modelName: String) {
         _defaultModelName.value = modelName
+        viewModelScope.launch {
+            userPreferencesRepository.setDefaultModelName(modelName)
+        }
     }
 
     lateinit var selectedModel: String
@@ -812,7 +819,7 @@ class MainViewModel @Inject constructor(
     var templates = mutableStateListOf<Template>()
         private set
 
-    fun addTemplate(template: Template): Boolean {
+    suspend fun addTemplate(template: Template): Boolean {
         return try {
             templates.add(template)
             userPreferencesRepository.saveTemplates(templates)
@@ -822,7 +829,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun editTemplate(updated: Template): Boolean {
+    suspend fun editTemplate(updated: Template): Boolean {
         val index = templates.indexOfFirst { it.id == updated.id }
         return if (index != -1) {
             try {
@@ -837,7 +844,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun deleteTemplate(template: Template): Boolean {
+    suspend fun deleteTemplate(template: Template): Boolean {
         val removed = templates.removeAll { it.id == template.id }
         return if (removed) {
             try {
@@ -982,15 +989,17 @@ class MainViewModel @Inject constructor(
         gpuLayers: Int
     ) {
         // TODO: Use ModelViewModel from UI layer
-        userPreferencesRepository.modelTemperature = temperature
-        userPreferencesRepository.modelTopP = topP
-        userPreferencesRepository.modelTopK = topK
-        userPreferencesRepository.modelMaxTokens = maxTokens
-        userPreferencesRepository.modelContextLength = contextLength
-        userPreferencesRepository.modelSystemPrompt = systemPrompt
-        userPreferencesRepository.modelChatFormat = chatFormat
-        userPreferencesRepository.modelThreadCount = threadCount
-        userPreferencesRepository.modelGpuLayers = gpuLayers
+        viewModelScope.launch {
+            userPreferencesRepository.setModelTemperature(temperature)
+            userPreferencesRepository.setModelTopP(topP)
+            userPreferencesRepository.setModelTopK(topK)
+            userPreferencesRepository.setModelMaxTokens(maxTokens)
+            userPreferencesRepository.setModelContextLength(contextLength)
+            userPreferencesRepository.setModelSystemPrompt(systemPrompt)
+            userPreferencesRepository.setModelChatFormat(chatFormat)
+            userPreferencesRepository.setModelThreadCount(threadCount)
+            userPreferencesRepository.setModelGpuLayers(gpuLayers)
+        }
     }
 
     // Legacy model settings function
@@ -1020,17 +1029,19 @@ class MainViewModel @Inject constructor(
                 // store in a backing pref via repository if available later in file
             } catch (_: Exception) {}
         }
-        
+
         // Save to preferences
-        userPreferencesRepository.modelTemperature = temperature
-        userPreferencesRepository.modelTopP = topP
-        userPreferencesRepository.modelTopK = topK
-        userPreferencesRepository.modelMaxTokens = maxTokens
-        userPreferencesRepository.modelContextLength = contextLength
-        userPreferencesRepository.modelSystemPrompt = systemPrompt
-        userPreferencesRepository.modelChatFormat = chatFormat
-        userPreferencesRepository.modelThreadCount = threadCount
-        userPreferencesRepository.modelGpuLayers = gpuLayers
+        viewModelScope.launch {
+            userPreferencesRepository.setModelTemperature(temperature)
+            userPreferencesRepository.setModelTopP(topP)
+            userPreferencesRepository.setModelTopK(topK)
+            userPreferencesRepository.setModelMaxTokens(maxTokens)
+            userPreferencesRepository.setModelContextLength(contextLength)
+            userPreferencesRepository.setModelSystemPrompt(systemPrompt)
+            userPreferencesRepository.setModelChatFormat(chatFormat)
+            userPreferencesRepository.setModelThreadCount(threadCount)
+            userPreferencesRepository.setModelGpuLayers(gpuLayers)
+        }
     }
 
     fun loadModelSettings() {
@@ -1040,86 +1051,88 @@ class MainViewModel @Inject constructor(
 
     // Legacy load model settings function
     private fun legacyLoadModelSettings() {
-        try {
-            Timber.tag("MainViewModel").d("Loading model settings...")
-            
-            // Try to load each setting with individual try-catch blocks
+        viewModelScope.launch {
             try {
-                modelTemperature = userPreferencesRepository.modelTemperature
-                Timber.tag("MainViewModel").d("Loaded temperature: $modelTemperature")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading temperature, using default")
-                modelTemperature = 0.7f
-            }
-            
-            try {
-                modelTopP = userPreferencesRepository.modelTopP
-                Timber.tag("MainViewModel").d("Loaded topP: $modelTopP")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading topP, using default")
-                modelTopP = 0.9f
-            }
-            
-            try {
-                modelTopK = userPreferencesRepository.modelTopK
-                Timber.tag("MainViewModel").d("Loaded topK: $modelTopK")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading topK, using default")
-                modelTopK = 40
-            }
-            
-            try {
-                modelMaxTokens = userPreferencesRepository.modelMaxTokens
-                Timber.tag("MainViewModel").d("Loaded maxTokens: $modelMaxTokens")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading maxTokens, using default")
-                modelMaxTokens = 2048
-            }
-            
-            try {
-                modelContextLength = userPreferencesRepository.modelContextLength
-                Timber.tag("MainViewModel").d("Loaded contextLength: $modelContextLength")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading contextLength, using default")
-                modelContextLength = 32768  // Increased for Qwen3 support
-            }
-            maxContextLimit = modelContextLength
-            
-            try {
-                modelSystemPrompt = userPreferencesRepository.modelSystemPrompt
-                Timber.tag("MainViewModel").d("Loaded systemPrompt: $modelSystemPrompt")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading systemPrompt, using default")
-                modelSystemPrompt = "You are a helpful AI assistant."
-            }
-            
-            try {
-                modelChatFormat = userPreferencesRepository.modelChatFormat
-                Timber.tag("MainViewModel").d("Loaded chatFormat: $modelChatFormat")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading chatFormat, using default")
-                modelChatFormat = "CHATML"
-            }
-            
-            try {
-                modelThreadCount = userPreferencesRepository.modelThreadCount
-                Timber.tag("MainViewModel").d("Loaded threadCount: $modelThreadCount")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading threadCount, using default")
-                modelThreadCount = 4
-            }
+                Timber.tag("MainViewModel").d("Loading model settings...")
 
-            try {
-                modelGpuLayers = userPreferencesRepository.modelGpuLayers
-                Timber.tag("MainViewModel").d("Loaded gpuLayers: $modelGpuLayers")
+                // Try to load each setting with individual try-catch blocks
+                try {
+                    modelTemperature = userPreferencesRepository.getModelTemperature()
+                    Timber.tag("MainViewModel").d("Loaded temperature: $modelTemperature")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading temperature, using default")
+                    modelTemperature = 0.7f
+                }
+
+                try {
+                    modelTopP = userPreferencesRepository.getModelTopP()
+                    Timber.tag("MainViewModel").d("Loaded topP: $modelTopP")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading topP, using default")
+                    modelTopP = 0.9f
+                }
+
+                try {
+                    modelTopK = userPreferencesRepository.getModelTopK()
+                    Timber.tag("MainViewModel").d("Loaded topK: $modelTopK")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading topK, using default")
+                    modelTopK = 40
+                }
+
+                try {
+                    modelMaxTokens = userPreferencesRepository.getModelMaxTokens()
+                    Timber.tag("MainViewModel").d("Loaded maxTokens: $modelMaxTokens")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading maxTokens, using default")
+                    modelMaxTokens = 2048
+                }
+
+                try {
+                    modelContextLength = userPreferencesRepository.getModelContextLength()
+                    Timber.tag("MainViewModel").d("Loaded contextLength: $modelContextLength")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading contextLength, using default")
+                    modelContextLength = 32768  // Increased for Qwen3 support
+                }
+                maxContextLimit = modelContextLength
+
+                try {
+                    modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
+                    Timber.tag("MainViewModel").d("Loaded systemPrompt: $modelSystemPrompt")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading systemPrompt, using default")
+                    modelSystemPrompt = "You are a helpful AI assistant."
+                }
+
+                try {
+                    modelChatFormat = userPreferencesRepository.getModelChatFormat()
+                    Timber.tag("MainViewModel").d("Loaded chatFormat: $modelChatFormat")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading chatFormat, using default")
+                    modelChatFormat = "CHATML"
+                }
+
+                try {
+                    modelThreadCount = userPreferencesRepository.getModelThreadCount()
+                    Timber.tag("MainViewModel").d("Loaded threadCount: $modelThreadCount")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading threadCount, using default")
+                    modelThreadCount = 4
+                }
+
+                try {
+                    modelGpuLayers = userPreferencesRepository.getModelGpuLayers()
+                    Timber.tag("MainViewModel").d("Loaded gpuLayers: $modelGpuLayers")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading gpuLayers, using default")
+                    modelGpuLayers = -1
+                }
+
+                Timber.tag("MainViewModel").d("Model settings loaded successfully")
             } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading gpuLayers, using default")
-                modelGpuLayers = -1
+                Timber.tag("MainViewModel").e(e, "Error in loadModelSettings")
             }
-            
-            Timber.tag("MainViewModel").d("Model settings loaded successfully")
-        } catch (e: Exception) {
-            Timber.tag("MainViewModel").e(e, "Error in loadModelSettings")
         }
     }
 
@@ -1134,12 +1147,16 @@ class MainViewModel @Inject constructor(
     // Thinking token settings
     fun updateShowThinkingTokens(show: Boolean) {
         // TODO: Use ChatViewModel from UI layer
-        userPreferencesRepository.showThinkingTokens = show
+        viewModelScope.launch {
+            userPreferencesRepository.setShowThinkingTokens(show)
+        }
     }
 
     fun updateThinkingTokenStyle(style: String) {
         // TODO: Use ChatViewModel from UI layer
-        userPreferencesRepository.thinkingTokenStyle = style
+        viewModelScope.launch {
+            userPreferencesRepository.setThinkingTokenStyle(style)
+        }
     }
 
     fun loadThinkingTokenSettings() {
@@ -1149,28 +1166,30 @@ class MainViewModel @Inject constructor(
 
     // Legacy thinking token settings functions
     private fun legacyLoadThinkingTokenSettings() {
-        try {
-            Timber.tag("MainViewModel").d("Loading thinking token settings...")
-            
+        viewModelScope.launch {
             try {
-                showThinkingTokens = userPreferencesRepository.showThinkingTokens
-                Timber.tag("MainViewModel").d("Loaded showThinkingTokens: $showThinkingTokens")
+                Timber.tag("MainViewModel").d("Loading thinking token settings...")
+
+                try {
+                    showThinkingTokens = userPreferencesRepository.getShowThinkingTokens()
+                    Timber.tag("MainViewModel").d("Loaded showThinkingTokens: $showThinkingTokens")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading showThinkingTokens, using default")
+                    showThinkingTokens = true
+                }
+
+                try {
+                    thinkingTokenStyle = userPreferencesRepository.getThinkingTokenStyle()
+                    Timber.tag("MainViewModel").d("Loaded thinkingTokenStyle: $thinkingTokenStyle")
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error loading thinkingTokenStyle, using default")
+                    thinkingTokenStyle = "COLLAPSIBLE"
+                }
+
+                Timber.tag("MainViewModel").d("Thinking token settings loaded successfully")
             } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading showThinkingTokens, using default")
-                showThinkingTokens = true
+                Timber.tag("MainViewModel").e(e, "Error in loadThinkingTokenSettings")
             }
-            
-            try {
-                thinkingTokenStyle = userPreferencesRepository.thinkingTokenStyle
-                Timber.tag("MainViewModel").d("Loaded thinkingTokenStyle: $thinkingTokenStyle")
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading thinkingTokenStyle, using default")
-                thinkingTokenStyle = "COLLAPSIBLE"
-            }
-            
-            Timber.tag("MainViewModel").d("Thinking token settings loaded successfully")
-        } catch (e: Exception) {
-            Timber.tag("MainViewModel").e(e, "Error in loadThinkingTokenSettings")
         }
     }
 

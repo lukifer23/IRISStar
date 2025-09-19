@@ -116,7 +116,7 @@ class ModelRepositoryImpl @Inject constructor(
                     it["supportsReasoning"]?.toBoolean() ?: false
                 )
             }
-            userPreferencesRepository.cachedModels = adapter.toJson(cacheData)
+            userPreferencesRepository.setCachedModels(adapter.toJson(cacheData))
 
             allModels
         } catch (e: NetworkException) {
@@ -132,7 +132,7 @@ class ModelRepositoryImpl @Inject constructor(
     override suspend fun getAvailableModels(directory: File): List<Map<String, String>> {
         return try {
             if (cachedModels == null) {
-                val json = userPreferencesRepository.cachedModels
+                val json = userPreferencesRepository.getCachedModels()
                 if (json.isNotEmpty()) {
                     val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
                     val adapter = moshi.adapter<List<CachedModel>>(listType)
