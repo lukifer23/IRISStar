@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.SettingsRepository
+import com.nervesparks.iris.data.repository.ThinkingTokenSettings
+import com.nervesparks.iris.data.repository.UISettings
 import com.nervesparks.iris.security.InputValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -80,7 +82,9 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun loadPerformanceSettings() {
         try {
-            // TODO: Load performance settings from repository
+            val performanceSettings = settingsRepository.getPerformanceSettings()
+            perfEnableMemoryOptimization = performanceSettings.enableMemoryOptimization
+            perfEnableBackgroundProcessing = performanceSettings.enableBackgroundProcessing
             Timber.tag(tag).d("Performance settings loaded")
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading performance settings")
@@ -89,7 +93,11 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun loadUISettings() {
         try {
-            // TODO: Load UI settings from repository
+            val uiSettings = settingsRepository.getUISettings()
+            uiTheme = uiSettings.theme
+            uiFontSize = uiSettings.fontSize
+            uiEnableAnimations = uiSettings.enableAnimations
+            uiEnableHapticFeedback = uiSettings.enableHapticFeedback
             Timber.tag(tag).d("UI settings loaded")
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading UI settings")
@@ -106,7 +114,9 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun loadThinkingTokenSettings() {
         try {
-            // TODO: Load thinking token settings from repository
+            val thinkingTokenSettings = settingsRepository.getThinkingTokenSettings()
+            showThinkingTokens = thinkingTokenSettings.showThinkingTokens
+            thinkingTokenStyle = thinkingTokenSettings.thinkingTokenStyle
             Timber.tag(tag).d("Thinking token settings loaded")
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading thinking token settings")
@@ -148,7 +158,18 @@ class SettingsViewModel @Inject constructor(
     ) {
         perfEnableMemoryOptimization = enableMemoryOptimization
         perfEnableBackgroundProcessing = enableBackgroundProcessing
-        // TODO: Save to repository
+        viewModelScope.launch {
+            try {
+                val current = settingsRepository.getPerformanceSettings()
+                val updated = current.copy(
+                    enableMemoryOptimization = enableMemoryOptimization,
+                    enableBackgroundProcessing = enableBackgroundProcessing
+                )
+                settingsRepository.savePerformanceSettings(updated)
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error saving performance settings")
+            }
+        }
         Timber.tag(tag).d("Performance settings updated")
     }
 
@@ -162,7 +183,19 @@ class SettingsViewModel @Inject constructor(
         uiFontSize = fontSize
         uiEnableAnimations = enableAnimations
         uiEnableHapticFeedback = enableHapticFeedback
-        // TODO: Save to repository
+        viewModelScope.launch {
+            try {
+                val settings = UISettings(
+                    theme = theme,
+                    fontSize = fontSize,
+                    enableAnimations = enableAnimations,
+                    enableHapticFeedback = enableHapticFeedback
+                )
+                settingsRepository.saveUISettings(settings)
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error saving UI settings")
+            }
+        }
         Timber.tag(tag).d("UI settings updated")
     }
 
@@ -175,7 +208,17 @@ class SettingsViewModel @Inject constructor(
     fun updateThinkingTokenSettings(showThinking: Boolean, style: String) {
         showThinkingTokens = showThinking
         thinkingTokenStyle = style
-        // TODO: Save to repository
+        viewModelScope.launch {
+            try {
+                val settings = ThinkingTokenSettings(
+                    showThinkingTokens = showThinking,
+                    thinkingTokenStyle = style
+                )
+                settingsRepository.saveThinkingTokenSettings(settings)
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error saving thinking token settings")
+            }
+        }
         Timber.tag(tag).d("Thinking token settings updated")
     }
 
