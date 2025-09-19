@@ -242,7 +242,7 @@ class ModelViewModel @Inject constructor(
     fun loadExistingModels(directory: File) {
         viewModelScope.launch {
             try {
-                availableModels = modelRepository.getAvailableModels(directory)
+                availableModels = getAvailableModels(directory)
                 Timber.tag(tag).d("Loaded ${availableModels.size} existing models")
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error loading existing models")
@@ -250,10 +250,11 @@ class ModelViewModel @Inject constructor(
         }
     }
 
-    fun getAvailableModels(directory: File): List<Map<String, String>> {
+    suspend fun getAvailableModels(directory: File): List<Map<String, String>> {
         return try {
-            // TODO: This should be called from a coroutine
-            emptyList()
+            modelRepository.getAvailableModels(directory).also { models ->
+                availableModels = models
+            }
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error getting available models")
             emptyList()
