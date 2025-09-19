@@ -1,8 +1,6 @@
 package com.nervesparks.iris.data
 
-import timber.log.Timber
 import android.content.Context
-import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -14,10 +12,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.repository.ModelConfiguration
 import com.nervesparks.iris.security.EncryptedPreferences
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
+import timber.log.Timber
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
@@ -51,8 +52,6 @@ private val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDat
     name = USER_PREFERENCES_NAME
 )
 
-// Removed EncryptionManager - using EncryptedPreferences instead
-
 open class UserPreferencesRepository protected constructor(context: Context) {
 
     companion object {
@@ -69,58 +68,246 @@ open class UserPreferencesRepository protected constructor(context: Context) {
     private val dataStore = context.userPrefsDataStore
     private val encryptedPrefs = EncryptedPreferences(context)
 
-    // Delegated preference helpers
-    private fun stringPreference(key: String, default: String = "") =
-        object : kotlin.properties.ReadWriteProperty<Any, String> {
-            private val prefKey = stringPreferencesKey(key)
-            override fun getValue(thisRef: Any, property: kotlin.reflect.KProperty<*>): String = runBlocking {
-                dataStore.data.first()[prefKey] ?: default
-            }
+    private object PreferenceKeys {
+        val defaultModelName = stringPreferencesKey(KEY_DEFAULT_MODEL_NAME)
+        val modelTemperature = floatPreferencesKey(KEY_MODEL_TEMPERATURE)
+        val modelTopP = floatPreferencesKey(KEY_MODEL_TOP_P)
+        val modelTopK = intPreferencesKey(KEY_MODEL_TOP_K)
+        val modelMaxTokens = intPreferencesKey(KEY_MODEL_MAX_TOKENS)
+        val modelContextLength = intPreferencesKey(KEY_MODEL_CONTEXT_LENGTH)
+        val modelSystemPrompt = stringPreferencesKey(KEY_MODEL_SYSTEM_PROMPT)
+        val modelChatFormat = stringPreferencesKey(KEY_MODEL_CHAT_FORMAT)
+        val modelThreadCount = intPreferencesKey(KEY_MODEL_THREAD_COUNT)
+        val modelGpuLayers = intPreferencesKey(KEY_MODEL_GPU_LAYERS)
+        val cachedModels = stringPreferencesKey(KEY_CACHED_MODELS)
+        val showThinkingTokens = booleanPreferencesKey(KEY_SHOW_THINKING_TOKENS)
+        val thinkingTokenStyle = stringPreferencesKey(KEY_THINKING_TOKEN_STYLE)
+        val templates = stringPreferencesKey(KEY_TEMPLATES)
+        val uiTheme = stringPreferencesKey(KEY_UI_THEME)
+        val uiFontSize = floatPreferencesKey(KEY_UI_FONT_SIZE)
+        val uiEnableAnimations = booleanPreferencesKey(KEY_UI_ENABLE_ANIMATIONS)
+        val uiEnableHapticFeedback = booleanPreferencesKey(KEY_UI_ENABLE_HAPTIC_FEEDBACK)
+        val perfEnableMemoryOptimization = booleanPreferencesKey(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION)
+        val perfEnableBackgroundProcessing = booleanPreferencesKey(KEY_PERF_ENABLE_BACKGROUND_PROCESSING)
+        val securityBiometricEnabled = booleanPreferencesKey(KEY_SECURITY_BIOMETRIC_ENABLED)
+    }
 
-            override fun setValue(thisRef: Any, property: kotlin.reflect.KProperty<*>, value: String) {
-                runBlocking {
-                    dataStore.edit { prefs ->
-                        prefs[prefKey] = value
-                    }
-                }
-            }
+    private fun <T> preferenceFlow(key: Preferences.Key<T>, default: T): Flow<T> {
+        return dataStore.data
+            .map { prefs -> prefs[key] ?: default }
+            .distinctUntilChanged()
+    }
+
+    private suspend fun <T> setPreference(key: Preferences.Key<T>, value: T) {
+        dataStore.edit { prefs -> prefs[key] = value }
+    }
+
+    // region Preference accessors
+    open val defaultModelNameFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.defaultModelName, "")
+
+    open suspend fun getDefaultModelName(): String = defaultModelNameFlow.first()
+
+    open suspend fun setDefaultModelName(modelName: String) {
+        setPreference(PreferenceKeys.defaultModelName, modelName)
+    }
+
+    open val modelTemperatureFlow: Flow<Float> =
+        preferenceFlow(PreferenceKeys.modelTemperature, 0.7f)
+
+    open suspend fun getModelTemperature(): Float = modelTemperatureFlow.first()
+
+    open suspend fun setModelTemperature(temperature: Float) {
+        setPreference(PreferenceKeys.modelTemperature, temperature)
+    }
+
+    open val modelTopPFlow: Flow<Float> =
+        preferenceFlow(PreferenceKeys.modelTopP, 0.9f)
+
+    open suspend fun getModelTopP(): Float = modelTopPFlow.first()
+
+    open suspend fun setModelTopP(value: Float) {
+        setPreference(PreferenceKeys.modelTopP, value)
+    }
+
+    open val modelTopKFlow: Flow<Int> =
+        preferenceFlow(PreferenceKeys.modelTopK, 40)
+
+    open suspend fun getModelTopK(): Int = modelTopKFlow.first()
+
+    open suspend fun setModelTopK(value: Int) {
+        setPreference(PreferenceKeys.modelTopK, value)
+    }
+
+    open val modelMaxTokensFlow: Flow<Int> =
+        preferenceFlow(PreferenceKeys.modelMaxTokens, 2048)
+
+    open suspend fun getModelMaxTokens(): Int = modelMaxTokensFlow.first()
+
+    open suspend fun setModelMaxTokens(value: Int) {
+        setPreference(PreferenceKeys.modelMaxTokens, value)
+    }
+
+    open val modelContextLengthFlow: Flow<Int> =
+        preferenceFlow(PreferenceKeys.modelContextLength, 4096)
+
+    open suspend fun getModelContextLength(): Int = modelContextLengthFlow.first()
+
+    open suspend fun setModelContextLength(value: Int) {
+        setPreference(PreferenceKeys.modelContextLength, value)
+    }
+
+    open val modelSystemPromptFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.modelSystemPrompt, "You are a helpful AI assistant.")
+
+    open suspend fun getModelSystemPrompt(): String = modelSystemPromptFlow.first()
+
+    open suspend fun setModelSystemPrompt(value: String) {
+        setPreference(PreferenceKeys.modelSystemPrompt, value)
+    }
+
+    open val modelChatFormatFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.modelChatFormat, "CHATML")
+
+    open suspend fun getModelChatFormat(): String = modelChatFormatFlow.first()
+
+    open suspend fun setModelChatFormat(value: String) {
+        setPreference(PreferenceKeys.modelChatFormat, value)
+    }
+
+    open val modelThreadCountFlow: Flow<Int> =
+        preferenceFlow(PreferenceKeys.modelThreadCount, 4)
+
+    open suspend fun getModelThreadCount(): Int = modelThreadCountFlow.first()
+
+    open suspend fun setModelThreadCount(value: Int) {
+        setPreference(PreferenceKeys.modelThreadCount, value)
+    }
+
+    open val modelGpuLayersFlow: Flow<Int> =
+        preferenceFlow(PreferenceKeys.modelGpuLayers, -1)
+
+    open suspend fun getModelGpuLayers(): Int = modelGpuLayersFlow.first()
+
+    open suspend fun setModelGpuLayers(value: Int) {
+        setPreference(PreferenceKeys.modelGpuLayers, value)
+    }
+
+    open val cachedModelsFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.cachedModels, "")
+
+    open suspend fun getCachedModels(): String = cachedModelsFlow.first()
+
+    open suspend fun setCachedModels(json: String) {
+        setPreference(PreferenceKeys.cachedModels, json)
+    }
+
+    open val showThinkingTokensFlow: Flow<Boolean> =
+        preferenceFlow(PreferenceKeys.showThinkingTokens, true)
+
+    open suspend fun getShowThinkingTokens(): Boolean = showThinkingTokensFlow.first()
+
+    open suspend fun setShowThinkingTokens(value: Boolean) {
+        setPreference(PreferenceKeys.showThinkingTokens, value)
+    }
+
+    open val thinkingTokenStyleFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.thinkingTokenStyle, "COLLAPSIBLE")
+
+    open suspend fun getThinkingTokenStyle(): String = thinkingTokenStyleFlow.first()
+
+    open suspend fun setThinkingTokenStyle(value: String) {
+        setPreference(PreferenceKeys.thinkingTokenStyle, value)
+    }
+
+    private val templatesJsonFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.templates, "[]")
+
+    open val templatesFlow: Flow<List<Template>> = templatesJsonFlow
+        .map { json -> parseTemplates(json) }
+        .distinctUntilChanged()
+
+    open suspend fun getTemplates(): List<Template> = templatesFlow.first()
+
+    open suspend fun saveTemplates(templates: List<Template>) {
+        val array = JSONArray()
+        templates.forEach { template ->
+            val obj = JSONObject()
+            obj.put("id", template.id)
+            obj.put("name", template.name)
+            obj.put("content", template.content)
+            array.put(obj)
         }
+        setPreference(PreferenceKeys.templates, array.toString())
+    }
 
-    private fun intPreference(key: String, default: Int = 0) =
-        object : kotlin.properties.ReadWriteProperty<Any, Int> {
-            private val prefKey = intPreferencesKey(key)
-            override fun getValue(thisRef: Any, property: kotlin.reflect.KProperty<*>): Int = runBlocking {
-                dataStore.data.first()[prefKey] ?: default
-            }
-            override fun setValue(thisRef: Any, property: kotlin.reflect.KProperty<*>, value: Int) {
-                runBlocking { dataStore.edit { it[prefKey] = value } }
-            }
-        }
+    open val uiThemeFlow: Flow<String> =
+        preferenceFlow(PreferenceKeys.uiTheme, "DARK")
 
-    private fun floatPreference(key: String, default: Float = 0f) =
-        object : kotlin.properties.ReadWriteProperty<Any, Float> {
-            private val prefKey = floatPreferencesKey(key)
-            override fun getValue(thisRef: Any, property: kotlin.reflect.KProperty<*>): Float = runBlocking {
-                dataStore.data.first()[prefKey] ?: default
-            }
-            override fun setValue(thisRef: Any, property: kotlin.reflect.KProperty<*>, value: Float) {
-                runBlocking { dataStore.edit { it[prefKey] = value } }
-            }
-        }
+    open suspend fun getUITheme(): String = uiThemeFlow.first()
 
-    private fun booleanPreference(key: String, default: Boolean = false) =
-        object : kotlin.properties.ReadWriteProperty<Any, Boolean> {
-            private val prefKey = booleanPreferencesKey(key)
-            override fun getValue(thisRef: Any, property: kotlin.reflect.KProperty<*>): Boolean = runBlocking {
-                dataStore.data.first()[prefKey] ?: default
-            }
-            override fun setValue(thisRef: Any, property: kotlin.reflect.KProperty<*>, value: Boolean) {
-                runBlocking { dataStore.edit { it[prefKey] = value } }
-            }
-        }
+    open suspend fun setUITheme(value: String) {
+        setPreference(PreferenceKeys.uiTheme, value)
+    }
 
-    // Preferences stored via delegates - public for external access
-    var defaultModelName by stringPreference(KEY_DEFAULT_MODEL_NAME)
+    open val uiFontSizeFlow: Flow<Float> =
+        preferenceFlow(PreferenceKeys.uiFontSize, 1.0f)
+
+    open suspend fun getUIFontSize(): Float = uiFontSizeFlow.first()
+
+    open suspend fun setUIFontSize(value: Float) {
+        setPreference(PreferenceKeys.uiFontSize, value)
+    }
+
+    open val uiEnableAnimationsFlow: Flow<Boolean> =
+        preferenceFlow(PreferenceKeys.uiEnableAnimations, true)
+
+    open suspend fun getUIEnableAnimations(): Boolean = uiEnableAnimationsFlow.first()
+
+    open suspend fun setUIEnableAnimations(value: Boolean) {
+        setPreference(PreferenceKeys.uiEnableAnimations, value)
+    }
+
+    open val uiEnableHapticFeedbackFlow: Flow<Boolean> =
+        preferenceFlow(PreferenceKeys.uiEnableHapticFeedback, true)
+
+    open suspend fun getUIEnableHapticFeedback(): Boolean =
+        uiEnableHapticFeedbackFlow.first()
+
+    open suspend fun setUIEnableHapticFeedback(value: Boolean) {
+        setPreference(PreferenceKeys.uiEnableHapticFeedback, value)
+    }
+
+    open val perfEnableMemoryOptimizationFlow: Flow<Boolean> =
+        preferenceFlow(PreferenceKeys.perfEnableMemoryOptimization, true)
+
+    open suspend fun getPerfEnableMemoryOptimization(): Boolean =
+        perfEnableMemoryOptimizationFlow.first()
+
+    open suspend fun setPerfEnableMemoryOptimization(value: Boolean) {
+        setPreference(PreferenceKeys.perfEnableMemoryOptimization, value)
+    }
+
+    open val perfEnableBackgroundProcessingFlow: Flow<Boolean> =
+        preferenceFlow(PreferenceKeys.perfEnableBackgroundProcessing, true)
+
+    open suspend fun getPerfEnableBackgroundProcessing(): Boolean =
+        perfEnableBackgroundProcessingFlow.first()
+
+    open suspend fun setPerfEnableBackgroundProcessing(value: Boolean) {
+        setPreference(PreferenceKeys.perfEnableBackgroundProcessing, value)
+    }
+
+    open val securityBiometricEnabledFlow: Flow<Boolean> =
+        preferenceFlow(PreferenceKeys.securityBiometricEnabled, false)
+
+    open suspend fun getSecurityBiometricEnabled(): Boolean =
+        securityBiometricEnabledFlow.first()
+
+    open suspend fun setSecurityBiometricEnabled(value: Boolean) {
+        setPreference(PreferenceKeys.securityBiometricEnabled, value)
+    }
+    // endregion
 
     // Sensitive data stored in encrypted preferences
     var huggingFaceToken: String
@@ -138,36 +325,15 @@ open class UserPreferencesRepository protected constructor(context: Context) {
     var googleCseId: String
         get() = encryptedPrefs.getEncryptedString(KEY_GOOGLE_CSE_ID)
         set(value) = encryptedPrefs.putEncryptedString(KEY_GOOGLE_CSE_ID, value)
-    var modelTemperature by floatPreference(KEY_MODEL_TEMPERATURE, 0.7f)
-    var modelTopP by floatPreference(KEY_MODEL_TOP_P, 0.9f)
-    var modelTopK by intPreference(KEY_MODEL_TOP_K, 40)
-    var modelMaxTokens by intPreference(KEY_MODEL_MAX_TOKENS, 2048)
-    var modelContextLength by intPreference(KEY_MODEL_CONTEXT_LENGTH, 4096)
-    var modelSystemPrompt by stringPreference(KEY_MODEL_SYSTEM_PROMPT, "You are a helpful AI assistant.")
-    var modelChatFormat by stringPreference(KEY_MODEL_CHAT_FORMAT, "CHATML")
-    var modelThreadCount by intPreference(KEY_MODEL_THREAD_COUNT, 4)
-    var modelGpuLayers by intPreference(KEY_MODEL_GPU_LAYERS, -1)
-    var cachedModels by stringPreference(KEY_CACHED_MODELS, "")
-    var showThinkingTokens by booleanPreference(KEY_SHOW_THINKING_TOKENS, true)
-    var thinkingTokenStyle by stringPreference(KEY_THINKING_TOKEN_STYLE, "COLLAPSIBLE")
-    var templatesJson by stringPreference(KEY_TEMPLATES, "[]")
-    var uiTheme by stringPreference(KEY_UI_THEME, "DARK")
-    var uiFontSize by floatPreference(KEY_UI_FONT_SIZE, 1.0f)
-    var uiEnableAnimations by booleanPreference(KEY_UI_ENABLE_ANIMATIONS, true)
-    var uiEnableHapticFeedback by booleanPreference(KEY_UI_ENABLE_HAPTIC_FEEDBACK, true)
-    var perfEnableMemoryOptimization by booleanPreference(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION, true)
-    var perfEnableBackgroundProcessing by booleanPreference(KEY_PERF_ENABLE_BACKGROUND_PROCESSING, true)
-    var securityBiometricEnabled by booleanPreference(KEY_SECURITY_BIOMETRIC_ENABLED, false)
 
-    // Public API - using delegated properties directly
     open fun hasHuggingFaceCredentials(): Boolean {
         return huggingFaceToken.isNotEmpty() || huggingFaceUsername.isNotEmpty()
     }
 
-    open fun getModelConfiguration(modelName: String): ModelConfiguration = runBlocking {
+    open suspend fun getModelConfiguration(modelName: String): ModelConfiguration {
         val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
         val prefs = dataStore.data.first()
-        ModelConfiguration(
+        return ModelConfiguration(
             temperature = prefs[floatPreferencesKey(prefix + "temperature")] ?: 0.7f,
             topP = prefs[floatPreferencesKey(prefix + "top_p")] ?: 0.9f,
             topK = prefs[intPreferencesKey(prefix + "top_k")] ?: 40,
@@ -178,29 +344,82 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         )
     }
 
-    open fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
+    open suspend fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
         val prefix = "${KEY_MODEL_CONFIG_PREFIX}${modelName}_"
-        runBlocking {
-            dataStore.edit { prefs ->
-                prefs[floatPreferencesKey(prefix + "temperature")] = config.temperature
-                prefs[floatPreferencesKey(prefix + "top_p")] = config.topP
-                prefs[intPreferencesKey(prefix + "top_k")] = config.topK
-                prefs[intPreferencesKey(prefix + "thread_count")] = config.threadCount
-                prefs[intPreferencesKey(prefix + "context_length")] = config.contextLength
-                prefs[stringPreferencesKey(prefix + "system_prompt")] = config.systemPrompt
-                prefs[intPreferencesKey(prefix + "gpu_layers")] = config.gpuLayers
-            }
+        dataStore.edit { prefs ->
+            prefs[floatPreferencesKey(prefix + "temperature")] = config.temperature
+            prefs[floatPreferencesKey(prefix + "top_p")] = config.topP
+            prefs[intPreferencesKey(prefix + "top_k")] = config.topK
+            prefs[intPreferencesKey(prefix + "thread_count")] = config.threadCount
+            prefs[intPreferencesKey(prefix + "context_length")] = config.contextLength
+            prefs[stringPreferencesKey(prefix + "system_prompt")] = config.systemPrompt
+            prefs[intPreferencesKey(prefix + "gpu_layers")] = config.gpuLayers
         }
     }
 
-    // All other properties are accessible via delegated properties
+    open suspend fun clearAll() {
+        dataStore.edit { it.clear() }
+    }
 
-    open fun getTemplates(): List<Template> {
-        val json = templatesJson
+    open suspend fun exportConfiguration(): String {
+        val prefs = dataStore.data.first()
+        val jsonObject = JSONObject()
+        jsonObject.put("defaultModelName", prefs[PreferenceKeys.defaultModelName] ?: "")
+        jsonObject.put("huggingFaceToken", huggingFaceToken)
+        jsonObject.put("huggingFaceUsername", huggingFaceUsername)
+        jsonObject.put("modelTemperature", prefs[PreferenceKeys.modelTemperature] ?: 0.7f)
+        jsonObject.put("modelTopP", prefs[PreferenceKeys.modelTopP] ?: 0.9f)
+        jsonObject.put("modelTopK", prefs[PreferenceKeys.modelTopK] ?: 40)
+        jsonObject.put("modelMaxTokens", prefs[PreferenceKeys.modelMaxTokens] ?: 2048)
+        jsonObject.put("modelContextLength", prefs[PreferenceKeys.modelContextLength] ?: 4096)
+        jsonObject.put("modelSystemPrompt", prefs[PreferenceKeys.modelSystemPrompt] ?: "You are a helpful AI assistant.")
+        jsonObject.put("modelChatFormat", prefs[PreferenceKeys.modelChatFormat] ?: "CHATML")
+        jsonObject.put("modelThreadCount", prefs[PreferenceKeys.modelThreadCount] ?: 4)
+        jsonObject.put("showThinkingTokens", prefs[PreferenceKeys.showThinkingTokens] ?: true)
+        jsonObject.put("thinkingTokenStyle", prefs[PreferenceKeys.thinkingTokenStyle] ?: "COLLAPSIBLE")
+        jsonObject.put("uiTheme", prefs[PreferenceKeys.uiTheme] ?: "DARK")
+        jsonObject.put("uiFontSize", prefs[PreferenceKeys.uiFontSize] ?: 1.0f)
+        jsonObject.put("uiEnableAnimations", prefs[PreferenceKeys.uiEnableAnimations] ?: true)
+        jsonObject.put("uiEnableHapticFeedback", prefs[PreferenceKeys.uiEnableHapticFeedback] ?: true)
+        jsonObject.put("perfEnableMemoryOptimization", prefs[PreferenceKeys.perfEnableMemoryOptimization] ?: true)
+        jsonObject.put("perfEnableBackgroundProcessing", prefs[PreferenceKeys.perfEnableBackgroundProcessing] ?: true)
+        return jsonObject.toString()
+    }
+
+    open suspend fun importConfiguration(jsonString: String): Boolean {
+        return try {
+            val json = JSONObject(jsonString)
+            if (json.has("defaultModelName")) setDefaultModelName(json.getString("defaultModelName"))
+            if (json.has("huggingFaceToken")) huggingFaceToken = json.getString("huggingFaceToken")
+            if (json.has("huggingFaceUsername")) huggingFaceUsername = json.getString("huggingFaceUsername")
+            if (json.has("modelTemperature")) setModelTemperature(json.getDouble("modelTemperature").toFloat())
+            if (json.has("modelTopP")) setModelTopP(json.getDouble("modelTopP").toFloat())
+            if (json.has("modelTopK")) setModelTopK(json.getInt("modelTopK"))
+            if (json.has("modelMaxTokens")) setModelMaxTokens(json.getInt("modelMaxTokens"))
+            if (json.has("modelContextLength")) setModelContextLength(json.getInt("modelContextLength"))
+            if (json.has("modelSystemPrompt")) setModelSystemPrompt(json.getString("modelSystemPrompt"))
+            if (json.has("modelChatFormat")) setModelChatFormat(json.getString("modelChatFormat"))
+            if (json.has("modelThreadCount")) setModelThreadCount(json.getInt("modelThreadCount"))
+            if (json.has("showThinkingTokens")) setShowThinkingTokens(json.getBoolean("showThinkingTokens"))
+            if (json.has("thinkingTokenStyle")) setThinkingTokenStyle(json.getString("thinkingTokenStyle"))
+            if (json.has("uiTheme")) setUITheme(json.getString("uiTheme"))
+            if (json.has("uiFontSize")) setUIFontSize(json.getDouble("uiFontSize").toFloat())
+            if (json.has("uiEnableAnimations")) setUIEnableAnimations(json.getBoolean("uiEnableAnimations"))
+            if (json.has("uiEnableHapticFeedback")) setUIEnableHapticFeedback(json.getBoolean("uiEnableHapticFeedback"))
+            if (json.has("perfEnableMemoryOptimization")) setPerfEnableMemoryOptimization(json.getBoolean("perfEnableMemoryOptimization"))
+            if (json.has("perfEnableBackgroundProcessing")) setPerfEnableBackgroundProcessing(json.getBoolean("perfEnableBackgroundProcessing"))
+            true
+        } catch (e: Exception) {
+            Timber.tag("UserPreferencesRepository").e(e, "Error importing configuration")
+            false
+        }
+    }
+
+    private fun parseTemplates(json: String): List<Template> {
         return try {
             val array = JSONArray(json)
-            List(array.length()) { i ->
-                val obj = array.getJSONObject(i)
+            List(array.length()) { index ->
+                val obj = array.getJSONObject(index)
                 Template(
                     id = obj.getLong("id"),
                     name = obj.getString("name"),
@@ -209,75 +428,6 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             }
         } catch (e: Exception) {
             emptyList()
-        }
-    }
-
-    open fun saveTemplates(templates: List<Template>) {
-        val array = JSONArray()
-        templates.forEach { t ->
-            val obj = JSONObject()
-            obj.put("id", t.id)
-            obj.put("name", t.name)
-            obj.put("content", t.content)
-            array.put(obj)
-        }
-        templatesJson = array.toString()
-    }
-
-    open fun clearAll() {
-        runBlocking { dataStore.edit { it.clear() } }
-    }
-
-    open fun exportConfiguration(): String {
-        val jsonObject = JSONObject()
-        jsonObject.put("defaultModelName", defaultModelName)
-        jsonObject.put("huggingFaceToken", huggingFaceToken)
-        jsonObject.put("huggingFaceUsername", huggingFaceUsername)
-        jsonObject.put("modelTemperature", modelTemperature)
-        jsonObject.put("modelTopP", modelTopP)
-        jsonObject.put("modelTopK", modelTopK)
-        jsonObject.put("modelMaxTokens", modelMaxTokens)
-        jsonObject.put("modelContextLength", modelContextLength)
-        jsonObject.put("modelSystemPrompt", modelSystemPrompt)
-        jsonObject.put("modelChatFormat", modelChatFormat)
-        jsonObject.put("modelThreadCount", modelThreadCount)
-        jsonObject.put("showThinkingTokens", showThinkingTokens)
-        jsonObject.put("thinkingTokenStyle", thinkingTokenStyle)
-        jsonObject.put("uiTheme", uiTheme)
-        jsonObject.put("uiFontSize", uiFontSize)
-        jsonObject.put("uiEnableAnimations", uiEnableAnimations)
-        jsonObject.put("uiEnableHapticFeedback", uiEnableHapticFeedback)
-        jsonObject.put("perfEnableMemoryOptimization", perfEnableMemoryOptimization)
-        jsonObject.put("perfEnableBackgroundProcessing", perfEnableBackgroundProcessing)
-        return jsonObject.toString()
-    }
-
-    open fun importConfiguration(jsonString: String): Boolean {
-        return try {
-            val json = JSONObject(jsonString)
-            if (json.has("defaultModelName")) defaultModelName = json.getString("defaultModelName")
-            if (json.has("huggingFaceToken")) huggingFaceToken = json.getString("huggingFaceToken")
-            if (json.has("huggingFaceUsername")) huggingFaceUsername = json.getString("huggingFaceUsername")
-            if (json.has("modelTemperature")) modelTemperature = json.getDouble("modelTemperature").toFloat()
-            if (json.has("modelTopP")) modelTopP = json.getDouble("modelTopP").toFloat()
-            if (json.has("modelTopK")) modelTopK = json.getInt("modelTopK")
-            if (json.has("modelMaxTokens")) modelMaxTokens = json.getInt("modelMaxTokens")
-            if (json.has("modelContextLength")) modelContextLength = json.getInt("modelContextLength")
-            if (json.has("modelSystemPrompt")) modelSystemPrompt = json.getString("modelSystemPrompt")
-            if (json.has("modelChatFormat")) modelChatFormat = json.getString("modelChatFormat")
-            if (json.has("modelThreadCount")) modelThreadCount = json.getInt("modelThreadCount")
-            if (json.has("showThinkingTokens")) showThinkingTokens = json.getBoolean("showThinkingTokens")
-            if (json.has("thinkingTokenStyle")) thinkingTokenStyle = json.getString("thinkingTokenStyle")
-            if (json.has("uiTheme")) uiTheme = json.getString("uiTheme")
-            if (json.has("uiFontSize")) uiFontSize = json.getDouble("uiFontSize").toFloat()
-            if (json.has("uiEnableAnimations")) uiEnableAnimations = json.getBoolean("uiEnableAnimations")
-            if (json.has("uiEnableHapticFeedback")) uiEnableHapticFeedback = json.getBoolean("uiEnableHapticFeedback")
-            if (json.has("perfEnableMemoryOptimization")) perfEnableMemoryOptimization = json.getBoolean("perfEnableMemoryOptimization")
-            if (json.has("perfEnableBackgroundProcessing")) perfEnableBackgroundProcessing = json.getBoolean("perfEnableBackgroundProcessing")
-            true
-        } catch (e: Exception) {
-            Timber.tag("UserPreferencesRepository").e(e, "Error importing configuration")
-            false
         }
     }
 }

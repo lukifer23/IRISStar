@@ -3,249 +3,244 @@ package com.nervesparks.iris.data
 import android.content.Context
 import com.nervesparks.iris.Template
 import com.nervesparks.iris.data.repository.ModelConfiguration
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepository(context) {
 
-    private val prefs = mutableMapOf<String, Any>()
+    private val defaultModelNameState = MutableStateFlow("")
+    private val modelTemperatureState = MutableStateFlow(0.7f)
+    private val modelTopPState = MutableStateFlow(0.9f)
+    private val modelTopKState = MutableStateFlow(40)
+    private val modelMaxTokensState = MutableStateFlow(2048)
+    private val modelContextLengthState = MutableStateFlow(4096)
+    private val modelSystemPromptState = MutableStateFlow("You are a helpful AI assistant.")
+    private val modelChatFormatState = MutableStateFlow("CHATML")
+    private val modelThreadCountState = MutableStateFlow(4)
+    private val modelGpuLayersState = MutableStateFlow(-1)
+    private val cachedModelsState = MutableStateFlow("")
+    private val showThinkingTokensState = MutableStateFlow(true)
+    private val thinkingTokenStyleState = MutableStateFlow("COLLAPSIBLE")
+    private val templatesState = MutableStateFlow<List<Template>>(emptyList())
+    private val uiThemeState = MutableStateFlow("DARK")
+    private val uiFontSizeState = MutableStateFlow(1.0f)
+    private val uiEnableAnimationsState = MutableStateFlow(true)
+    private val uiEnableHapticFeedbackState = MutableStateFlow(true)
+    private val perfEnableMemoryOptimizationState = MutableStateFlow(true)
+    private val perfEnableBackgroundProcessingState = MutableStateFlow(true)
+    private val securityBiometricEnabledState = MutableStateFlow(false)
 
-    override fun getDefaultModelName(): String {
-        return prefs[KEY_DEFAULT_MODEL_NAME] as? String ?: ""
+    private val modelConfigurations = mutableMapOf<String, ModelConfiguration>()
+
+    override val defaultModelNameFlow: Flow<String> = defaultModelNameState.distinctUntilChanged()
+    override suspend fun getDefaultModelName(): String = defaultModelNameState.value
+    override suspend fun setDefaultModelName(modelName: String) {
+        defaultModelNameState.value = modelName
     }
 
-    override fun setDefaultModelName(modelName: String) {
-        prefs[KEY_DEFAULT_MODEL_NAME] = modelName
+    override val modelTemperatureFlow: Flow<Float> = modelTemperatureState.distinctUntilChanged()
+    override suspend fun getModelTemperature(): Float = modelTemperatureState.value
+    override suspend fun setModelTemperature(temperature: Float) {
+        modelTemperatureState.value = temperature
     }
 
-    override fun getHuggingFaceToken(): String {
-        return prefs[KEY_HUGGINGFACE_TOKEN] as? String ?: ""
+    override val modelTopPFlow: Flow<Float> = modelTopPState.distinctUntilChanged()
+    override suspend fun getModelTopP(): Float = modelTopPState.value
+    override suspend fun setModelTopP(value: Float) {
+        modelTopPState.value = value
     }
 
-    override fun setHuggingFaceToken(token: String) {
-        prefs[KEY_HUGGINGFACE_TOKEN] = token
+    override val modelTopKFlow: Flow<Int> = modelTopKState.distinctUntilChanged()
+    override suspend fun getModelTopK(): Int = modelTopKState.value
+    override suspend fun setModelTopK(value: Int) {
+        modelTopKState.value = value
     }
 
-    override fun getHuggingFaceUsername(): String {
-        return prefs[KEY_HUGGINGFACE_USERNAME] as? String ?: ""
+    override val modelMaxTokensFlow: Flow<Int> = modelMaxTokensState.distinctUntilChanged()
+    override suspend fun getModelMaxTokens(): Int = modelMaxTokensState.value
+    override suspend fun setModelMaxTokens(value: Int) {
+        modelMaxTokensState.value = value
     }
 
-    override fun setHuggingFaceUsername(username: String) {
-        prefs[KEY_HUGGINGFACE_USERNAME] = username
+    override val modelContextLengthFlow: Flow<Int> = modelContextLengthState.distinctUntilChanged()
+    override suspend fun getModelContextLength(): Int = modelContextLengthState.value
+    override suspend fun setModelContextLength(value: Int) {
+        modelContextLengthState.value = value
     }
 
-    override fun hasHuggingFaceCredentials(): Boolean {
-        return getHuggingFaceToken().isNotEmpty() || getHuggingFaceUsername().isNotEmpty()
+    override val modelSystemPromptFlow: Flow<String> = modelSystemPromptState.distinctUntilChanged()
+    override suspend fun getModelSystemPrompt(): String = modelSystemPromptState.value
+    override suspend fun setModelSystemPrompt(value: String) {
+        modelSystemPromptState.value = value
     }
 
-    override fun setModelTemperature(temperature: Float) {
-        prefs[KEY_MODEL_TEMPERATURE] = temperature
+    override val modelChatFormatFlow: Flow<String> = modelChatFormatState.distinctUntilChanged()
+    override suspend fun getModelChatFormat(): String = modelChatFormatState.value
+    override suspend fun setModelChatFormat(value: String) {
+        modelChatFormatState.value = value
     }
 
-    override fun getModelTemperature(): Float {
-        return prefs[KEY_MODEL_TEMPERATURE] as? Float ?: 0.7f
+    override val modelThreadCountFlow: Flow<Int> = modelThreadCountState.distinctUntilChanged()
+    override suspend fun getModelThreadCount(): Int = modelThreadCountState.value
+    override suspend fun setModelThreadCount(value: Int) {
+        modelThreadCountState.value = value
     }
 
-    override fun setModelTopP(topP: Float) {
-        prefs[KEY_MODEL_TOP_P] = topP
+    override val modelGpuLayersFlow: Flow<Int> = modelGpuLayersState.distinctUntilChanged()
+    override suspend fun getModelGpuLayers(): Int = modelGpuLayersState.value
+    override suspend fun setModelGpuLayers(value: Int) {
+        modelGpuLayersState.value = value
     }
 
-    override fun getModelTopP(): Float {
-        return prefs[KEY_MODEL_TOP_P] as? Float ?: 0.9f
+    override val cachedModelsFlow: Flow<String> = cachedModelsState.distinctUntilChanged()
+    override suspend fun getCachedModels(): String = cachedModelsState.value
+    override suspend fun setCachedModels(json: String) {
+        cachedModelsState.value = json
     }
 
-    override fun setModelTopK(topK: Int) {
-        prefs[KEY_MODEL_TOP_K] = topK
+    override val showThinkingTokensFlow: Flow<Boolean> = showThinkingTokensState.distinctUntilChanged()
+    override suspend fun getShowThinkingTokens(): Boolean = showThinkingTokensState.value
+    override suspend fun setShowThinkingTokens(value: Boolean) {
+        showThinkingTokensState.value = value
     }
 
-    override fun getModelTopK(): Int {
-        return prefs[KEY_MODEL_TOP_K] as? Int ?: 40
+    override val thinkingTokenStyleFlow: Flow<String> = thinkingTokenStyleState.distinctUntilChanged()
+    override suspend fun getThinkingTokenStyle(): String = thinkingTokenStyleState.value
+    override suspend fun setThinkingTokenStyle(value: String) {
+        thinkingTokenStyleState.value = value
     }
 
-    override fun setModelMaxTokens(maxTokens: Int) {
-        prefs[KEY_MODEL_MAX_TOKENS] = maxTokens
+    override val templatesFlow: Flow<List<Template>> = templatesState.distinctUntilChanged()
+    override suspend fun getTemplates(): List<Template> = templatesState.value
+    override suspend fun saveTemplates(templates: List<Template>) {
+        templatesState.value = templates
     }
 
-    override fun getModelMaxTokens(): Int {
-        return prefs[KEY_MODEL_MAX_TOKENS] as? Int ?: 2048
+    override val uiThemeFlow: Flow<String> = uiThemeState.distinctUntilChanged()
+    override suspend fun getUITheme(): String = uiThemeState.value
+    override suspend fun setUITheme(value: String) {
+        uiThemeState.value = value
     }
 
-    override fun setModelContextLength(contextLength: Int) {
-        prefs[KEY_MODEL_CONTEXT_LENGTH] = contextLength
+    override val uiFontSizeFlow: Flow<Float> = uiFontSizeState.distinctUntilChanged()
+    override suspend fun getUIFontSize(): Float = uiFontSizeState.value
+    override suspend fun setUIFontSize(value: Float) {
+        uiFontSizeState.value = value
     }
 
-    override fun getModelContextLength(): Int {
-        return prefs[KEY_MODEL_CONTEXT_LENGTH] as? Int ?: 4096
+    override val uiEnableAnimationsFlow: Flow<Boolean> = uiEnableAnimationsState.distinctUntilChanged()
+    override suspend fun getUIEnableAnimations(): Boolean = uiEnableAnimationsState.value
+    override suspend fun setUIEnableAnimations(value: Boolean) {
+        uiEnableAnimationsState.value = value
     }
 
-    override fun setModelSystemPrompt(systemPrompt: String) {
-        prefs[KEY_MODEL_SYSTEM_PROMPT] = systemPrompt
+    override val uiEnableHapticFeedbackFlow: Flow<Boolean> = uiEnableHapticFeedbackState.distinctUntilChanged()
+    override suspend fun getUIEnableHapticFeedback(): Boolean = uiEnableHapticFeedbackState.value
+    override suspend fun setUIEnableHapticFeedback(value: Boolean) {
+        uiEnableHapticFeedbackState.value = value
     }
 
-    override fun getModelSystemPrompt(): String {
-        return prefs[KEY_MODEL_SYSTEM_PROMPT] as? String ?: "You are a helpful AI assistant."
+    override val perfEnableMemoryOptimizationFlow: Flow<Boolean> =
+        perfEnableMemoryOptimizationState.distinctUntilChanged()
+    override suspend fun getPerfEnableMemoryOptimization(): Boolean = perfEnableMemoryOptimizationState.value
+    override suspend fun setPerfEnableMemoryOptimization(value: Boolean) {
+        perfEnableMemoryOptimizationState.value = value
     }
 
-    override fun setModelChatFormat(chatFormat: String) {
-        prefs[KEY_MODEL_CHAT_FORMAT] = chatFormat
+    override val perfEnableBackgroundProcessingFlow: Flow<Boolean> =
+        perfEnableBackgroundProcessingState.distinctUntilChanged()
+    override suspend fun getPerfEnableBackgroundProcessing(): Boolean =
+        perfEnableBackgroundProcessingState.value
+    override suspend fun setPerfEnableBackgroundProcessing(value: Boolean) {
+        perfEnableBackgroundProcessingState.value = value
     }
 
-    override fun getModelChatFormat(): String {
-        return prefs[KEY_MODEL_CHAT_FORMAT] as? String ?: "CHATML"
+    override val securityBiometricEnabledFlow: Flow<Boolean> =
+        securityBiometricEnabledState.distinctUntilChanged()
+    override suspend fun getSecurityBiometricEnabled(): Boolean = securityBiometricEnabledState.value
+    override suspend fun setSecurityBiometricEnabled(value: Boolean) {
+        securityBiometricEnabledState.value = value
     }
 
-    override fun setModelThreadCount(threadCount: Int) {
-        prefs[KEY_MODEL_THREAD_COUNT] = threadCount
+    override suspend fun getModelConfiguration(modelName: String): ModelConfiguration {
+        return modelConfigurations[modelName] ?: ModelConfiguration()
     }
 
-    override fun getModelThreadCount(): Int {
-        return prefs[KEY_MODEL_THREAD_COUNT] as? Int ?: 4
+    override suspend fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
+        modelConfigurations[modelName] = config
     }
 
-    override fun getModelConfiguration(modelName: String): ModelConfiguration {
-        val prefix = "model_config_${modelName}_"
-        return ModelConfiguration(
-            temperature = prefs[prefix + "temperature"] as? Float ?: 0.7f,
-            topP = prefs[prefix + "top_p"] as? Float ?: 0.9f,
-            topK = prefs[prefix + "top_k"] as? Int ?: 40,
-            threadCount = prefs[prefix + "thread_count"] as? Int ?: 2,
-            contextLength = prefs[prefix + "context_length"] as? Int ?: 4096,
-            systemPrompt = prefs[prefix + "system_prompt"] as? String ?: "",
-            gpuLayers = prefs[prefix + "gpu_layers"] as? Int ?: -1
-        )
+    override suspend fun clearAll() {
+        defaultModelNameState.value = ""
+        modelTemperatureState.value = 0.7f
+        modelTopPState.value = 0.9f
+        modelTopKState.value = 40
+        modelMaxTokensState.value = 2048
+        modelContextLengthState.value = 4096
+        modelSystemPromptState.value = "You are a helpful AI assistant."
+        modelChatFormatState.value = "CHATML"
+        modelThreadCountState.value = 4
+        modelGpuLayersState.value = -1
+        cachedModelsState.value = ""
+        showThinkingTokensState.value = true
+        thinkingTokenStyleState.value = "COLLAPSIBLE"
+        templatesState.value = emptyList()
+        uiThemeState.value = "DARK"
+        uiFontSizeState.value = 1.0f
+        uiEnableAnimationsState.value = true
+        uiEnableHapticFeedbackState.value = true
+        perfEnableMemoryOptimizationState.value = true
+        perfEnableBackgroundProcessingState.value = true
+        securityBiometricEnabledState.value = false
+        modelConfigurations.clear()
     }
 
-    override fun saveModelConfiguration(modelName: String, config: ModelConfiguration) {
-        val prefix = "model_config_${modelName}_"
-        prefs[prefix + "temperature"] = config.temperature
-        prefs[prefix + "top_p"] = config.topP
-        prefs[prefix + "top_k"] = config.topK
-        prefs[prefix + "thread_count"] = config.threadCount
-        prefs[prefix + "context_length"] = config.contextLength
-        prefs[prefix + "system_prompt"] = config.systemPrompt
-        prefs[prefix + "gpu_layers"] = config.gpuLayers
+    override suspend fun exportConfiguration(): String {
+        return "{" +
+            "\"defaultModelName\":\"${defaultModelNameState.value}\"," +
+            "\"modelTemperature\":${modelTemperatureState.value}," +
+            "\"modelTopP\":${modelTopPState.value}," +
+            "\"modelTopK\":${modelTopKState.value}," +
+            "\"modelMaxTokens\":${modelMaxTokensState.value}," +
+            "\"modelContextLength\":${modelContextLengthState.value}," +
+            "\"modelSystemPrompt\":\"${modelSystemPromptState.value}\"," +
+            "\"modelChatFormat\":\"${modelChatFormatState.value}\"," +
+            "\"modelThreadCount\":${modelThreadCountState.value}," +
+            "\"showThinkingTokens\":${showThinkingTokensState.value}," +
+            "\"thinkingTokenStyle\":\"${thinkingTokenStyleState.value}\"," +
+            "\"uiTheme\":\"${uiThemeState.value}\"," +
+            "\"uiFontSize\":${uiFontSizeState.value}," +
+            "\"uiEnableAnimations\":${uiEnableAnimationsState.value}," +
+            "\"uiEnableHapticFeedback\":${uiEnableHapticFeedbackState.value}," +
+            "\"perfEnableMemoryOptimization\":${perfEnableMemoryOptimizationState.value}," +
+            "\"perfEnableBackgroundProcessing\":${perfEnableBackgroundProcessingState.value}" +
+            "}"
     }
 
-    override fun getCachedModels(): String {
-        return prefs[KEY_CACHED_MODELS] as? String ?: ""
-    }
-
-    override fun setCachedModels(json: String) {
-        prefs[KEY_CACHED_MODELS] = json
-    }
-
-    override fun setShowThinkingTokens(show: Boolean) {
-        prefs[KEY_SHOW_THINKING_TOKENS] = show
-    }
-
-    override fun getShowThinkingTokens(): Boolean {
-        return prefs[KEY_SHOW_THINKING_TOKENS] as? Boolean ?: true
-    }
-
-    override fun setThinkingTokenStyle(style: String) {
-        prefs[KEY_THINKING_TOKEN_STYLE] = style
-    }
-
-    override fun getThinkingTokenStyle(): String {
-        return prefs[KEY_THINKING_TOKEN_STYLE] as? String ?: "COLLAPSIBLE"
-    }
-
-    override fun setUITheme(theme: String) {
-        prefs[KEY_UI_THEME] = theme
-    }
-
-    override fun getUITheme(): String {
-        return prefs[KEY_UI_THEME] as? String ?: "DARK"
-    }
-
-    override fun setUIFontSize(fontSize: Float) {
-        prefs[KEY_UI_FONT_SIZE] = fontSize
-    }
-
-    override fun getUIFontSize(): Float {
-        return prefs[KEY_UI_FONT_SIZE] as? Float ?: 1.0f
-    }
-
-    override fun setUIEnableAnimations(enable: Boolean) {
-        prefs[KEY_UI_ENABLE_ANIMATIONS] = enable
-    }
-
-    override fun getUIEnableAnimations(): Boolean {
-        return prefs[KEY_UI_ENABLE_ANIMATIONS] as? Boolean ?: true
-    }
-
-    override fun setUIEnableHapticFeedback(enable: Boolean) {
-        prefs[KEY_UI_ENABLE_HAPTIC_FEEDBACK] = enable
-    }
-
-    override fun getUIEnableHapticFeedback(): Boolean {
-        return prefs[KEY_UI_ENABLE_HAPTIC_FEEDBACK] as? Boolean ?: true
-    }
-
-    override fun setPerfEnableMemoryOptimization(enable: Boolean) {
-        prefs[KEY_PERF_ENABLE_MEMORY_OPTIMIZATION] = enable
-    }
-
-    override fun getPerfEnableMemoryOptimization(): Boolean {
-        return prefs[KEY_PERF_ENABLE_MEMORY_OPTIMIZATION] as? Boolean ?: true
-    }
-
-    override fun setPerfEnableBackgroundProcessing(enable: Boolean) {
-        prefs[KEY_PERF_ENABLE_BACKGROUND_PROCESSING] = enable
-    }
-
-    override fun getPerfEnableBackgroundProcessing(): Boolean {
-        return prefs[KEY_PERF_ENABLE_BACKGROUND_PROCESSING] as? Boolean ?: true
-    }
-
-    override fun setSecurityBiometricEnabled(enabled: Boolean) {
-        prefs[KEY_SECURITY_BIOMETRIC_ENABLED] = enabled
-    }
-
-    override fun getSecurityBiometricEnabled(): Boolean {
-        return prefs[KEY_SECURITY_BIOMETRIC_ENABLED] as? Boolean ?: false
-    }
-
-    override fun getTemplates(): List<Template> {
-        @Suppress("UNCHECKED_CAST")
-        return prefs[KEY_TEMPLATES] as? List<Template> ?: emptyList()
-    }
-
-    override fun saveTemplates(templates: List<Template>) {
-        prefs[KEY_TEMPLATES] = templates
-    }
-
-    override fun clearAll() {
-        prefs.clear()
-    }
-
-    override fun exportConfiguration(): String {
-        return "" // Not needed for tests
-    }
-
-    override fun importConfiguration(jsonString: String): Boolean {
-        return true // Not needed for tests
+    override suspend fun importConfiguration(jsonString: String): Boolean {
+        return try {
+            val json = org.json.JSONObject(jsonString)
+            if (json.has("defaultModelName")) setDefaultModelName(json.getString("defaultModelName"))
+            if (json.has("modelTemperature")) setModelTemperature(json.getDouble("modelTemperature").toFloat())
+            if (json.has("modelTopP")) setModelTopP(json.getDouble("modelTopP").toFloat())
+            if (json.has("modelTopK")) setModelTopK(json.getInt("modelTopK"))
+            if (json.has("modelMaxTokens")) setModelMaxTokens(json.getInt("modelMaxTokens"))
+            if (json.has("modelContextLength")) setModelContextLength(json.getInt("modelContextLength"))
+            if (json.has("modelSystemPrompt")) setModelSystemPrompt(json.getString("modelSystemPrompt"))
+            if (json.has("modelChatFormat")) setModelChatFormat(json.getString("modelChatFormat"))
+            if (json.has("modelThreadCount")) setModelThreadCount(json.getInt("modelThreadCount"))
+            if (json.has("showThinkingTokens")) setShowThinkingTokens(json.getBoolean("showThinkingTokens"))
+            if (json.has("thinkingTokenStyle")) setThinkingTokenStyle(json.getString("thinkingTokenStyle"))
+            if (json.has("uiTheme")) setUITheme(json.getString("uiTheme"))
+            if (json.has("uiFontSize")) setUIFontSize(json.getDouble("uiFontSize").toFloat())
+            if (json.has("uiEnableAnimations")) setUIEnableAnimations(json.getBoolean("uiEnableAnimations"))
+            if (json.has("uiEnableHapticFeedback")) setUIEnableHapticFeedback(json.getBoolean("uiEnableHapticFeedback"))
+            if (json.has("perfEnableMemoryOptimization")) setPerfEnableMemoryOptimization(json.getBoolean("perfEnableMemoryOptimization"))
+            if (json.has("perfEnableBackgroundProcessing")) setPerfEnableBackgroundProcessing(json.getBoolean("perfEnableBackgroundProcessing"))
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }
-
-private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
-private const val KEY_HUGGINGFACE_TOKEN = "huggingface_token"
-private const val KEY_HUGGINGFACE_USERNAME = "huggingface_username"
-private const val KEY_MODEL_TEMPERATURE = "model_temperature"
-private const val KEY_MODEL_TOP_P = "model_top_p"
-private const val KEY_MODEL_TOP_K = "model_top_k"
-private const val KEY_MODEL_MAX_TOKENS = "model_max_tokens"
-private const val KEY_MODEL_CONTEXT_LENGTH = "model_context_length"
-private const val KEY_MODEL_SYSTEM_PROMPT = "model_system_prompt"
-private const val KEY_MODEL_CHAT_FORMAT = "model_chat_format"
-private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
-private const val KEY_CACHED_MODELS = "cached_models"
-private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
-private const val KEY_SHOW_THINKING_TOKENS = "show_thinking_tokens"
-private const val KEY_THINKING_TOKEN_STYLE = "thinking_token_style"
-private const val KEY_UI_THEME = "ui_theme"
-private const val KEY_UI_FONT_SIZE = "ui_font_size"
-private const val KEY_UI_ENABLE_ANIMATIONS = "ui_enable_animations"
-private const val KEY_UI_ENABLE_HAPTIC_FEEDBACK = "ui_enable_haptic_feedback"
-private const val KEY_PERF_ENABLE_MEMORY_OPTIMIZATION = "perf_enable_memory_optimization"
-private const val KEY_PERF_ENABLE_BACKGROUND_PROCESSING = "perf_enable_background_processing"
-private const val KEY_SECURITY_BIOMETRIC_ENABLED = "security_biometric_enabled"
-private const val KEY_TEMPLATES = "user_templates"

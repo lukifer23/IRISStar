@@ -209,33 +209,41 @@ class ModelViewModel @Inject constructor(
     }
 
     private fun loadModelSettings() {
-        try {
-            modelTemperature = userPreferencesRepository.modelTemperature
-            modelTopP = userPreferencesRepository.modelTopP
-            modelTopK = userPreferencesRepository.modelTopK
-            modelMaxTokens = userPreferencesRepository.modelMaxTokens
-            modelContextLength = userPreferencesRepository.modelContextLength
-            modelSystemPrompt = userPreferencesRepository.modelSystemPrompt
-            modelChatFormat = userPreferencesRepository.modelChatFormat
-            modelThreadCount = userPreferencesRepository.modelThreadCount
-            modelGpuLayers = userPreferencesRepository.modelGpuLayers
-            Timber.tag(tag).d("Model settings loaded")
-        } catch (e: Exception) {
-            Timber.tag(tag).e(e, "Error loading model settings")
+        viewModelScope.launch {
+            try {
+                modelTemperature = userPreferencesRepository.getModelTemperature()
+                modelTopP = userPreferencesRepository.getModelTopP()
+                modelTopK = userPreferencesRepository.getModelTopK()
+                modelMaxTokens = userPreferencesRepository.getModelMaxTokens()
+                modelContextLength = userPreferencesRepository.getModelContextLength()
+                modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
+                modelChatFormat = userPreferencesRepository.getModelChatFormat()
+                modelThreadCount = userPreferencesRepository.getModelThreadCount()
+                modelGpuLayers = userPreferencesRepository.getModelGpuLayers()
+                Timber.tag(tag).d("Model settings loaded")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error loading model settings")
+            }
         }
     }
 
     private fun saveModelSettings() {
-        userPreferencesRepository.modelTemperature = modelTemperature
-        userPreferencesRepository.modelTopP = modelTopP
-        userPreferencesRepository.modelTopK = modelTopK
-        userPreferencesRepository.modelMaxTokens = modelMaxTokens
-        userPreferencesRepository.modelContextLength = modelContextLength
-        userPreferencesRepository.modelSystemPrompt = modelSystemPrompt
-        userPreferencesRepository.modelChatFormat = modelChatFormat
-        userPreferencesRepository.modelThreadCount = modelThreadCount
-        userPreferencesRepository.modelGpuLayers = modelGpuLayers
-        Timber.tag(tag).d("Model settings saved")
+        viewModelScope.launch {
+            try {
+                userPreferencesRepository.setModelTemperature(modelTemperature)
+                userPreferencesRepository.setModelTopP(modelTopP)
+                userPreferencesRepository.setModelTopK(modelTopK)
+                userPreferencesRepository.setModelMaxTokens(modelMaxTokens)
+                userPreferencesRepository.setModelContextLength(modelContextLength)
+                userPreferencesRepository.setModelSystemPrompt(modelSystemPrompt)
+                userPreferencesRepository.setModelChatFormat(modelChatFormat)
+                userPreferencesRepository.setModelThreadCount(modelThreadCount)
+                userPreferencesRepository.setModelGpuLayers(modelGpuLayers)
+                Timber.tag(tag).d("Model settings saved")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error saving model settings")
+            }
+        }
     }
 
     // Available models management
