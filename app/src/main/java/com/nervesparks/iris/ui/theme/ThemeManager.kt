@@ -189,7 +189,7 @@ data class ThemeState(
 // Enhanced theme composable with full theme management
 @Composable
 fun ManagedIrisStarTheme(
-    themeViewModel: ThemeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    themeViewModel: ThemeViewModel,
     content: @Composable () -> Unit
 ) {
     val themeState = rememberThemeState(themeViewModel)
