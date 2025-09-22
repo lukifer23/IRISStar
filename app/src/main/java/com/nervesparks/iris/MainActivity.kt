@@ -66,13 +66,15 @@ import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.security.BiometricAuthenticator
-import com.nervesparks.iris.ui.theme.IrisStarTheme
 import com.nervesparks.iris.ui.theme.ManagedIrisStarTheme
+import com.nervesparks.iris.ui.theme.ThemeViewModel
+import com.nervesparks.iris.ui.theme.ThemeViewModelFactory
 import com.nervesparks.iris.ui.navigation.AppNavigation
 import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -132,7 +134,11 @@ class MainActivity : FragmentActivity() {
         ModelUpdateWorker.schedule(this)
 
         val content = @Composable {
-            ManagedIrisStarTheme {
+            val themeViewModel: ThemeViewModel = viewModel(
+                factory = ThemeViewModelFactory(preferencesRepository, applicationContext)
+            )
+
+            ManagedIrisStarTheme(themeViewModel = themeViewModel) {
                 AppNavigation(
                     viewModel = viewModel,
                     clipboardManager = clipboardManager,
