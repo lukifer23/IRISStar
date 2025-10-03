@@ -17,6 +17,7 @@ import com.nervesparks.iris.ui.ParametersScreen
 import com.nervesparks.iris.ui.SettingsScreen
 import com.nervesparks.iris.ui.ThemeSettingsScreen
 import com.nervesparks.iris.ui.screens.MainChatScreen2
+import com.nervesparks.iris.ui.ModelPerformanceScreen
 import com.nervesparks.iris.data.UserPreferencesRepository
 import java.io.File
 
@@ -31,6 +32,7 @@ object AppDestinations {
     const val BENCHMARK = "benchmark"
     const val QUANTIZE = "quantize"
     const val TEMPLATES = "templates"
+    const val MODEL_PERFORMANCE = "model_performance"
 }
 
 @Composable
@@ -82,6 +84,7 @@ fun AppNavigation(
                 onAboutScreenButtonClicked = { navController.navigate(AppDestinations.ABOUT) },
                 onBenchMarkScreenButtonClicked = { navController.navigate(AppDestinations.BENCHMARK) },
                 onTemplatesScreenButtonClicked = { navController.navigate(AppDestinations.TEMPLATES) },
+                onModelPerformanceScreenButtonClicked = { navController.navigate(AppDestinations.MODEL_PERFORMANCE) },
                 onThemeSettingsClicked = { navController.navigate(AppDestinations.THEME_SETTINGS) }
             )
         }
@@ -113,6 +116,11 @@ fun AppNavigation(
         }
         composable(AppDestinations.TEMPLATES) {
             com.nervesparks.iris.ui.screens.TemplatesScreen(viewModel = viewModel)
+        }
+        composable(AppDestinations.MODEL_PERFORMANCE) {
+            ModelPerformanceScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

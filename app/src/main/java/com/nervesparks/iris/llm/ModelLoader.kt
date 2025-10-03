@@ -3,6 +3,7 @@ package com.nervesparks.iris.llm
 import android.llama.cpp.LLamaAndroid
 import timber.log.Timber
 import com.nervesparks.iris.data.exceptions.ErrorHandler
+import com.nervesparks.iris.llm.ModelPerformanceTracker
 import java.io.File
 import javax.inject.Inject
 
@@ -15,13 +16,14 @@ import javax.inject.Inject
  * @param llamaAndroid The LLamaAndroid instance for native model operations
  */
 class ModelLoader @Inject constructor(
-    private val llamaAndroid: LLamaAndroid
+    private val llamaAndroid: LLamaAndroid,
+    private val performanceTracker: ModelPerformanceTracker
 ) {
 
     private val tag = "ModelLoader"
 
     /**
-     * Load a model by file path with specified configuration
+     * Load a model by file path with specified configuration and performance tracking
      */
     suspend fun loadModel(
         modelPath: String,
@@ -31,9 +33,12 @@ class ModelLoader @Inject constructor(
         topP: Float = 0.9f,
         topK: Int = 40,
         gpuLayers: Int = -1
-    ): Result<Unit> {
+    ): Result<String> {
         return try {
             Timber.tag(tag).d("Loading model: $modelPath with backend: $backend")
+
+            val modelName = File(modelPath).name
+            val startTime = System.currentTimeMillis()
 
             // Load the model with all parameters
             llamaAndroid.load(
@@ -45,8 +50,33 @@ class ModelLoader @Inject constructor(
                 nGpuLayers = gpuLayers
             )
 
-            Timber.tag(tag).d("Model loaded successfully: ${File(modelPath).name}")
-            Result.success(Unit)
+            val loadTime = System.currentTimeMillis() - startTime
+
+            // Start performance tracking session
+            val sessionId = performanceTracker.startSession(
+                modelName = modelName,
+                modelPath = modelPath,
+                configuration = ModelPerformanceTracker.ModelConfiguration(
+                    temperature = temperature,
+                    topP = topP,
+                    topK = topK,
+                    threadCount = threadCount,
+                    gpuLayers = gpuLayers,
+                    contextLength = 2048, // Default context length
+                    chatFormat = "CHATML"
+                ),
+                deviceInfo = ModelPerformanceTracker.DeviceInfo(
+                    deviceModel = "Unknown",
+                    androidVersion = "Unknown",
+                    availableMemory = Runtime.getRuntime().maxMemory(),
+                    cpuCores = Runtime.getRuntime().availableProcessors(),
+                    hasGpu = false // Would need device capability detection
+                ),
+                backendUsed = backend
+            )
+
+            Timber.tag(tag).d("Model loaded successfully: $modelName in ${loadTime}ms")
+            Result.success(sessionId)
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading model: $modelPath")
             ErrorHandler.reportModelError(e, File(modelPath).name)
@@ -73,7 +103,8 @@ class ModelLoader @Inject constructor(
             val modelFile = directory.listFiles()?.find { it.name == modelName }
                 ?: return Result.failure(IllegalArgumentException("Model not found: $modelName"))
 
-            loadModel(
+            // Load the model and get the session ID
+            val loadResult = loadModel(
                 modelPath = modelFile.absolutePath,
                 threadCount = threadCount,
                 backend = backend,
@@ -83,7 +114,14 @@ class ModelLoader @Inject constructor(
                 gpuLayers = gpuLayers
             )
 
-            Result.success(modelFile.absolutePath)
+            loadResult.fold(
+                onSuccess = { sessionId ->
+                    Result.success(modelFile.absolutePath)
+                },
+                onFailure = { error ->
+                    Result.failure(error)
+                }
+            )
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading model by name: $modelName")
             ErrorHandler.reportModelError(e, modelName)
@@ -116,5 +154,43 @@ class ModelLoader @Inject constructor(
             Timber.tag(tag).e(e, "Error checking if model is loaded")
             false
         }
+    }
+
+    /**
+     * Record inference performance for the current session
+     */
+    fun recordInference(
+        sessionId: String,
+        tokensGenerated: Int,
+        inferenceTime: Long,
+        memoryUsage: Long
+    ) {
+        performanceTracker.recordInference(
+            sessionId = sessionId,
+            tokensGenerated = tokensGenerated,
+            inferenceTime = inferenceTime,
+            memoryUsage = memoryUsage
+        )
+    }
+
+    /**
+     * End the current performance tracking session
+     */
+    fun endSession(sessionId: String) {
+        performanceTracker.endSession(sessionId)
+    }
+
+    /**
+     * Get model performance comparison data
+     */
+    fun getPerformanceComparison(): List<ModelComparison> {
+        return performanceTracker.getPerformanceComparison()
+    }
+
+    /**
+     * Get the best performing model
+     */
+    fun getBestPerformingModel(): ModelPerformanceTracker.ModelMetrics? {
+        return performanceTracker.getBestPerformingModel()
     }
 }

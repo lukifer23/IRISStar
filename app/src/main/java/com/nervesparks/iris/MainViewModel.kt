@@ -1602,6 +1602,8 @@ class MainViewModel @Inject constructor(
                     maxContextLimit = modelContextLength
 
                     var generatedTokens = 0
+                    val inferenceStartTime = System.currentTimeMillis()
+
                     llamaAndroid.send(prompt)
                         .catch {
                             Timber.e(it, "send() failed")
@@ -1609,6 +1611,13 @@ class MainViewModel @Inject constructor(
                         }
                         .collect {
                             generatedTokens++
+                            val currentTime = System.currentTimeMillis()
+                            val inferenceTime = currentTime - inferenceStartTime
+
+                            // Record performance metrics (if ModelViewModel is available)
+                            // TODO: Integrate ModelViewModel properly for performance tracking
+                            // For now, performance tracking is handled in ModelViewModel directly
+
                             updateTokenCount(generatedTokens)
                             contextLimit = llamaAndroid.countTokens(prompt) + generatedTokens
 

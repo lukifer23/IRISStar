@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
+import com.nervesparks.iris.llm.ModelPerformanceTracker
 import com.nervesparks.iris.security.InputValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ import javax.inject.Inject
 class ModelViewModel @Inject constructor(
     private val llamaAndroid: LLamaAndroid,
     private val modelLoader: ModelLoader,
+    private val performanceTracker: ModelPerformanceTracker,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val modelRepository: ModelRepository
 ) : ViewModel() {
@@ -34,6 +36,7 @@ class ModelViewModel @Inject constructor(
     var currentModelName by mutableStateOf("")
     var isModelLoaded by mutableStateOf(false)
     var modelLoadingProgress by mutableStateOf(0f)
+    var currentSessionId by mutableStateOf<String?>(null)
 
     // Backend and hardware
     var currentBackend by mutableStateOf("cpu")
@@ -83,15 +86,17 @@ class ModelViewModel @Inject constructor(
                 )
 
                 result.fold(
-                    onSuccess = {
+                    onSuccess = { sessionId ->
                         currentModelName = File(pathToModel).name
                         isModelLoaded = true
                         modelLoadingProgress = 1f
-                        Timber.tag(tag).d("Model loaded successfully: $currentModelName")
+                        currentSessionId = sessionId
+                        Timber.tag(tag).d("Model loaded successfully: $currentModelName with session: $sessionId")
                     },
                     onFailure = { e ->
                         Timber.tag(tag).e(e, "Error loading model: $pathToModel")
                         isModelLoaded = false
+                        currentSessionId = null
                         backendError = "Failed to load model: ${e.message}"
                     }
                 )
@@ -125,11 +130,13 @@ class ModelViewModel @Inject constructor(
                     currentModelName = File(modelPath).name
                     isModelLoaded = true
                     modelLoadingProgress = 1f
+                    // Session ID is tracked in loadModel, not returned here
                     Timber.tag(tag).d("Model loaded successfully: $currentModelName")
                 },
                 onFailure = { e ->
                     Timber.tag(tag).e(e, "Error loading model by name: $modelName")
                     isModelLoaded = false
+                    currentSessionId = null
                     backendError = "Failed to load model: ${e.message}"
                 }
             )
@@ -140,12 +147,18 @@ class ModelViewModel @Inject constructor(
     fun unloadModel() {
         viewModelScope.launch {
             try {
+                // End performance tracking session if active
+                currentSessionId?.let { sessionId ->
+                    modelLoader.endSession(sessionId)
+                }
+
                 val result = modelLoader.unloadModel()
                 result.fold(
                     onSuccess = {
                         Timber.tag(tag).d("Model unloaded successfully")
                         isModelLoaded = false
                         currentModelName = ""
+                        currentSessionId = null
                     },
                     onFailure = { e ->
                         Timber.tag(tag).e(e, "Error unloading model")
@@ -154,6 +167,30 @@ class ModelViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error in unloadModel function")
             }
+        }
+    }
+
+    // Performance tracking methods
+    fun getPerformanceComparison(): List<ModelComparison> {
+        return modelLoader.getPerformanceComparison()
+    }
+
+    fun getBestPerformingModel(): ModelPerformanceTracker.ModelMetrics? {
+        return modelLoader.getBestPerformingModel()
+    }
+
+    fun clearPerformanceData() {
+        performanceTracker.clearAllData()
+    }
+
+    fun recordInferencePerformance(tokensGenerated: Int, inferenceTime: Long, memoryUsage: Long) {
+        currentSessionId?.let { sessionId ->
+            modelLoader.recordInference(
+                sessionId = sessionId,
+                tokensGenerated = tokensGenerated,
+                inferenceTime = inferenceTime,
+                memoryUsage = memoryUsage
+            )
         }
     }
 

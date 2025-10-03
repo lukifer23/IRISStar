@@ -4,6 +4,7 @@ import android.content.Context
 import android.llama.cpp.LLamaAndroid
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.llm.ModelLoader
+import com.nervesparks.iris.llm.ModelPerformanceTracker
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,5 +32,11 @@ object AppModule {
     @Singleton
     fun provideModelLoader(llamaAndroid: LLamaAndroid): ModelLoader {
         return ModelLoader(llamaAndroid)
+    }
+
+    @Provides
+    @Singleton
+    fun provideModelPerformanceTracker(): ModelPerformanceTracker {
+        return ModelPerformanceTracker()
     }
 }

@@ -47,6 +47,7 @@ fun SettingsScreen(
     onAboutScreenButtonClicked: () -> Unit,
     onBenchMarkScreenButtonClicked: () -> Unit,
     onTemplatesScreenButtonClicked: () -> Unit,
+    onModelPerformanceScreenButtonClicked: () -> Unit,
     onThemeSettingsClicked: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -317,6 +318,14 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Templates")
+                }
+
+                // Model Performance Button
+                SecondaryButton(
+                    onClick = onModelPerformanceScreenButtonClicked,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Model Performance")
                 }
 
                 // Biometric Switch
