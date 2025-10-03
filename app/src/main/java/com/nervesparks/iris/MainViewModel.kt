@@ -57,6 +57,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val llamaAndroid: LLamaAndroid,
+    private val modelLoader: com.nervesparks.iris.llm.ModelLoader,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val chatRepository: ChatRepository,
     private val modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
@@ -1299,9 +1300,17 @@ class MainViewModel @Inject constructor(
                 // Unload current model if any
                 viewModelScope.launch {
                     try {
-                        llamaAndroid.unload()
+                        val result = modelLoader.unloadModel()
+                        result.fold(
+                            onSuccess = {
+                                Timber.tag("MainViewModel").d("Model unloaded successfully")
+                            },
+                            onFailure = { e ->
+                                Timber.tag("MainViewModel").e(e, "Error unloading model")
+                            }
+                        )
                     } catch (e: Exception) {
-                        Timber.tag("MainViewModel").e(e, "Error unloading model")
+                        Timber.tag("MainViewModel").e(e, "Error in unload operation")
                     }
                 }
                 
@@ -1436,13 +1445,23 @@ class MainViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-
-                llamaAndroid.unload()
-
+                val unloadResult = modelLoader.unloadModel()
+                unloadResult.fold(
+                    onSuccess = {
+                        Timber.tag("MainViewModel").d("Model unloaded on clear")
+                    },
+                    onFailure = { e ->
+                        Timber.tag("MainViewModel").e(e, "Error unloading model on clear")
+                    }
+                )
             } catch (exc: IllegalStateException) {
                 addMessage("error", exc.message ?: "")
             } finally {
-                llamaAndroid.shutdown()
+                try {
+                    llamaAndroid.shutdown()
+                } catch (e: Exception) {
+                    Timber.tag("MainViewModel").e(e, "Error shutting down llamaAndroid")
+                }
             }
         }
     }
@@ -1882,15 +1901,30 @@ class MainViewModel @Inject constructor(
     var loadedModelName = mutableStateOf("");
 
     fun load(pathToModel: String, userThreads: Int, backend: String = "cpu") {
-        // TODO: Use ModelViewModel from UI layer
+        // Use centralized ModelLoader for consistent error handling and reporting
         viewModelScope.launch {
             try {
-                llamaAndroid.unload()
-                // Basic model loading - full implementation in ModelViewModel
-                llamaAndroid.load(pathToModel, userThreads, 40, 0.9f, 0.7f, -1)
-                Timber.tag("MainViewModel").d("Model loaded: $pathToModel")
+                // Use centralized model loading service
+                val result = modelLoader.loadModel(
+                    modelPath = pathToModel,
+                    threadCount = userThreads,
+                    backend = backend,
+                    temperature = modelTemperature,
+                    topP = modelTopP,
+                    topK = modelTopK,
+                    gpuLayers = modelGpuLayers
+                )
+
+                result.fold(
+                    onSuccess = {
+                        Timber.tag("MainViewModel").d("Model loaded: $pathToModel")
+                    },
+                    onFailure = { e ->
+                        Timber.tag("MainViewModel").e(e, "Error loading model")
+                    }
+                )
             } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error loading model")
+                Timber.tag("MainViewModel").e(e, "Error in load function")
             }
         }
     }
@@ -2444,12 +2478,19 @@ class MainViewModel @Inject constructor(
     fun unloadCurrentModel() {
         viewModelScope.launch {
             try {
-                llamaAndroid.unload()
-                loadedModelName.value = ""
-                selectedModel = ""
-                Timber.d("Current model unloaded successfully")
+                val result = modelLoader.unloadModel()
+                result.fold(
+                    onSuccess = {
+                        loadedModelName.value = ""
+                        selectedModel = ""
+                        Timber.d("Current model unloaded successfully")
+                    },
+                    onFailure = { e ->
+                        Timber.e(e, "Error unloading model")
+                    }
+                )
             } catch (e: Exception) {
-                Timber.e(e, "Error unloading model")
+                Timber.e(e, "Error in unloadCurrentModel")
             }
         }
     }

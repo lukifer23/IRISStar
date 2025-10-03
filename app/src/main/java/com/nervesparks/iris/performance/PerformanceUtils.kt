@@ -18,7 +18,7 @@ import timber.log.Timber
  * Memory management, caching, and performance monitoring
  */
 
-// Memory usage monitor
+// Memory usage monitor with caching for performance
 class MemoryMonitor(private val context: Context) {
 
     data class MemoryStats(
@@ -29,26 +29,53 @@ class MemoryMonitor(private val context: Context) {
         val isLowMemory: Boolean
     )
 
+    private var cachedStats: MemoryStats? = null
+    private var lastUpdateTime: Long = 0
+    private val cacheValidityDuration = 500L // 500ms cache
+
     fun getMemoryStats(): MemoryStats {
+        val currentTime = System.currentTimeMillis()
+
+        // Return cached stats if they're still valid
+        cachedStats?.let { cached ->
+            if (currentTime - lastUpdateTime < cacheValidityDuration) {
+                return cached
+            }
+        }
+
         val runtime = Runtime.getRuntime()
         val usedMemory = runtime.totalMemory() - runtime.freeMemory()
         val availableMemory = runtime.freeMemory()
         val totalMemory = runtime.totalMemory()
-        val memoryUsagePercent = (usedMemory.toFloat() / totalMemory.toFloat()) * 100
+        val memoryUsagePercent = if (totalMemory > 0) {
+            (usedMemory.toFloat() / totalMemory.toFloat()) * 100
+        } else {
+            0f
+        }
 
-        // Check if device is in low memory state
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-        val memoryInfo = android.app.ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        val isLowMemory = memoryInfo.lowMemory
+        // Check if device is in low memory state (cached for performance)
+        val isLowMemory = if (currentTime - lastUpdateTime < 2000L) {
+            cachedStats?.isLowMemory ?: false
+        } else {
+            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            val memoryInfo = android.app.ActivityManager.MemoryInfo()
+            activityManager.getMemoryInfo(memoryInfo)
+            memoryInfo.lowMemory
+        }
 
-        return MemoryStats(
+        val stats = MemoryStats(
             usedMemory = usedMemory,
             availableMemory = availableMemory,
             totalMemory = totalMemory,
             memoryUsagePercent = memoryUsagePercent,
             isLowMemory = isLowMemory
         )
+
+        // Cache the results
+        cachedStats = stats
+        lastUpdateTime = currentTime
+
+        return stats
     }
 
     fun shouldOptimizeMemory(): Boolean {

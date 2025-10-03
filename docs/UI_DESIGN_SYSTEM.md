@@ -1,6 +1,8 @@
 # Iris UI Design System
 
-This document tracks the unified UI system and refactor plan. It defines tokens, patterns, and component guidance to keep the app clean, modern, fluid, and consistent.
+**STATUS: ACTIVE DEVELOPMENT - This document tracks the unified UI system and ongoing refactor plan.**
+
+This document defines tokens, patterns, and component guidance to keep the app clean, modern, fluid, and consistent. The design system is continuously evolving as the project develops.
 
 ## Tokens
 
@@ -33,18 +35,21 @@ Existing `ComponentStyles` is retained, but now delegates to these tokens so leg
 - Cards/Sheets/Dialogs: consistent corners/elevation, blur scrim for modals, spring slide-in
 - Lists: Material3 list items with supporting text; section headers; consistent spacings
 
-## Phases
+## Development Phases (Ongoing)
 
-1) Tokens + groundwork (done by code refs below)
-2) Chat polish: grouped bubbles, markdown code styling, long-press actions
-3) Cards/Modals/Sheets unification
-4) Navigation transitions and edge-to-edge
-5) Settings/list visual pass and accessibility tweaks
+1. **Tokens + groundwork** - Design tokens and foundational components
+2. **Chat polish** - Grouped bubbles, markdown code styling, long-press actions
+3. **Cards/Modals/Sheets unification** - Consistent modal and card designs
+4. **Navigation transitions** - Smooth transitions and edge-to-edge support
+5. **Settings/list visual pass** - Enhanced settings and list accessibility
 
-## Acceptance
+## Design Goals
 
-- Hard-coded dp removed from components in favor of tokens
-- Uniform radii, strokes, color roles
-- Streaming smooth; markdown readable; code blocks copyable
+- Remove hard-coded dimensions from components in favor of design tokens
+- Maintain uniform radii, strokes, and color roles across all components
+- Ensure smooth streaming animations and readable markdown content
+- Implement copyable code blocks and intuitive interactions
+
+**Note**: These phases represent current development priorities and may be adjusted as the project evolves.
 
 

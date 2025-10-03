@@ -1,5 +1,7 @@
 # IRIS Star Modernization Plan
 
+**STATUS: ACTIVE DEVELOPMENT - This plan tracks ongoing improvements to the IRIS Star application.**
+
 ## PHASE 1: IMMEDIATE BUILD FIXES (Priority 1) - COMPLETED
 - [x] **1.1** Clone `llama.cpp` repository to project directory
 - [x] **1.2** Update Android Gradle Plugin and Kotlin versions
@@ -350,14 +352,16 @@ app/src/main/java/com/nervesparks/iris/ui/
 3. **Testing Suite** - Unit and integration tests ✅ COMPLETED
 4. **UI Polish** - Final design refinements ✅ COMPLETED
 
-## SUCCESS CRITERIA
-- ✅ App compiles and runs without errors
-- ✅ All core features work (model loading, chat, thinking UI)
-- ✅ Repository pattern fully implemented
-- ✅ Configuration persistence working
-- ✅ Chat management functional
-- ✅ Performance monitoring active
-- ✅ Modern UI fully implemented
+## SUCCESS CRITERIA (Ongoing)
+- App compiles and runs without errors
+- All core features work (model loading, chat, thinking UI)
+- Repository pattern fully implemented
+- Configuration persistence working
+- Chat management functional
+- Performance monitoring active
+- Modern UI fully implemented
+
+**Note**: This project is in active development. The above criteria represent current goals, but requirements may evolve as development continues.
 
 ## EXECUTION PLAN
 

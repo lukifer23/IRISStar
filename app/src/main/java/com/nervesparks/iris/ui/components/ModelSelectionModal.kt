@@ -296,7 +296,7 @@ fun ModelSelectionModal(
                                                 Spacer(modifier = Modifier.width(ComponentStyles.smallSpacing))
                                                 Text(
                                                     text = "Reasoning",
-                                                    color = Color.Black,
+                                                    color = MaterialTheme.colorScheme.onSurface,
                                                     fontSize = 12.sp,
                                                     modifier = Modifier
                                                         .background(SemanticColors.Warning, ComponentStyles.smallCardShape)

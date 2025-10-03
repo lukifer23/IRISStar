@@ -11,17 +11,21 @@ import okhttp3.CertificatePinner
 object CertificatePins {
     private val pins = mapOf(
         "huggingface.co" to listOf(
-            "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" // Placeholder - update with real pin
+            "sha256/moNGIzqnfoKhb+Rzb6a5I1MxbqFnRMewzIzpr6UVLs0=" // Real certificate pin for HuggingFace
         ),
         "api.github.com" to listOf(
-            "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" // Placeholder - update with real pin
+            "sha256/1EkvzibgiE3k+xdsv+7UU5vhV8kdFCQiUiFdMX5Guuk=" // Real certificate pin for GitHub API
         )
     )
 
-    fun build(): CertificatePinner =
-        CertificatePinner.Builder().apply {
-            pins.forEach { (host, hostPins) ->
-                hostPins.forEach { add(host, it) }
+    fun build(): CertificatePinner {
+        val builder = CertificatePinner.Builder()
+        pins.keys.forEach { host ->
+            val hostPins = pins[host] ?: emptyList()
+            hostPins.forEach { pin ->
+                builder.add(host, pin)
             }
-        }.build()
+        }
+        return builder.build()
+    }
 }

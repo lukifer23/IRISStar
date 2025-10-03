@@ -23,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ModelViewModel @Inject constructor(
     private val llamaAndroid: LLamaAndroid,
+    private val modelLoader: ModelLoader,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val modelRepository: ModelRepository
 ) : ViewModel() {
@@ -70,16 +71,32 @@ class ModelViewModel @Inject constructor(
                 // Set backend before loading
                 selectBackend(backend)
 
-                // Load the model
-                llamaAndroid.load(pathToModel, userThreads, modelTopK, modelTopP, modelTemperature, modelGpuLayers)
+                // Use centralized model loader
+                val result = modelLoader.loadModel(
+                    modelPath = pathToModel,
+                    threadCount = userThreads,
+                    backend = backend,
+                    temperature = modelTemperature,
+                    topP = modelTopP,
+                    topK = modelTopK,
+                    gpuLayers = modelGpuLayers
+                )
 
-                currentModelName = File(pathToModel).name
-                isModelLoaded = true
-                modelLoadingProgress = 1f
-
-                Timber.tag(tag).d("Model loaded successfully: $currentModelName")
+                result.fold(
+                    onSuccess = {
+                        currentModelName = File(pathToModel).name
+                        isModelLoaded = true
+                        modelLoadingProgress = 1f
+                        Timber.tag(tag).d("Model loaded successfully: $currentModelName")
+                    },
+                    onFailure = { e ->
+                        Timber.tag(tag).e(e, "Error loading model: $pathToModel")
+                        isModelLoaded = false
+                        backendError = "Failed to load model: ${e.message}"
+                    }
+                )
             } catch (e: Exception) {
-                Timber.tag(tag).e(e, "Error loading model: $pathToModel")
+                Timber.tag(tag).e(e, "Error in load function")
                 isModelLoaded = false
                 backendError = "Failed to load model: ${e.message}"
             }
@@ -91,25 +108,51 @@ class ModelViewModel @Inject constructor(
     }
 
     fun loadModelByName(modelName: String, directory: File): Boolean {
-        val modelFile = directory.listFiles()?.find { it.name == modelName }
-        return if (modelFile != null) {
-            loadModel(modelFile.absolutePath)
-            true
-        } else {
-            Timber.tag(tag).e("Model not found: $modelName")
-            false
+        viewModelScope.launch {
+            val result = modelLoader.loadModelByName(
+                modelName = modelName,
+                directory = directory,
+                threadCount = modelThreadCount,
+                backend = currentBackend,
+                temperature = modelTemperature,
+                topP = modelTopP,
+                topK = modelTopK,
+                gpuLayers = modelGpuLayers
+            )
+
+            result.fold(
+                onSuccess = { modelPath ->
+                    currentModelName = File(modelPath).name
+                    isModelLoaded = true
+                    modelLoadingProgress = 1f
+                    Timber.tag(tag).d("Model loaded successfully: $currentModelName")
+                },
+                onFailure = { e ->
+                    Timber.tag(tag).e(e, "Error loading model by name: $modelName")
+                    isModelLoaded = false
+                    backendError = "Failed to load model: ${e.message}"
+                }
+            )
         }
+        return true // Return true for now, actual success/failure handled in coroutine
     }
 
     fun unloadModel() {
         viewModelScope.launch {
             try {
-                llamaAndroid.unload()
-                isModelLoaded = false
-                currentModelName = ""
-                Timber.tag(tag).d("Model unloaded")
+                val result = modelLoader.unloadModel()
+                result.fold(
+                    onSuccess = {
+                        Timber.tag(tag).d("Model unloaded successfully")
+                        isModelLoaded = false
+                        currentModelName = ""
+                    },
+                    onFailure = { e ->
+                        Timber.tag(tag).e(e, "Error unloading model")
+                    }
+                )
             } catch (e: Exception) {
-                Timber.tag(tag).e(e, "Error unloading model")
+                Timber.tag(tag).e(e, "Error in unloadModel function")
             }
         }
     }

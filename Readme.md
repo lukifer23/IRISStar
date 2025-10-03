@@ -1,10 +1,21 @@
-<h2>IrisStar</h2>
+# IrisStar
+
+**⚠️ ACTIVE DEVELOPMENT - This project is currently in active development and may contain bugs, incomplete features, or breaking changes.**
 
 ## Project Description
 
-- This repository contains llama.cpp based offline android chat application cloned from llama.cpp android example. Install, download model and run completely offline privately.
-- The app supports downloading GGUF models from Hugging Face and offers customizable parameters for flexible use.
-- Being open-source, it allows for easy modifications and improvements, providing a secure, private, and fully offline experience.
+This repository contains a llama.cpp-based offline Android chat application that provides a private, secure, and fully offline AI chat experience.
+
+### Key Features
+
+- **Offline-First Design**: All model inference is performed locally on your device; no prompts or responses are sent to external servers
+- **Privacy-Focused**: User data and chat history remain on the device and are not collected or transmitted
+- **Expandable Models**: Download external GGUF models from Hugging Face
+- **Customizable Parameters**: Adjust n_threads, top_k, top_p, and temperature to optimize performance and behavior
+- **GPU Acceleration**: Support for Vulkan and OpenCL backends for improved performance on compatible devices
+- **Open Source**: Fully transparent development with easy modification capabilities
+
+**Note**: This application is currently in active development. Features may be incomplete or subject to change.
 
 ## Images
 
@@ -28,22 +39,33 @@ This screen displays available AI models and allows users to manage them efficie
 **Parameters Screen**  
 Users can adjust parameters to fine-tune the app's performance based on their needs.
 
-## Run
+## Installation
 
-- Go to releases : https://github.com/lukifer23/IRISStar/releases
-- Download app
-- Install app
+**Note**: Pre-built releases are not currently available as this project is in active development. To run the application:
+
+1. Clone this repository
+2. Build the project using the instructions in the Build section below
+3. Install the resulting APK on your Android device
 
 ## Features
 
-- Works Offline: Access all features without needing an internet connection.
-- Privacy-Focused: All data is processed securely on your device.
-- Expandable Models: Download external GGUF models from Hugging Face.
-- Open Source: Fully transparent development.
-- Customizable Parameters: n_threads, top_k, top_p, and temperature can be adjusted to optimize performance and behavior based on device capabilities and desired output.
-- Text To Speech: Support for Text-to-Speech functionality.
-- Speech To Text: Support for Speech-to-Text functionality.
-- Default Model Selection: Set a default model to load automatically on startup.
+### Core Features
+
+- **Offline-First Design**: All model inference is performed locally on your device; no prompts or responses are sent to external servers
+- **Privacy-Focused**: User data and chat history remain on the device and are not collected or transmitted
+- **Expandable Models**: Download external GGUF models from Hugging Face
+- **Customizable Parameters**: Adjust n_threads, top_k, top_p, and temperature to optimize performance and behavior
+- **GPU Acceleration**: Support for Vulkan and OpenCL backends for improved performance on compatible devices
+- **Open Source**: Fully transparent development with easy modification capabilities
+
+### Advanced Features (In Development)
+
+- Text-to-Speech functionality
+- Speech-to-Text functionality
+- Default model selection and management
+- Advanced chat management features
+
+**Note**: Some advanced features are still in development and may not be fully functional.
 
 ## Security & Privacy
 
@@ -53,57 +75,64 @@ Users can adjust parameters to fine-tune the app's performance based on their ne
 
 ## GPU Backends (Vulkan/OpenCL) on Android
 
-IrisStar integrates llama.cpp GPU backends via dynamic loading:
+IrisStar integrates llama.cpp GPU backends via dynamic loading for improved performance on compatible devices:
 
-- Vulkan: Preferred on modern Android (Adreno). Loaded at runtime from system `libvulkan.so` and packaged `libggml-vulkan.so` plugin.
-- OpenCL: Loaded if vendor `libOpenCL.so` is available; the ggml OpenCL plugin is loaded dynamically when present.
+### Supported Backends
 
-How to enable and verify:
+- **Vulkan**: Preferred on modern Android devices (especially Adreno GPUs). Loaded at runtime from system `libvulkan.so` and packaged `libggml-vulkan.so` plugin
+- **OpenCL**: Loaded if vendor `libOpenCL.so` is available; the ggml OpenCL plugin is loaded dynamically when present
+- **CPU**: Always available as fallback option
 
-1. Settings → Detect Hardware to populate available backends (e.g., `CPU,Vulkan`).
-2. Select Backend (Vulkan/OpenCL/CPU). The app will unload and reload the model so the change takes effect.
-3. Run CPU vs GPU Test on the Benchmark screen to compare throughput.
+### Configuration and Testing
 
-Notes and recommendations for mobile GPUs:
+1. Navigate to Settings → Detect Hardware to populate available backends (e.g., `CPU,Vulkan`)
+2. Select your preferred Backend (Vulkan/OpenCL/CPU) in Settings
+3. The app will unload and reload the model for the change to take effect
+4. Use the Benchmark screen to run CPU vs GPU tests and compare throughput
 
-- Chat defaults (mobile): `n_ctx=2048`, `n_batch=256`, `n_ubatch=64`. These values reduce KV memory and improve stability on mobile GPUs.
-- Generation cap: default `n_len=256` tokens per response.
-- GPU layers: default Auto (offload as many as fit). User can set exact layer count in Settings.
-- If you see `failed to find ggml_backend_init in libggml-vulkan.so` during startup but Vulkan is reported as present, it is benign; the backend registry still succeeds.
+### Performance Optimization
 
-Troubleshooting:
+**Recommended Settings for Mobile GPUs:**
 
-- Switching backends but still seeing the previous one: the app now forcefully unloads/reloads the model on backend change; reselect your backend and reload the model.
-- GPU latency too high: try a smaller model and/or reduce context length in Settings; Vulkan backends on mobile benefit from smaller ctx and micro-batching.
+- Context length (`n_ctx`): 2048 tokens (default)
+- Batch size (`n_batch`): 256 tokens (default)
+- Micro-batch size (`n_ubatch`): 64 tokens (default)
+- Generation limit: 256 tokens per response (default)
+- GPU layers: Auto (offload as many as fit) or manually configure in Settings
 
-### Runtime Diagnostics and Stability
+**Troubleshooting:**
 
-- The app exposes a native diagnostics snapshot used by the UI logs after model load. It includes backend registry, active contexts, GPU offload counts, KV size, and micro-batch size.
-- Backend switching is now safe: the runtime defers backend teardown when contexts are active to avoid crashes. Change backend in Settings, then reload the model.
-- GPU benchmark safety: if the device reports zero GPU offload or a CPU-forced session, the benchmark skips the GPU path and reports a clear reason instead of crashing.
-- Token logging is gated to avoid excessive log traffic during generation; verbose token logs can be enabled in development builds.
+- If you see `failed to find ggml_backend_init in libggml-vulkan.so` during startup but Vulkan is reported as present, this is benign; the backend registry still succeeds
+- GPU latency issues: Try smaller models or reduce context length in Settings
+- Backend switching problems: The app forcefully unloads/reloads models on backend changes
 
-## Optimizing Your Experience with Iris
+### Runtime Diagnostics
 
-The performance of Iris is directly influenced by the size, speed, and compute requirements of the models you use. These factors also impact the overall user experience. For a faster and smoother experience, consider downloading smaller models.
+- Native diagnostics snapshot available in UI logs after model load
+- Includes backend registry, active contexts, GPU offload counts, KV cache size, and micro-batch configuration
+- Backend switching is safe - runtime defers teardown when contexts are active
+- GPU benchmark skips GPU path if device reports zero offload or CPU-forced session
+- Token logging is gated to avoid excessive log traffic (verbose logs available in development builds)
 
-**Example Recommendation:**  
-On opening the app, users can download suggested models to optimize performance based on their preferences and device capabilities.
+## Model Selection and Performance
 
----
+The performance of IrisStar is directly influenced by the size, speed, and compute requirements of the models you use. These factors significantly impact the overall user experience.
 
-#### Note:
+### Performance Considerations
 
-- Smaller models are ideal for quicker interactions but may compromise slightly on response quality.
-- Larger models offer more comprehensive responses but require higher compute power and may result in slower speeds.
-- Choose a model that best balances speed and quality for your specific use case.
+- **Smaller models** are ideal for quicker interactions but may compromise slightly on response quality
+- **Larger models** offer more comprehensive responses but require higher compute power and may result in slower speeds
+- **GPU acceleration** can significantly improve performance on compatible devices
 
----
+### Model Recommendations
 
-#### Disclaimer:
+On opening the app, users can download suggested models to optimize performance based on their preferences and device capabilities. Choose a model that best balances speed and quality for your specific use case.
 
-- Iris may produce **inaccurate results** depending on the complexity of queries and model limitations.
-- Performance and accuracy are influenced by the size and type of model selected.
+**Important Disclaimer:**
+
+- IrisStar may produce **inaccurate results** depending on the complexity of queries and model limitations
+- Performance and accuracy are influenced by the size and type of model selected
+- This application is in active development; expect potential bugs and incomplete features
 
 ## Prerequisites
 
@@ -115,43 +144,90 @@ On opening the app, users can download suggested models to optimize performance 
 git submodule update --init --recursive
 ```
 
-## Build
+## Development Setup
 
-- Clone this repository and import into Android Studio
+### Prerequisites
 
+- **JDK 17** - Install from [Eclipse Adoptium](https://adoptium.net/)
+- **Android Studio** - Latest stable version from [developer.android.com](https://developer.android.com/studio)
+- **Android SDK** - API level 28 or higher
+- **Git** - For cloning the repository
+
+### Building the Project
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/lukifer23/IRISStar.git
 cd IRISStar
 ```
 
-### Building with GPU backends
+2. Initialize submodules:
+```bash
+git submodule update --init --recursive
+```
 
-- Vulkan: no extra steps on device; ensure you have `vulkan-headers` on host for cross-compilation (e.g., Homebrew `vulkan-headers`).
-- OpenCL: requires a vendor `libOpenCL.so` on the device. The app loads ggml OpenCL backend at runtime when available.
-- Open developer options on the Android mobile phone.
-- Enable developer options.
-- Click on developer options and enable wireless debugging.
-- In Android Studio, select the drop down on the left side of the 'app' button on the Navbar.
-- Select on 'Pair devices using Wi-Fi'. A QR code appears on screen.
-- Click on wireless debugging on Android phone. Select 'Pair device with QR code'. Scan the code. (Make sure both devices are on the same Wi-fi)
-- You can use Usb Debugging also to connect your phone.
-- Once the phone is connected, select the device name in the drop down menu and click on play button.
-- In the app, download at least one model from the given options.
-- Now you can run the app offline. (In airplane mode as well)
+3. Open the project in Android Studio and build the APK
+
+### GPU Backend Support
+
+**Vulkan Backend:**
+- No extra steps required on device
+- Ensure `vulkan-headers` are installed on host for cross-compilation (e.g., via Homebrew on macOS)
+
+**OpenCL Backend:**
+- Requires vendor `libOpenCL.so` on the target device
+- The app loads the ggml OpenCL backend at runtime when available
+
+### Device Setup for Development
+
+1. Enable Developer Options on your Android device
+2. Enable USB Debugging or Wireless Debugging
+3. For wireless debugging:
+   - Connect both devices to the same Wi-Fi network
+   - Scan the QR code displayed in Android Studio
+4. Select your device in Android Studio and run the app
+
+**Note**: After installation, download at least one model through the app's interface to enable full functionality.
 
 ## Contributing
 
-1. **Fork the repository.**
-2. **Create a new feature branch:**
-   ```bash
-   git checkout -b my-new-feature
-   ```
-3. **Commit your changes:**
-   ```bash
-   git commit -m 'Add some feature'
-   ```
-4. **Push your branch to the remote repository:**
-   ```bash
-   git push origin my-new-feature
-   ```
-5. **Open a Pull Request.**
+**Note**: This project is in active development. Contributions are welcome but please be aware that the codebase may undergo significant changes.
+
+### Development Guidelines
+
+1. **Fork the repository** and create a feature branch
+2. **Follow the existing code style** and architecture patterns
+3. **Test your changes** thoroughly before submitting
+4. **Update documentation** if adding new features
+5. **Submit a pull request** with a clear description of changes
+
+### Getting Started with Development
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/IRISStar.git
+cd IRISStar
+
+# Create a feature branch
+git checkout -b feature/your-feature-name
+
+# Make your changes and test them
+# ...
+
+# Commit your changes
+git commit -m 'Add your feature description'
+
+# Push to your fork
+git push origin feature/your-feature-name
+
+# Open a pull request
+```
+
+### Code Style
+
+- Follow Kotlin coding conventions
+- Use meaningful variable and function names
+- Add documentation for public APIs
+- Write tests for new functionality
+
+**Note**: Please ensure your contributions align with the project's privacy-first, offline-capable design philosophy.
