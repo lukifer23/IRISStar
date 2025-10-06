@@ -21,51 +21,33 @@ object ReasoningParser {
         "Let me solve",
         "Let me determine"
     )
-    
-    // Patterns that indicate thinking content
-    private val thinkingPatterns = listOf(
-        "thequestion",
-        "theuser",
-        "theresult",
-        "theanswer",
-        "Letme",
-        "Ineed",
-        "Ishould",
-        "Sincethe",
-        "Juststate",
-        "Butwait",
-        "Actually",
-        "Letmecheck",
-        "Letmeverify",
-        "Whenyouadd",
-        "maybetheuser",
-        "istestingif",
-        "Icanhandle",
-        "basicmath",
-        "Ineedtoconfirm",
-        "Yes,that'scorrect",
-        "Ishouldrespondwith",
-        "theanswerdirectly",
-        "Sincetheuserisprobablyjustasking",
-        "fortheresult",
-        "there'snoneed",
-        "foranyadditionalexplanation",
-        "Juststatetheanswer"
+
+    private val reasoningKeywords = listOf(
+        "reasoning",
+        "analysis",
+        "thought process",
+        "thinking",
+        "step-by-step",
+        "plan:",
+        "approach:",
+        "steps:",
+        "deliberate",
+        "consider"
     )
-    
+
+    private val structuralDelimiters = listOf(
+        Regex("```(?:[\\w-]+)?", RegexOption.IGNORE_CASE),
+        Regex("~~~(?:[\\w-]+)?", RegexOption.IGNORE_CASE),
+        Regex("^---+$", RegexOption.MULTILINE),
+        Regex("^\\*{3,}$", RegexOption.MULTILINE)
+    )
+
     // Patterns that indicate the actual answer
-    private val answerPatterns = listOf(
-        "2 plus 2 is 4",
-        "2+2=4",
-        "2 + 2 = 4",
-        "The answer is 4",
-        "Therefore, 2 + 2 = 4",
-        "So, 2 plus 2 equals 4",
-        "The result is 4",
-        "The solution is 4",
-        "2plus2is4",
-        "2plus2equals4",
-        "2+2equals4"
+    private val answerIndicators = listOf(
+        Regex("\\bfinal (answer|response)\\b", RegexOption.IGNORE_CASE),
+        Regex("\\b(conclusion|answer|result|response)\\s*[:\\-]", RegexOption.IGNORE_CASE),
+        Regex("```(?:answer|output|response)?", RegexOption.IGNORE_CASE),
+        Regex("^\\s*>", RegexOption.MULTILINE)
     )
 
     /**
@@ -105,10 +87,8 @@ object ReasoningParser {
         }
 
         // Check if the message contains jumbled thinking patterns
-        val hasThinkingPatterns = thinkingPatterns.any { pattern ->
-            message.contains(pattern, ignoreCase = true)
-        }
-        
+        val hasThinkingPatterns = containsReasoningMarkers(message)
+
         if (hasThinkingPatterns) {
             // Look for the actual answer at the end of the message
             val actualAnswer = findActualAnswer(message)
@@ -179,26 +159,62 @@ object ReasoningParser {
      */
     private fun findActualAnswer(message: String): String {
         // Look for answer patterns in the message
-        for (pattern in answerPatterns) {
-            val index = message.indexOf(pattern, ignoreCase = true)
-            if (index >= 0) {
-                // Return everything from the answer pattern to the end
-                val answer = message.substring(index).trim()
-                Timber.tag("ReasoningParser").d("Found actual answer: '$answer'")
-                return answer
+        answerIndicators.forEach { pattern ->
+            pattern.find(message)?.let { match ->
+                val answer = message.substring(match.range.first).trim()
+                if (answer.isNotEmpty()) {
+                    Timber.tag("ReasoningParser").d("Found actual answer via indicator: '$answer'")
+                    return answer
+                }
             }
         }
-        
-        // If no specific answer pattern found, try to find the last sentence that looks like an answer
-        val sentences = message.split(Regex("[.!?]"))
-        for (sentence in sentences.reversed()) {
-            val trimmed = sentence.trim()
-            if (trimmed.contains("2") && trimmed.contains("4") && trimmed.length < 50) {
-                Timber.tag("ReasoningParser").d("Found answer-like sentence: '$trimmed'")
-                return trimmed
+
+        // If no specific answer pattern found, try structural delimiters such as code fences
+        val lastFence = message.lastIndexOf("```")
+        if (lastFence != -1) {
+            val candidate = message.substring(lastFence + 3).trim()
+            if (candidate.isNotEmpty()) {
+                Timber.tag("ReasoningParser").d("Found answer after code fence: '$candidate'")
+                return candidate
             }
         }
-        
+
+        val structuralSplit = message.split(Regex("\n{2,}|\n-\s*\n"))
+        val sectionCandidate = structuralSplit.lastOrNull()?.trim().orEmpty()
+        if (sectionCandidate.isNotEmpty()) {
+            Timber.tag("ReasoningParser").d("Found answer in final section: '$sectionCandidate'")
+            return sectionCandidate
+        }
+
+        // As a final fallback, return the last sentence
+        val sentences = message.split(Regex("(?<=[.!?])\\s+"))
+        val sentenceCandidate = sentences.lastOrNull { it.isNotBlank() }?.trim().orEmpty()
+        if (sentenceCandidate.isNotEmpty()) {
+            Timber.tag("ReasoningParser").d("Found answer from last sentence: '$sentenceCandidate'")
+            return sentenceCandidate
+        }
+
         return ""
+    }
+
+    private fun containsReasoningMarkers(message: String): Boolean {
+        if (message.contains("<think", ignoreCase = true) || message.contains("</think>", ignoreCase = true)) {
+            return true
+        }
+
+        if (structuralDelimiters.any { it.containsMatchIn(message) }) {
+            return true
+        }
+
+        if (reasoningKeywords.any { keyword -> message.contains(keyword, ignoreCase = true) }) {
+            return true
+        }
+
+        val numberedSteps = Regex("\\b(step\\s*\\d+|\\d+\\.)", RegexOption.IGNORE_CASE)
+        if (numberedSteps.containsMatchIn(message)) {
+            return true
+        }
+
+        return false
     }
 }
