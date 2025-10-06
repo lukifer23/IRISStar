@@ -30,8 +30,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideModelLoader(llamaAndroid: LLamaAndroid): ModelLoader {
-        return ModelLoader(llamaAndroid)
+    fun provideModelLoader(
+        llamaAndroid: LLamaAndroid,
+        modelPerformanceTracker: ModelPerformanceTracker
+    ): ModelLoader {
+        return ModelLoader(llamaAndroid, modelPerformanceTracker)
     }
 
     @Provides

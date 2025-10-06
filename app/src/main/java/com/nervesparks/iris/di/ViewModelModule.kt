@@ -29,10 +29,18 @@ object ViewModelModule {
     @ViewModelScoped
     fun provideModelViewModel(
         llamaAndroid: android.llama.cpp.LLamaAndroid,
+        modelLoader: com.nervesparks.iris.llm.ModelLoader,
+        modelPerformanceTracker: com.nervesparks.iris.llm.ModelPerformanceTracker,
         userPreferencesRepository: com.nervesparks.iris.data.UserPreferencesRepository,
         modelRepository: com.nervesparks.iris.data.repository.ModelRepository
     ): ModelViewModel {
-        return ModelViewModel(llamaAndroid, userPreferencesRepository, modelRepository)
+        return ModelViewModel(
+            llamaAndroid,
+            modelLoader,
+            modelPerformanceTracker,
+            userPreferencesRepository,
+            modelRepository
+        )
     }
 
     @Provides

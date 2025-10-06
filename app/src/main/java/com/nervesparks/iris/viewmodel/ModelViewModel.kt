@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
+import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
 import com.nervesparks.iris.security.InputValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
