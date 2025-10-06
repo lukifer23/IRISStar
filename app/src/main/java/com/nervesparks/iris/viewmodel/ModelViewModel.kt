@@ -10,9 +10,15 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
+import com.nervesparks.iris.llm.ModelComparison
+import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
 import com.nervesparks.iris.security.InputValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -59,6 +65,27 @@ class ModelViewModel @Inject constructor(
     // Available models
     var availableModels by mutableStateOf<List<Map<String, String>>>(emptyList())
     var downloadableModels by mutableStateOf<List<Downloadable>>(emptyList())
+
+    private val performanceComparison: StateFlow<List<ModelComparison>> =
+        performanceTracker.performanceMetrics
+            .map { metrics ->
+                metrics.values.map { modelMetrics ->
+                    ModelComparison(
+                        modelName = modelMetrics.modelName,
+                        performanceScore = modelMetrics.calculatePerformanceScore(),
+                        recommendation = modelMetrics.getRecommendation(),
+                        averageTokensPerSecond = modelMetrics.averageTokensPerSecond,
+                        averageMemoryUsage = modelMetrics.averageMemoryUsage,
+                        totalSessions = modelMetrics.totalSessions,
+                        lastUsed = modelMetrics.lastUsed
+                    )
+                }.sortedByDescending { it.performanceScore }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList()
+            )
 
     init {
         loadModelSettings()
@@ -171,8 +198,8 @@ class ModelViewModel @Inject constructor(
     }
 
     // Performance tracking methods
-    fun getPerformanceComparison(): List<ModelComparison> {
-        return modelLoader.getPerformanceComparison()
+    fun getPerformanceComparison(): StateFlow<List<ModelComparison>> {
+        return performanceComparison
     }
 
     fun getBestPerformingModel(): ModelPerformanceTracker.ModelMetrics? {

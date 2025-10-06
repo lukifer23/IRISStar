@@ -1,19 +1,43 @@
 package com.nervesparks.iris.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nervesparks.iris.llm.ModelComparison
 import com.nervesparks.iris.llm.ModelPerformanceTracker
 import com.nervesparks.iris.viewmodel.ModelViewModel
-import kotlinx.coroutines.launch
 
 /**
  * Screen for displaying model performance metrics and comparisons
@@ -24,10 +48,24 @@ fun ModelPerformanceScreen(
     onNavigateBack: () -> Unit = {},
     modelViewModel: ModelViewModel = viewModel()
 ) {
-    val performanceComparison by modelViewModel.getPerformanceComparison().collectAsState(initial = emptyList())
-    val bestModel by remember { derivedStateOf { modelViewModel.getBestPerformingModel() } }
-    val scope = rememberCoroutineScope()
+    val performanceComparison by modelViewModel.getPerformanceComparison().collectAsState()
+    val bestModel = remember(performanceComparison) { modelViewModel.getBestPerformingModel() }
 
+    ModelPerformanceScreenContent(
+        performanceComparison = performanceComparison,
+        bestModel = bestModel,
+        onClearData = { modelViewModel.clearPerformanceData() },
+        onNavigateBack = onNavigateBack
+    )
+}
+
+@Composable
+private fun ModelPerformanceScreenContent(
+    performanceComparison: List<ModelComparison>,
+    bestModel: ModelPerformanceTracker.ModelMetrics?,
+    onClearData: () -> Unit,
+    onNavigateBack: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -38,13 +76,7 @@ fun ModelPerformanceScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                modelViewModel.clearPerformanceData()
-                            }
-                        }
-                    ) {
+                    IconButton(onClick = onClearData) {
                         Icon(Icons.Default.Clear, contentDescription = "Clear Data")
                     }
                 }
@@ -58,85 +90,90 @@ fun ModelPerformanceScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Best performing model card
-            bestModel?.let { model ->
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Best Performing Model",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = model.modelName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Performance Score: ${model.calculatePerformanceScore().toInt()}/100",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = model.getRecommendation(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-            }
+            ModelPerformanceHeader(bestModel)
+            ModelPerformanceList(performanceComparison)
+        }
+    }
+}
 
-            // Performance comparison list
-            if (performanceComparison.isNotEmpty()) {
-                item {
+private fun LazyListScope.ModelPerformanceHeader(bestModel: ModelPerformanceTracker.ModelMetrics?) {
+    bestModel?.let { model ->
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
-                        text = "Model Comparison",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        text = "Best Performing Model",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = model.modelName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Performance Score: ${model.calculatePerformanceScore().toInt()}/100",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = model.getRecommendation(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
+            }
+        }
+    }
+}
 
-                items(performanceComparison) { comparison ->
-                    PerformanceComparisonCard(comparison)
-                }
-            } else {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Analytics,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "No performance data available",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "Load models and use them to see performance metrics",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+private fun LazyListScope.ModelPerformanceList(performanceComparison: List<ModelComparison>) {
+    if (performanceComparison.isNotEmpty()) {
+        item {
+            Text(
+                text = "Model Comparison",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+
+        items(performanceComparison) { comparison ->
+            PerformanceComparisonCard(comparison)
+        }
+    } else {
+        item {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Analytics,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "No performance data available",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Load models and use them to see performance metrics",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -223,4 +260,67 @@ private fun PerformanceComparisonCard(comparison: ModelComparison) {
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ModelPerformanceScreenPreview() {
+    val comparisonItems = listOf(
+        ModelComparison(
+            modelName = "Orion-7B",
+            performanceScore = 82.5,
+            recommendation = "Excellent performance",
+            averageTokensPerSecond = 45.0,
+            averageMemoryUsage = 512L * 1024 * 1024,
+            totalSessions = 12,
+            lastUsed = System.currentTimeMillis()
+        ),
+        ModelComparison(
+            modelName = "Nebula-3B",
+            performanceScore = 68.0,
+            recommendation = "Good performance",
+            averageTokensPerSecond = 28.0,
+            averageMemoryUsage = 384L * 1024 * 1024,
+            totalSessions = 7,
+            lastUsed = System.currentTimeMillis()
+        )
+    )
+
+    val bestModel = ModelPerformanceTracker.ModelMetrics(
+        modelName = "Orion-7B",
+        modelPath = "models/orion-7b.bin",
+        totalSessions = 12,
+        averageLoadTime = 700,
+        averageInferenceTime = 250,
+        averageTokensPerSecond = 45.0,
+        averageMemoryUsage = 512L * 1024 * 1024,
+        bestTokensPerSecond = 60.0,
+        worstTokensPerSecond = 30.0,
+        totalTokensGenerated = 25_000,
+        lastUsed = System.currentTimeMillis(),
+        backendUsed = "gpu",
+        configuration = ModelPerformanceTracker.ModelConfiguration(
+            temperature = 0.7f,
+            topP = 0.9f,
+            topK = 40,
+            threadCount = 4,
+            gpuLayers = 8,
+            contextLength = 2048,
+            chatFormat = "CHATML"
+        ),
+        deviceInfo = ModelPerformanceTracker.DeviceInfo(
+            deviceModel = "Pixel 8",
+            androidVersion = "14",
+            availableMemory = 8_000L,
+            cpuCores = 8,
+            hasGpu = true
+        )
+    )
+
+    ModelPerformanceScreenContent(
+        performanceComparison = comparisonItems,
+        bestModel = bestModel,
+        onClearData = {},
+        onNavigateBack = {}
+    )
 }
