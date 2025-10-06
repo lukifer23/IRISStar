@@ -74,12 +74,15 @@ class ModelPerformanceTracker @Inject constructor() {
     data class ModelSessionMetrics(
         val sessionId: String,
         val modelName: String,
+        val modelPath: String,
         val startTime: Long,
         val tokensGenerated: Int,
         val inferenceCalls: Int,
         val totalInferenceTime: Long,
         val memoryUsage: Long,
-        val backendUsed: String
+        val backendUsed: String,
+        val configuration: ModelConfiguration,
+        val deviceInfo: DeviceInfo
     ) {
 
         /**
@@ -143,12 +146,15 @@ class ModelPerformanceTracker @Inject constructor() {
         val sessionMetrics = ModelSessionMetrics(
             sessionId = sessionId,
             modelName = modelName,
+            modelPath = modelPath,
             startTime = System.currentTimeMillis(),
             tokensGenerated = 0,
             inferenceCalls = 0,
             totalInferenceTime = 0,
             memoryUsage = 0,
-            backendUsed = backendUsed
+            backendUsed = backendUsed,
+            configuration = configuration,
+            deviceInfo = deviceInfo
         )
 
         _currentSessionMetrics.value = sessionMetrics
@@ -199,6 +205,7 @@ class ModelPerformanceTracker @Inject constructor() {
                 val updatedMetrics = if (existingMetrics != null) {
                     // Update existing metrics
                     existingMetrics.copy(
+                        modelPath = current.modelPath,
                         totalSessions = existingMetrics.totalSessions + 1,
                         averageLoadTime = (existingMetrics.averageLoadTime + sessionDuration) / 2,
                         averageInferenceTime = calculateAverageInferenceTime(existingMetrics, current),
@@ -207,13 +214,16 @@ class ModelPerformanceTracker @Inject constructor() {
                         bestTokensPerSecond = maxOf(existingMetrics.bestTokensPerSecond, current.getCurrentTokensPerSecond()),
                         worstTokensPerSecond = minOf(existingMetrics.worstTokensPerSecond, current.getCurrentTokensPerSecond()),
                         totalTokensGenerated = existingMetrics.totalTokensGenerated + current.tokensGenerated,
-                        lastUsed = System.currentTimeMillis()
+                        lastUsed = System.currentTimeMillis(),
+                        backendUsed = current.backendUsed,
+                        configuration = current.configuration,
+                        deviceInfo = current.deviceInfo
                     )
                 } else {
                     // Create new metrics
                     ModelMetrics(
                         modelName = current.modelName,
-                        modelPath = "", // Would need to be passed in
+                        modelPath = current.modelPath,
                         totalSessions = 1,
                         averageLoadTime = sessionDuration,
                         averageInferenceTime = current.getAverageInferenceTimePerToken(),
@@ -224,8 +234,8 @@ class ModelPerformanceTracker @Inject constructor() {
                         totalTokensGenerated = current.tokensGenerated,
                         lastUsed = System.currentTimeMillis(),
                         backendUsed = current.backendUsed,
-                        configuration = ModelConfiguration(0.7f, 0.9f, 40, 4, -1, 2048, "CHATML"), // Would need to be passed in
-                        deviceInfo = DeviceInfo("Unknown", "Unknown", 0, 0, false) // Would need to be passed in
+                        configuration = current.configuration,
+                        deviceInfo = current.deviceInfo
                     )
                 }
 
