@@ -73,6 +73,21 @@ fun DocumentManager(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         Button(onClick = { launcher.launch("image/*") }) {
             Text("Import Image")
         }
+        if (viewModel.isDocumentIndexing) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Indexing document…")
+        }
+
+        viewModel.documentIndexingSuccess?.let { msg ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(msg, color = MaterialTheme.colorScheme.primary)
+        }
+
+        viewModel.documentIndexingError?.let { msg ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(msg, color = MaterialTheme.colorScheme.error)
+        }
+
         errorMessage.value?.let { msg ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(msg, color = MaterialTheme.colorScheme.error)
