@@ -84,10 +84,47 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    var isDocumentIndexing by mutableStateOf(false)
+        private set
+
+    var documentIndexingError by mutableStateOf<String?>(null)
+        private set
+
+    var documentIndexingSuccess by mutableStateOf<String?>(null)
+        private set
+
     fun indexDocument(text: String) {
-        viewModelScope.launch {
-            // TODO: Implement document indexing
-            Timber.tag("MainViewModel").d("Document indexing not yet implemented")
+        viewModelScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                isDocumentIndexing = true
+                documentIndexingError = null
+                documentIndexingSuccess = null
+            }
+
+            if (text.isBlank()) {
+                withContext(Dispatchers.Main) {
+                    isDocumentIndexing = false
+                    documentIndexingError = "Document is empty"
+                }
+                return@launch
+            }
+
+            try {
+                val embedding = embedText(text).toList()
+                documentRepository.addDocument(text, embedding)
+                withContext(Dispatchers.Main) {
+                    documentIndexingSuccess = "Document indexed successfully"
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to index document")
+                withContext(Dispatchers.Main) {
+                    documentIndexingError = e.message ?: "Failed to index document"
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    isDocumentIndexing = false
+                }
+            }
         }
     }
 
