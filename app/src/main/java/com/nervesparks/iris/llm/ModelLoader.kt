@@ -42,12 +42,12 @@ class ModelLoader @Inject constructor(
 
             // Load the model with all parameters
             llamaAndroid.load(
-                modelPath = modelPath,
-                nThreads = threadCount,
+                pathToModel = modelPath,
+                userThreads = threadCount,
                 topK = topK,
                 topP = topP,
-                temperature = temperature,
-                nGpuLayers = gpuLayers
+                temp = temperature,
+                gpuLayers = gpuLayers
             )
 
             val loadTime = System.currentTimeMillis() - startTime
@@ -132,9 +132,16 @@ class ModelLoader @Inject constructor(
     /**
      * Unload the current model
      */
-    fun unloadModel(): Result<Unit> {
+    suspend fun unloadModel(): Result<Unit> {
         return try {
+            // Force garbage collection before unloading to help free memory
+            System.gc()
+            System.runFinalization()
+
             llamaAndroid.unload()
+
+            // Note: Performance session cleanup is handled by the modelLoader.endSession() calls
+
             Timber.tag(tag).d("Model unloaded successfully")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -148,8 +155,10 @@ class ModelLoader @Inject constructor(
      * Check if a model is currently loaded
      */
     fun isModelLoaded(): Boolean {
+        // Check using the isSending state as a proxy - if we're sending, a model must be loaded
+        // This is a workaround since LLamaAndroid doesn't expose state directly
         return try {
-            llamaAndroid.isModelLoaded()
+            llamaAndroid.getIsSending() || !llamaAndroid.getIsCompleteEOT()
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error checking if model is loaded")
             false

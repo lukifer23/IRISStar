@@ -95,7 +95,7 @@ fun SearchLoadingModal(
                         .size(60.dp)
                         .scale(scale)
                         .clip(CircleShape)
-                        .background(SemanticColors.LoadingAccent),
+                        .background(SemanticColors.LoadingAccent()),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -111,7 +111,7 @@ fun SearchLoadingModal(
                     Text(
                         text = "Searching for:",
                         style = MaterialTheme.typography.bodySmall,
-                        color = SemanticColors.TextInverse.copy(alpha = 0.7f),
+                        color = SemanticColors.TextInverse().copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
                     )
                     
@@ -120,7 +120,7 @@ fun SearchLoadingModal(
                     Text(
                         text = "\"$searchQuery\"",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = SemanticColors.TextInverse,
+                        color = SemanticColors.TextInverse(),
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center
                     )
@@ -132,7 +132,7 @@ fun SearchLoadingModal(
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SemanticColors.TextInverse,
+                    color = SemanticColors.TextInverse(),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Medium
                 )
@@ -161,7 +161,7 @@ fun SearchLoadingModal(
                                 .size(8.dp)
                                 .scale(0.5f + dotBounce * 0.5f)
                                 .clip(CircleShape)
-                                .background(SemanticColors.LoadingAccent)
+                                .background(SemanticColors.LoadingAccent())
                         )
                     }
                 }
@@ -176,7 +176,7 @@ fun SearchLoadingModal(
                 Text(
                     text = "Please wait...",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.LoadingAccent,
+                    color = SemanticColors.LoadingAccent(),
                     textAlign = TextAlign.Center
                 )
             }
@@ -211,8 +211,8 @@ private fun SearchProgressSteps() {
                         .size(6.dp)
                         .clip(CircleShape)
                         .background(
-                            if (isActive) SemanticColors.LoadingAccent 
-                            else SemanticColors.TextInverse.copy(alpha = 0.3f)
+                            if (isActive) SemanticColors.LoadingAccent() 
+                            else SemanticColors.TextInverse().copy(alpha = 0.3f)
                         )
                 )
                 
@@ -221,7 +221,7 @@ private fun SearchProgressSteps() {
                 Text(
                     text = step,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isActive) SemanticColors.LoadingAccent else SemanticColors.TextInverse.copy(alpha = 0.7f),
+                    color = if (isActive) SemanticColors.LoadingAccent() else SemanticColors.TextInverse().copy(alpha = 0.7f),
                     fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal
                 )
             }

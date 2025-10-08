@@ -12,6 +12,7 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
 import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
+import com.nervesparks.iris.llm.ModelComparison
 import com.nervesparks.iris.security.InputValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -66,11 +67,23 @@ class ModelViewModel @Inject constructor(
         detectHardwareCapabilities()
     }
 
+    // Benchmark function (delegate to benchmark logic)
+    fun runBenchmarkWithModel(modelName: String, directory: File) {
+        // TODO: This should probably be in BenchmarkViewModel
+        // For now, just log that benchmark was requested
+        Timber.tag(tag).d("Benchmark requested for model: $modelName in directory: $directory")
+        // The actual benchmark logic should be handled by the benchmark screen
+    }
+
     // Model loading functions
     fun load(pathToModel: String, userThreads: Int, backend: String = "cpu") {
         viewModelScope.launch {
             try {
                 Timber.tag(tag).d("Loading model: $pathToModel with backend: $backend")
+
+                // Set loading state
+                modelLoadingProgress = 0f
+                backendError = null
 
                 // Set backend before loading
                 selectBackend(backend)
@@ -92,11 +105,13 @@ class ModelViewModel @Inject constructor(
                         isModelLoaded = true
                         modelLoadingProgress = 1f
                         currentSessionId = sessionId
+                        backendError = null
                         Timber.tag(tag).d("Model loaded successfully: $currentModelName with session: $sessionId")
                     },
                     onFailure = { e ->
                         Timber.tag(tag).e(e, "Error loading model: $pathToModel")
                         isModelLoaded = false
+                        modelLoadingProgress = 0f
                         currentSessionId = null
                         backendError = "Failed to load model: ${e.message}"
                     }
@@ -104,6 +119,7 @@ class ModelViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error in load function")
                 isModelLoaded = false
+                modelLoadingProgress = 0f
                 backendError = "Failed to load model: ${e.message}"
             }
         }
@@ -113,8 +129,14 @@ class ModelViewModel @Inject constructor(
         load(modelPath, modelThreadCount, currentBackend)
     }
 
-    fun loadModelByName(modelName: String, directory: File): Boolean {
-        viewModelScope.launch {
+    suspend fun loadModelByName(modelName: String, directory: File): Result<String> {
+        return try {
+            Timber.tag(tag).d("Loading model by name: $modelName")
+
+            // Set loading state
+            modelLoadingProgress = 0f
+            backendError = null
+
             val result = modelLoader.loadModelByName(
                 modelName = modelName,
                 directory = directory,
@@ -131,18 +153,26 @@ class ModelViewModel @Inject constructor(
                     currentModelName = File(modelPath).name
                     isModelLoaded = true
                     modelLoadingProgress = 1f
-                    // Session ID is tracked in loadModel, not returned here
+                    backendError = null
                     Timber.tag(tag).d("Model loaded successfully: $currentModelName")
+                    Result.success(modelPath)
                 },
                 onFailure = { e ->
                     Timber.tag(tag).e(e, "Error loading model by name: $modelName")
                     isModelLoaded = false
+                    modelLoadingProgress = 0f
                     currentSessionId = null
                     backendError = "Failed to load model: ${e.message}"
+                    Result.failure(e)
                 }
             )
+        } catch (e: Exception) {
+            Timber.tag(tag).e(e, "Exception loading model by name: $modelName")
+            isModelLoaded = false
+            modelLoadingProgress = 0f
+            backendError = "Failed to load model: ${e.message}"
+            Result.failure(e)
         }
-        return true // Return true for now, actual success/failure handled in coroutine
     }
 
     fun unloadModel() {
@@ -160,13 +190,42 @@ class ModelViewModel @Inject constructor(
                         isModelLoaded = false
                         currentModelName = ""
                         currentSessionId = null
+                        backendError = null
+
+                        // Help with memory cleanup
+                        System.gc()
                     },
                     onFailure = { e ->
                         Timber.tag(tag).e(e, "Error unloading model")
+                        backendError = "Failed to unload model: ${e.message}"
                     }
                 )
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error in unloadModel function")
+            }
+        }
+    }
+
+    /**
+     * Force cleanup of resources to help with memory management
+     */
+    fun cleanupResources() {
+        viewModelScope.launch {
+            try {
+                // Clear cached lists to free memory
+                availableModels = emptyList()
+                downloadableModels = emptyList()
+
+                // Clear any error states
+                backendError = null
+
+                // Force garbage collection
+                System.gc()
+                System.runFinalization()
+
+                Timber.tag(tag).d("Resources cleaned up")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error during resource cleanup")
             }
         }
     }

@@ -179,7 +179,7 @@ object ReasoningParser {
             }
         }
 
-        val structuralSplit = message.split(Regex("\n{2,}|\n-\s*\n"))
+        val structuralSplit = message.split(Regex("\n{2,}|\n-\\s*\n"))
         val sectionCandidate = structuralSplit.lastOrNull()?.trim().orEmpty()
         if (sectionCandidate.isNotEmpty()) {
             Timber.tag("ReasoningParser").d("Found answer in final section: '$sectionCandidate'")

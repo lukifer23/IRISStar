@@ -221,7 +221,7 @@ fun ThemedModalSurface(
         modifier = modifier,
         shape = ComponentStyles.modalShape,
         colors = CardDefaults.cardColors(
-            containerColor = SemanticColors.ModalBackground
+            containerColor = SemanticColors.ModalBackground()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.modalElevation)
     ) {
@@ -238,7 +238,7 @@ fun ThemedModalCard(
         modifier = modifier,
         shape = ComponentStyles.dialogShape,
         colors = CardDefaults.cardColors(
-            containerColor = SemanticColors.ModalSurface
+            containerColor = SemanticColors.ModalSurface()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.largeElevation)
     ) {
@@ -255,7 +255,7 @@ fun ThemedLoadingSurface(
         modifier = modifier,
         shape = ComponentStyles.defaultCardShape,
         colors = CardDefaults.cardColors(
-            containerColor = SemanticColors.LoadingBackground
+            containerColor = SemanticColors.LoadingBackground()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation)
     ) {
@@ -272,7 +272,7 @@ fun ThemedDownloadSurface(
         modifier = modifier,
         shape = ComponentStyles.defaultCardShape,
         colors = CardDefaults.cardColors(
-            containerColor = SemanticColors.DownloadSurface
+            containerColor = SemanticColors.DownloadSurface()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = ComponentStyles.defaultElevation)
     ) {
@@ -293,10 +293,10 @@ fun ThemedAccentButton(
         enabled = enabled,
         shape = ComponentStyles.primaryButtonShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = SemanticColors.ModalAccent,
-            contentColor = SemanticColors.TextInverse,
-            disabledContainerColor = SemanticColors.Disabled,
-            disabledContentColor = SemanticColors.TextDisabled
+            containerColor = SemanticColors.ModalAccent(),
+            contentColor = SemanticColors.TextInverse(),
+            disabledContainerColor = SemanticColors.Disabled(),
+            disabledContentColor = SemanticColors.TextDisabled()
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = ComponentStyles.defaultElevation,
@@ -321,9 +321,9 @@ fun ThemedSuccessButton(
         shape = ComponentStyles.primaryButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.semanticSuccess(),
-            contentColor = SemanticColors.TextInverse,
-            disabledContainerColor = SemanticColors.Disabled,
-            disabledContentColor = SemanticColors.TextDisabled
+            contentColor = SemanticColors.TextInverse(),
+            disabledContainerColor = SemanticColors.Disabled(),
+            disabledContentColor = SemanticColors.TextDisabled()
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = ComponentStyles.defaultElevation,
@@ -348,9 +348,9 @@ fun ThemedWarningButton(
         shape = ComponentStyles.primaryButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.semanticWarning(),
-            contentColor = SemanticColors.TextInverse,
-            disabledContainerColor = SemanticColors.Disabled,
-            disabledContentColor = SemanticColors.TextDisabled
+            contentColor = SemanticColors.TextInverse(),
+            disabledContainerColor = SemanticColors.Disabled(),
+            disabledContentColor = SemanticColors.TextDisabled()
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = ComponentStyles.defaultElevation,

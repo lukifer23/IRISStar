@@ -38,16 +38,40 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
     val messages = viewModel.messages
     val context = LocalContext.current
 
+    // Memoize the message list to avoid recreating it on every recomposition
+    val displayMessages = remember(messages) {
+        messages.drop(3)
+    }
+
+    // Memoize supportsReasoning to avoid unnecessary recompositions
+    val supportsReasoning = viewModel.supportsReasoning
+
     LazyColumn(state = scrollState) {
-        itemsIndexed(messages.drop(3), key = { idx, _ -> idx }) { idx, messageMap ->
+        itemsIndexed(
+            items = displayMessages,
+            key = { idx: Int, messageMap: Map<String, String> ->
+                // Use a stable key based on content hash to avoid unnecessary recompositions
+                val role = messageMap["role"] ?: ""
+                val content = messageMap["content"] ?: ""
+                "$idx-$role-${content.hashCode()}"
+            },
+            contentType = { _: Int, messageMap: Map<String, String> ->
+                // Use content type for better item reuse
+                messageMap["role"] ?: "unknown"
+            }
+        ) { idx: Int, messageMap: Map<String, String> ->
             val role = messageMap["role"] ?: ""
             val content = (messageMap["content"] ?: "").trimEnd()
             if (role != "system") {
                 when (role) {
                     "codeBlock" -> CodeBlockMessage(content)
                     "assistant" -> {
-                        val (reasoningContent, _) = ReasoningParser.parse(content, viewModel.supportsReasoning)
-                        if (viewModel.supportsReasoning && reasoningContent.isNotEmpty()) {
+                        // Memoize the expensive parsing operation
+                        val parsedContent = remember(content, supportsReasoning) {
+                            ReasoningParser.parse(content, supportsReasoning)
+                        }
+                        val (reasoningContent, _) = parsedContent
+                        if (supportsReasoning && reasoningContent.isNotEmpty()) {
                             ThinkingMessage(
                                 message = content,
                                 viewModel = viewModel,
@@ -65,10 +89,14 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                                 }
                             )
                         } else {
-                            val prevRole = messages.getOrNull(idx + 2)?.get("role")
-                            val nextRole = messages.getOrNull(idx + 4)?.get("role")
-                            val groupedPrev = prevRole == role
-                            val groupedNext = nextRole == role
+                            // Memoize the grouping calculations to avoid expensive lookups
+                            // Note: idx here is the index in displayMessages (after drop(3))
+                            val groupingInfo = remember(displayMessages, idx, role) {
+                                val prevRole = displayMessages.getOrNull(idx - 1)?.get("role")
+                                val nextRole = displayMessages.getOrNull(idx + 1)?.get("role")
+                                Pair(prevRole == role, nextRole == role)
+                            }
+                            val (groupedPrev, groupedNext) = groupingInfo
                             MessageBubble(
                                 message = content,
                                 isUser = false,

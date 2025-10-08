@@ -140,7 +140,7 @@ class NotificationManager(private val context: Context) {
             .setContentText("$fileName exported successfully")
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setCategory(NotificationCompat.CATEGORY_SUCCESS)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
             .build()
 
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_EXPORT_PROGRESS, notification)

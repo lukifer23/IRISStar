@@ -42,6 +42,10 @@ import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.Message
+import com.nervesparks.iris.viewmodel.ChatViewModel
+import com.nervesparks.iris.viewmodel.ModelViewModel
+import com.nervesparks.iris.viewmodel.SearchViewModel
+import com.nervesparks.iris.viewmodel.VoiceViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -68,8 +72,7 @@ class MainViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
-    // Chat operations - delegate to ChatRepository for now
-    // TODO: Use ChatViewModel from UI layer when needed
+    // Chat operations
     val chats = chatRepository.observeChats()
 
     fun renameChat(chat: Chat, title: String) {
@@ -226,7 +229,7 @@ class MainViewModel @Inject constructor(
         loadDefaultModelName()
         loadModelSettings() // Re-enabled model settings loading
         loadThinkingTokenSettings()
-        
+
         // Set a default Hugging Face token if none exists
         if (userPreferencesRepository.huggingFaceToken.isEmpty()) {
             setTestHuggingFaceToken()
@@ -1027,16 +1030,20 @@ class MainViewModel @Inject constructor(
         gpuLayers: Int
     ) {
         // TODO: Use ModelViewModel from UI layer
-        viewModelScope.launch {
-            userPreferencesRepository.setModelTemperature(temperature)
-            userPreferencesRepository.setModelTopP(topP)
-            userPreferencesRepository.setModelTopK(topK)
-            userPreferencesRepository.setModelMaxTokens(maxTokens)
-            userPreferencesRepository.setModelContextLength(contextLength)
-            userPreferencesRepository.setModelSystemPrompt(systemPrompt)
-            userPreferencesRepository.setModelChatFormat(chatFormat)
-            userPreferencesRepository.setModelThreadCount(threadCount)
-            userPreferencesRepository.setModelGpuLayers(gpuLayers)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                userPreferencesRepository.setModelTemperature(temperature)
+                userPreferencesRepository.setModelTopP(topP)
+                userPreferencesRepository.setModelTopK(topK)
+                userPreferencesRepository.setModelMaxTokens(maxTokens)
+                userPreferencesRepository.setModelContextLength(contextLength)
+                userPreferencesRepository.setModelSystemPrompt(systemPrompt)
+                userPreferencesRepository.setModelChatFormat(chatFormat)
+                userPreferencesRepository.setModelThreadCount(threadCount)
+                userPreferencesRepository.setModelGpuLayers(gpuLayers)
+            } catch (e: Exception) {
+                Timber.tag("MainViewModel").e(e, "Error updating model settings")
+            }
         }
     }
 
@@ -1182,7 +1189,6 @@ class MainViewModel @Inject constructor(
         showModelSettings = false
     }
 
-    // Thinking token settings
     fun updateShowThinkingTokens(show: Boolean) {
         // TODO: Use ChatViewModel from UI layer
         viewModelScope.launch {
@@ -1197,13 +1203,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun loadThinkingTokenSettings() {
-        // Thinking token settings are now handled by ChatViewModel
-        // This function kept for backward compatibility
-    }
-
-    // Legacy thinking token settings functions
-    private fun legacyLoadThinkingTokenSettings() {
+    private fun loadThinkingTokenSettings() {
         viewModelScope.launch {
             try {
                 Timber.tag("MainViewModel").d("Loading thinking token settings...")
@@ -1232,7 +1232,25 @@ class MainViewModel @Inject constructor(
     }
 
 
+
     var refresh by mutableStateOf(false)
+
+    /**
+     * Force cleanup of resources to help with memory management
+     */
+    fun cleanupResources() {
+        viewModelScope.launch {
+            try {
+                // Force garbage collection
+                System.gc()
+                System.runFinalization()
+
+                Timber.tag("MainViewModel").d("Resource cleanup completed")
+            } catch (e: Exception) {
+                Timber.tag("MainViewModel").e(e, "Error during resource cleanup")
+            }
+        }
+    }
 
     fun loadExistingModels(directory: File) {
         Timber.d("loadExistingModels called with directory: ${directory.absolutePath}")

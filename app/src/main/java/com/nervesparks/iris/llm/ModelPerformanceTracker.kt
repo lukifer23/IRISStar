@@ -226,12 +226,12 @@ class ModelPerformanceTracker @Inject constructor() {
                         modelPath = current.modelPath,
                         totalSessions = 1,
                         averageLoadTime = sessionDuration,
-                        averageInferenceTime = current.getAverageInferenceTimePerToken(),
+                        averageInferenceTime = current.getAverageInferenceTimePerToken().toLong(),
                         averageTokensPerSecond = current.getCurrentTokensPerSecond(),
                         averageMemoryUsage = current.memoryUsage,
                         bestTokensPerSecond = current.getCurrentTokensPerSecond(),
                         worstTokensPerSecond = current.getCurrentTokensPerSecond(),
-                        totalTokensGenerated = current.tokensGenerated,
+                        totalTokensGenerated = current.tokensGenerated.toLong(),
                         lastUsed = System.currentTimeMillis(),
                         backendUsed = current.backendUsed,
                         configuration = current.configuration,
@@ -305,15 +305,3 @@ class ModelPerformanceTracker @Inject constructor() {
     }
 }
 
-/**
- * Model performance comparison data
- */
-data class ModelComparison(
-    val modelName: String,
-    val performanceScore: Double,
-    val recommendation: String,
-    val averageTokensPerSecond: Double,
-    val averageMemoryUsage: Long,
-    val totalSessions: Int,
-    val lastUsed: Long
-)

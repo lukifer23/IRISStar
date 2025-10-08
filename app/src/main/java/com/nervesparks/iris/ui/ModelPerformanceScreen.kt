@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +28,7 @@ fun ModelPerformanceScreen(
     onNavigateBack: () -> Unit = {},
     modelViewModel: ModelViewModel = viewModel()
 ) {
-    val performanceComparison by modelViewModel.getPerformanceComparison().collectAsState(initial = emptyList())
+    val performanceComparison = modelViewModel.getPerformanceComparison()
     val bestModel by remember { derivedStateOf { modelViewModel.getBestPerformingModel() } }
     val scope = rememberCoroutineScope()
 

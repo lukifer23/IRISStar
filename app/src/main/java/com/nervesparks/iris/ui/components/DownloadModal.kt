@@ -69,7 +69,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                 Text(
                     text = "Download Required",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = SemanticColors.TextInverse,
+                    color = SemanticColors.TextInverse(),
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
@@ -77,14 +77,14 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                 Text(
                     text = "Don't close or minimize the app!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SemanticColors.TextInverse.copy(alpha = 0.8f),
+                    color = SemanticColors.TextInverse().copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(ComponentStyles.smallPadding))
                 Text(
                     text = "Download at least 1 model",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SemanticColors.ModalAccent,
+                    color = SemanticColors.ModalAccent(),
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
@@ -144,12 +144,12 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             label = { Text("Search for models (e.g., 'qwen', 'llama')") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = SemanticColors.ModalAccent,
-                                unfocusedBorderColor = SemanticColors.ModalSurface,
-                                focusedLabelColor = SemanticColors.ModalAccent,
-                                unfocusedLabelColor = SemanticColors.TextInverse.copy(alpha = 0.7f),
-                                focusedTextColor = SemanticColors.TextInverse,
-                                unfocusedTextColor = SemanticColors.TextInverse
+                                focusedBorderColor = SemanticColors.ModalAccent(),
+                                unfocusedBorderColor = SemanticColors.ModalSurface(),
+                                focusedLabelColor = SemanticColors.ModalAccent(),
+                                unfocusedLabelColor = SemanticColors.TextInverse().copy(alpha = 0.7f),
+                                focusedTextColor = SemanticColors.TextInverse(),
+                                unfocusedTextColor = SemanticColors.TextInverse()
                             ),
                             shape = ComponentStyles.textFieldShape,
                             singleLine = true
@@ -236,7 +236,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             Text(
                                 text = "Found ${results.size} models:",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = SemanticColors.TextInverse,
+                                color = SemanticColors.TextInverse(),
                                 fontWeight = FontWeight.Medium
                             )
                             LazyColumn(
@@ -266,7 +266,7 @@ private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, mode
         ) {
             Text(
                 text = model.name,
-                color = SemanticColors.TextInverse,
+                color = SemanticColors.TextInverse(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
@@ -290,7 +290,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
         ) {
             Text(
                 text = model["modelName"] ?: "Unknown Model",
-                color = SemanticColors.TextInverse.copy(alpha = 0.8f),
+                color = SemanticColors.TextInverse().copy(alpha = 0.8f),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
@@ -301,7 +301,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.TextInverse.copy(alpha = 0.7f),
+                    color = SemanticColors.TextInverse().copy(alpha = 0.7f),
                     maxLines = 2,
                     textAlign = TextAlign.Center
                 )
@@ -314,12 +314,12 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                 Text(
                     text = "Downloads: ${model["downloads"] ?: "0"}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.ModalAccent
+                    color = SemanticColors.ModalAccent()
                 )
                 Text(
                     text = "Likes: ${model["likes"] ?: "0"}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.Info
+                    color = SemanticColors.Info()
                 )
             }
             
@@ -328,7 +328,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                 Text(
                     text = "Tags: $tags",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.TextInverse.copy(alpha = 0.6f),
+                    color = SemanticColors.TextInverse().copy(alpha = 0.6f),
                     maxLines = 1,
                     textAlign = TextAlign.Center
                 )
@@ -339,13 +339,13 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                 Text(
                     text = "Available Files:",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.ModalAccent,
+                    color = SemanticColors.ModalAccent(),
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = files,
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.TextInverse.copy(alpha = 0.7f),
+                    color = SemanticColors.TextInverse().copy(alpha = 0.7f),
                     maxLines = 3,
                     textAlign = TextAlign.Center
                 )
@@ -403,7 +403,7 @@ private fun SearchResultCard(model: Map<String, String>, dm: DownloadManager, co
                                         Text(
                                             text = file,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = SemanticColors.TextInverse,
+                                            color = SemanticColors.TextInverse(),
                                             maxLines = 1
                                         )
                                     }

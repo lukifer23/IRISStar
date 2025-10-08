@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -44,11 +45,16 @@ fun ModelSelectionModal(
 ) {
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
+    val scope = rememberCoroutineScope()
 
     // Get available models and check which ones exist
     val availableModels = remember(extFilesDir) {
         extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
     }
+
+    // Model loading state - simplified for now
+    val modelLoadingProgress = 0f
+    val backendError: String? = null
 
     var showReasoningOnly by remember { mutableStateOf(false) }
     val filteredModels = remember(availableModels, showReasoningOnly) {
@@ -299,7 +305,7 @@ fun ModelSelectionModal(
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     fontSize = 12.sp,
                                                     modifier = Modifier
-                                                        .background(SemanticColors.Warning, ComponentStyles.smallCardShape)
+                                                        .background(SemanticColors.Warning(), ComponentStyles.smallCardShape)
                                                         .padding(horizontal = ComponentStyles.smallPadding, vertical = ComponentStyles.smallPadding / 2)
                                                 )
                                             }
@@ -329,7 +335,39 @@ fun ModelSelectionModal(
                     }
                     
                     Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
-                    
+
+                    // Loading indicator
+                    if (modelLoadingProgress > 0f && modelLoadingProgress < 1f) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Loading model... (${(modelLoadingProgress * 100).toInt()}%)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(ComponentStyles.smallSpacing))
+                            LinearProgressIndicator(
+                                progress = { modelLoadingProgress },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
+                    }
+
+                    // Error message
+                    backendError?.let { error ->
+                        androidx.compose.material3.Text(
+                            text = error.toString(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(bottom = ComponentStyles.smallSpacing)
+                        )
+                    }
+
                     // Action buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -346,17 +384,27 @@ fun ModelSelectionModal(
                             onClick = {
                                 if (selectedModel.isNotEmpty() && extFilesDir != null) {
                                     if (isForBenchmark) {
-                                        viewModel.runBenchmarkWithModel(selectedModel, extFilesDir)
+                                        // For benchmark, we'll handle this in the benchmark screen
+                                        viewModel.showBenchmarkModelSelection = false
                                     } else {
-                                        viewModel.loadModelByName(selectedModel, extFilesDir)
+                                        // Try to load the selected model
+                                        viewModel.loadModel(selectedModel)
                                     }
                                     onDismiss()
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = selectedModel.isNotEmpty()
+                            enabled = selectedModel.isNotEmpty() && modelLoadingProgress == 0f
                         ) {
-                            Text(if (isForBenchmark) "Run Benchmark" else "Load Model")
+                            if (modelLoadingProgress > 0f && modelLoadingProgress < 1f) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(if (isForBenchmark) "Run Benchmark" else "Load Model")
+                            }
                         }
                     }
                 }

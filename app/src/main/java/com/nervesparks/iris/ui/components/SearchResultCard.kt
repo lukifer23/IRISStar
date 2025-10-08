@@ -76,13 +76,13 @@ fun SearchResultCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(SemanticColors.Info.copy(alpha = 0.2f))
+                        .background(SemanticColors.Info().copy(alpha = 0.2f))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = result.source,
                         style = MaterialTheme.typography.bodySmall,
-                        color = SemanticColors.Info,
+                        color = SemanticColors.Info(),
                         fontSize = 10.sp
                     )
                 }
@@ -105,7 +105,7 @@ fun SearchResultCard(
             Text(
                 text = result.url,
                 style = MaterialTheme.typography.bodySmall,
-                color = SemanticColors.TextSecondary,
+                color = SemanticColors.TextSecondary(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -150,7 +150,7 @@ fun SearchResultsSection(
             Text(
                 text = "${results.size} results",
                 style = MaterialTheme.typography.bodySmall,
-                color = SemanticColors.TextSecondary
+                color = SemanticColors.TextSecondary()
             )
         }
         
@@ -160,7 +160,7 @@ fun SearchResultsSection(
         Text(
             text = "Query: \"$query\"",
             style = MaterialTheme.typography.bodySmall,
-            color = SemanticColors.TextSecondary,
+            color = SemanticColors.TextSecondary(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -181,7 +181,7 @@ fun SearchResultsSection(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = SemanticColors.Warning.copy(alpha = 0.1f)
+                containerColor = SemanticColors.Warning().copy(alpha = 0.1f)
             ),
             shape = ComponentStyles.smallCardShape
         ) {
@@ -201,7 +201,7 @@ fun SearchResultsSection(
                 Text(
                     text = "Please verify important information from these search results.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.Warning
+                    color = SemanticColors.Warning()
                 )
             }
         }

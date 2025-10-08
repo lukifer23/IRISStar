@@ -37,7 +37,7 @@ fun DownloadInfoModal(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = SemanticColors.TextInverse,
+                    color = SemanticColors.TextInverse(),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold
                 )
@@ -47,7 +47,7 @@ fun DownloadInfoModal(
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SemanticColors.TextInverse.copy(alpha = 0.8f),
+                    color = SemanticColors.TextInverse().copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
                 
@@ -56,7 +56,7 @@ fun DownloadInfoModal(
                 Text(
                     text = "Download progress will be shown in notifications",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.TextInverse.copy(alpha = 0.6f),
+                    color = SemanticColors.TextInverse().copy(alpha = 0.6f),
                     textAlign = TextAlign.Center
                 )
                 

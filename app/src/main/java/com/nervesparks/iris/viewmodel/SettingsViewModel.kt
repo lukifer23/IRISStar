@@ -282,7 +282,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     // Configuration export/import
-    fun exportConfiguration(): String {
+    suspend fun exportConfiguration(): String {
         return try {
             userPreferencesRepository.exportConfiguration()
         } catch (e: Exception) {
@@ -291,7 +291,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun importConfiguration(jsonString: String): Boolean {
+    suspend fun importConfiguration(jsonString: String): Boolean {
         return try {
             val success = userPreferencesRepository.importConfiguration(jsonString)
             if (success) {

@@ -34,7 +34,7 @@ fun LoadingModal(
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(ComponentStyles.largeIconSize),
-                    color = SemanticColors.LoadingAccent,
+                    color = SemanticColors.LoadingAccent(),
                     strokeWidth = ComponentStyles.thickBorderWidth
                 )
                 
@@ -43,7 +43,7 @@ fun LoadingModal(
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SemanticColors.TextInverse,
+                    color = SemanticColors.TextInverse(),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Medium
                 )
@@ -53,7 +53,7 @@ fun LoadingModal(
                 Text(
                     text = "Please wait...",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SemanticColors.LoadingAccent,
+                    color = SemanticColors.LoadingAccent(),
                     textAlign = TextAlign.Center
                 )
             }

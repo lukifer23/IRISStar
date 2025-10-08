@@ -1,5 +1,6 @@
 package com.nervesparks.iris.ui.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // Light Theme Colors
@@ -55,33 +56,66 @@ val DarkOutline = Color(0xFF938F99)
 // Semantic Color Tokens for consistent usage across components
 object SemanticColors {
     // Status colors using Material 3 theme colors
-    val Success get() = androidx.compose.material3.MaterialTheme.colorScheme.primary
-    val Warning get() = androidx.compose.material3.MaterialTheme.colorScheme.tertiary
-    val Info get() = androidx.compose.material3.MaterialTheme.colorScheme.secondary
+    @Composable
+    fun Success() = androidx.compose.material3.MaterialTheme.colorScheme.primary
+
+    @Composable
+    fun Warning() = androidx.compose.material3.MaterialTheme.colorScheme.tertiary
+
+    @Composable
+    fun Info() = androidx.compose.material3.MaterialTheme.colorScheme.secondary
 
     // Interactive states using theme colors
-    val Hover get() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    val Pressed get() = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-    val Disabled get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    @Composable
+    fun Hover() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+
+    @Composable
+    fun Pressed() = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+
+    @Composable
+    fun Disabled() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
 
     // Special purpose colors using Material 3 containers
-    val ModalBackground get() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHighest
-    val ModalSurface get() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh
-    val ModalAccent get() = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer
-    val LoadingBackground get() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLowest
-    val LoadingAccent get() = androidx.compose.material3.MaterialTheme.colorScheme.primary
-    val DownloadSurface get() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer
+    @Composable
+    fun ModalBackground() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHighest
+
+    @Composable
+    fun ModalSurface() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh
+
+    @Composable
+    fun ModalAccent() = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer
+
+    @Composable
+    fun LoadingBackground() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLowest
+
+    @Composable
+    fun LoadingAccent() = androidx.compose.material3.MaterialTheme.colorScheme.primary
+
+    @Composable
+    fun DownloadSurface() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer
 
     // Text variants using Material 3 theme
-    val TextPrimary get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
-    val TextSecondary get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-    val TextDisabled get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    val TextInverse get() = androidx.compose.material3.MaterialTheme.colorScheme.inverseOnSurface
+    @Composable
+    fun TextPrimary() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+
+    @Composable
+    fun TextSecondary() = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+
+    @Composable
+    fun TextDisabled() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+
+    @Composable
+    fun TextInverse() = androidx.compose.material3.MaterialTheme.colorScheme.inverseOnSurface
 
     // Border and divider colors using Material 3
-    val BorderPrimary get() = androidx.compose.material3.MaterialTheme.colorScheme.outline
-    val BorderSecondary get() = androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
-    val Divider get() = androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
+    @Composable
+    fun BorderPrimary() = androidx.compose.material3.MaterialTheme.colorScheme.outline
+
+    @Composable
+    fun BorderSecondary() = androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
+
+    @Composable
+    fun Divider() = androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
 }
 
 // Gradient definitions for modern UI elements
@@ -101,70 +135,31 @@ object Gradients {
     val Loading = listOf(Color(0xFF6750A4), Color(0xFF9C73D7), Color(0xFFD0BCFF))
 }
 
-// Enhanced semantic colors for modern UI
-object EnhancedSemanticColors {
-    // Status colors with variations using Material 3 theme
-    val SuccessLight get() = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer
-    val SuccessMain get() = androidx.compose.material3.MaterialTheme.colorScheme.primary
-    val SuccessDark get() = androidx.compose.material3.MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-
-    val WarningLight get() = androidx.compose.material3.MaterialTheme.colorScheme.tertiaryContainer
-    val WarningMain get() = androidx.compose.material3.MaterialTheme.colorScheme.tertiary
-    val WarningDark get() = androidx.compose.material3.MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
-
-    val ErrorLight get() = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer
-    val ErrorMain get() = androidx.compose.material3.MaterialTheme.colorScheme.error
-    val ErrorDark get() = androidx.compose.material3.MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-
-    val InfoLight get() = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer
-    val InfoMain get() = androidx.compose.material3.MaterialTheme.colorScheme.secondary
-    val InfoDark get() = androidx.compose.material3.MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-
-    // Interactive states using Material 3
-    val HoverOverlay get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val PressedOverlay get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-    val FocusRing get() = androidx.compose.material3.MaterialTheme.colorScheme.primary
-
-    // Glass morphism colors using Material 3
-    val GlassBackground get() = androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-    val GlassBorder get() = androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
-
-    // Chat specific colors using Material 3
-    val UserMessage get() = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer
-    val AssistantMessage get() = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh
-    val SystemMessage get() = androidx.compose.material3.MaterialTheme.colorScheme.tertiaryContainer
-    val ErrorMessage get() = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer
-
-    // Model status colors using Material 3
-    val ModelReady get() = androidx.compose.material3.MaterialTheme.colorScheme.primary
-    val ModelLoading get() = androidx.compose.material3.MaterialTheme.colorScheme.tertiary
-    val ModelError get() = androidx.compose.material3.MaterialTheme.colorScheme.error
-    val ModelOffline get() = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-}
+// Enhanced semantic colors moved to composable extension functions below
 
 // Extension functions for semantic color access
-fun androidx.compose.material3.ColorScheme.semanticSuccess() = EnhancedSemanticColors.SuccessMain
-fun androidx.compose.material3.ColorScheme.semanticWarning() = EnhancedSemanticColors.WarningMain
-fun androidx.compose.material3.ColorScheme.semanticInfo() = EnhancedSemanticColors.InfoMain
-fun androidx.compose.material3.ColorScheme.semanticError() = EnhancedSemanticColors.ErrorMain
+fun androidx.compose.material3.ColorScheme.semanticSuccess() = primary
+fun androidx.compose.material3.ColorScheme.semanticWarning() = tertiary
+fun androidx.compose.material3.ColorScheme.semanticInfo() = secondary
+fun androidx.compose.material3.ColorScheme.semanticError() = error
 
 // Convenience functions for common UI patterns
 fun androidx.compose.material3.ColorScheme.cardBackground() = surfaceContainerHigh
-fun androidx.compose.material3.ColorScheme.modalBackground() = SemanticColors.ModalBackground
-fun androidx.compose.material3.ColorScheme.userMessageColor() = EnhancedSemanticColors.UserMessage
-fun androidx.compose.material3.ColorScheme.assistantMessageColor() = EnhancedSemanticColors.AssistantMessage
+fun androidx.compose.material3.ColorScheme.modalBackground() = surfaceContainerHighest
+fun androidx.compose.material3.ColorScheme.userMessageColor() = primaryContainer
+fun androidx.compose.material3.ColorScheme.assistantMessageColor() = surfaceContainerHigh
 
 // Enhanced interactive state colors
-fun androidx.compose.material3.ColorScheme.hoverOverlay() = EnhancedSemanticColors.HoverOverlay
-fun androidx.compose.material3.ColorScheme.pressedOverlay() = EnhancedSemanticColors.PressedOverlay
-fun androidx.compose.material3.ColorScheme.focusRing() = EnhancedSemanticColors.FocusRing
+fun androidx.compose.material3.ColorScheme.hoverOverlay() = onSurface.copy(alpha = 0.08f)
+fun androidx.compose.material3.ColorScheme.pressedOverlay() = onSurface.copy(alpha = 0.12f)
+fun androidx.compose.material3.ColorScheme.focusRing() = primary
 
 // Chat-specific colors
-fun androidx.compose.material3.ColorScheme.userMessage() = EnhancedSemanticColors.UserMessage
-fun androidx.compose.material3.ColorScheme.assistantMessage() = EnhancedSemanticColors.AssistantMessage
-fun androidx.compose.material3.ColorScheme.systemMessage() = EnhancedSemanticColors.SystemMessage
+fun androidx.compose.material3.ColorScheme.userMessage() = primaryContainer
+fun androidx.compose.material3.ColorScheme.assistantMessage() = surfaceContainerHigh
+fun androidx.compose.material3.ColorScheme.systemMessage() = tertiaryContainer
 
 // Model status colors
-fun androidx.compose.material3.ColorScheme.modelReady() = EnhancedSemanticColors.ModelReady
-fun androidx.compose.material3.ColorScheme.modelLoading() = EnhancedSemanticColors.ModelLoading
-fun androidx.compose.material3.ColorScheme.modelError() = EnhancedSemanticColors.ModelError
+fun androidx.compose.material3.ColorScheme.modelReady() = primary
+fun androidx.compose.material3.ColorScheme.modelLoading() = tertiary
+fun androidx.compose.material3.ColorScheme.modelError() = error

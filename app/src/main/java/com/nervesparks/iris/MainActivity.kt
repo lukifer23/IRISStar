@@ -162,6 +162,12 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+        // Cleanup resources when app is backgrounded to help with memory management
+        viewModel.cleanupResources()
+    }
 }
 
 

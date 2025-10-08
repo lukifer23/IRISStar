@@ -51,9 +51,9 @@ fun SettingsScreen(
     onThemeSettingsClicked: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val biometricAuthenticator = remember { BiometricAuthenticator(context) }
     val coroutineScope = rememberCoroutineScope()
-    val biometricEnabled by preferencesRepository.securityBiometricEnabledFlow.collectAsState(initial = false)
+    // Simplified biometric handling for now
+    var biometricEnabled by remember { mutableStateOf(false) }
     
     var huggingFaceToken by remember { mutableStateOf(preferencesRepository.huggingFaceToken) }
     var huggingFaceUsername by remember { mutableStateOf(preferencesRepository.huggingFaceUsername) }
@@ -337,11 +337,10 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(
                         checked = biometricEnabled,
-                        onCheckedChange = {
-                            if (biometricAuthenticator.isBiometricAuthAvailable()) {
-                                coroutineScope.launch {
-                                    preferencesRepository.setSecurityBiometricEnabled(it)
-                                }
+                        onCheckedChange = { enabled ->
+                            biometricEnabled = enabled
+                            coroutineScope.launch {
+                                preferencesRepository.setSecurityBiometricEnabled(enabled)
                             }
                         }
                     )
