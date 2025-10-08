@@ -552,7 +552,8 @@ Milestones & Order of Operations
 ### High Priority Bugs
 - ✅ **Model Loading Issue**: Fixed - Models now properly load and track loaded state
 - 🔴 **Prompt Sending Crash**: App crashes immediately when sending chat prompts (needs investigation)
-- ✅ **Settings Screen Failure**: Fixed - Biometric dependencies resolved, settings screen opens
+- ✅ **Settings Screen Failure**: Fixed - Settings navigation works from both home screen and chat screen
+- ✅ **New Chat Creation Crash**: Fixed - Improved navigation logic and empty chat persistence
 
 ### Next Steps
 - Investigate remaining prompt sending crash (model loading now works, crash may be in inference)

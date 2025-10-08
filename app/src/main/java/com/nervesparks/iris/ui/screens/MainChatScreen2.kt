@@ -196,8 +196,12 @@ fun MainChatScreen2(
                     }
                 },
                 onNewChat = {
+                    viewModel.persistChat() // Save current chat first
                     viewModel.clear()
-                    navController.navigate(AppDestinations.CHAT)
+                    navController.navigate(AppDestinations.CHAT) {
+                        // Pop up to chat list to avoid stacking CHAT destinations
+                        popUpTo(AppDestinations.CHAT_LIST) { inclusive = false }
+                    }
                 },
                 onSettings = {
                     navController.navigate(AppDestinations.SETTINGS)

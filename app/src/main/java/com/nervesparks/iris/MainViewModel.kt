@@ -2384,24 +2384,36 @@ class MainViewModel @Inject constructor(
     }
 
     fun persistChat() {
+        // Don't persist empty chats (no user messages)
+        val hasUserMessages = messages.any { it["role"] == "user" && it["content"]?.isNotBlank() == true }
+        if (!hasUserMessages) {
+            Timber.d("Not persisting chat: no user messages found")
+            return
+        }
+
         val title = messages.firstOrNull { it["role"] == "user" }?.get("content")?.take(64) ?: "Chat"
         val baseChat = currentChat?.copy(title = title, updated = System.currentTimeMillis())
             ?: Chat(title = title)
 
         viewModelScope.launch(Dispatchers.IO) {
-            val id = chatRepository.saveChatWithMessages(
-                baseChat,
-                messages.mapIndexed { idx, m ->
-                    Message(
-                        chatId = baseChat.id,
-                        role = m["role"] ?: "assistant",
-                        content = m["content"] ?: "",
-                        index = idx
-                    )
+            try {
+                val id = chatRepository.saveChatWithMessages(
+                    baseChat,
+                    messages.mapIndexed { idx, m ->
+                        Message(
+                            chatId = baseChat.id,
+                            role = m["role"] ?: "assistant",
+                            content = m["content"] ?: "",
+                            index = idx
+                        )
+                    }
+                )
+                if (currentChat == null || currentChat?.id != id) {
+                    currentChat = baseChat.copy(id = id)
                 }
-            )
-            if (currentChat == null || currentChat?.id != id) {
-                currentChat = baseChat.copy(id = id)
+                Timber.d("Chat persisted successfully with id: $id")
+            } catch (e: Exception) {
+                Timber.e(e, "Error persisting chat")
             }
         }
     }

@@ -62,6 +62,9 @@ fun AppNavigation(
                 onNewChat = {
                     viewModel.clear()
                     navController.navigate(AppDestinations.CHAT)
+                },
+                onMenuClick = {
+                    navController.navigate(AppDestinations.SETTINGS)
                 }
             )
         }
