@@ -46,6 +46,7 @@ fun ModelSelectionModal(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val scope = rememberCoroutineScope()
+    val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
     // Get available models and check which ones exist
     val availableModels = remember(extFilesDir) {
@@ -53,8 +54,8 @@ fun ModelSelectionModal(
     }
 
     // Model loading state - simplified for now
-    val modelLoadingProgress = 0f
-    val backendError: String? = null
+    val modelLoadingProgress = modelViewModel.modelLoadingProgress
+    val backendError: String? = modelViewModel.backendError
 
     var showReasoningOnly by remember { mutableStateOf(false) }
     val filteredModels = remember(availableModels, showReasoningOnly) {
@@ -388,7 +389,7 @@ fun ModelSelectionModal(
                                         viewModel.showBenchmarkModelSelection = false
                                     } else {
                                         // Try to load the selected model
-                                        viewModel.loadModel(selectedModel)
+                                        modelViewModel.loadModel(selectedModel)
                                     }
                                     onDismiss()
                                 }

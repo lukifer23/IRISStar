@@ -1573,6 +1573,14 @@ class MainViewModel @Inject constructor(
 
     fun send() {
         Timber.d("Send button clicked")
+
+        // Check if model is loaded before proceeding
+        if (!isModelLoaded()) {
+            Timber.w("Cannot send message: No model is loaded")
+            // TODO: Show user feedback that no model is loaded
+            return
+        }
+
         val reserveTokens = 256
         val userMessage = removeExtraWhiteSpaces(message)
         message = ""
@@ -1980,8 +1988,9 @@ class MainViewModel @Inject constructor(
                 )
 
                 result.fold(
-                    onSuccess = {
+                    onSuccess = { sessionId ->
                         Timber.tag("MainViewModel").d("Model loaded: $pathToModel")
+                        loadedModelName.value = File(pathToModel).name
                     },
                     onFailure = { e ->
                         Timber.tag("MainViewModel").e(e, "Error loading model")

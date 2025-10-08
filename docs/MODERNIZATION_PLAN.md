@@ -550,14 +550,13 @@ Milestones & Order of Operations
 ## CURRENT CRITICAL ISSUES (IMMEDIATE PRIORITY)
 
 ### High Priority Bugs
-- 🔴 **Model Loading Issue**: Models appear to load but don't actually work (UI feedback misleading)
-- 🔴 **Prompt Sending Crash**: App crashes immediately when sending chat prompts
-- 🔴 **Settings Screen Failure**: Settings screen fails to open (biometric dependency issue)
+- ✅ **Model Loading Issue**: Fixed - Models now properly load and track loaded state
+- 🔴 **Prompt Sending Crash**: App crashes immediately when sending chat prompts (needs investigation)
+- ✅ **Settings Screen Failure**: Fixed - Biometric dependencies resolved, settings screen opens
 
 ### Next Steps
-- Debug model loading mechanism to ensure models are actually loaded
-- Investigate prompt sending crash (likely llama.cpp initialization issue)
-- Fix settings screen by properly handling biometric dependencies
+- Investigate remaining prompt sending crash (model loading now works, crash may be in inference)
+- Test core chat functionality end-to-end
 - Complete remaining TODO items after core functionality is stable
 
 Notes & Non-Goals
