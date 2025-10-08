@@ -15,7 +15,9 @@ import com.nervesparks.iris.llm.ModelPerformanceTracker
 import com.nervesparks.iris.llm.ModelComparison
 import com.nervesparks.iris.security.InputValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
@@ -86,7 +88,14 @@ class ModelViewModel @Inject constructor(
                 backendError = null
 
                 // Set backend before loading
-                selectBackend(backend)
+                val backendSet = setBackend(backend)
+                if (!backendSet) {
+                    Timber.tag(tag).e("Failed to set backend to $backend. Aborting model load.")
+                    isModelLoaded = false
+                    modelLoadingProgress = 0f
+                    currentSessionId = null
+                    return@launch
+                }
 
                 // Use centralized model loader
                 val result = modelLoader.loadModel(
@@ -270,20 +279,28 @@ class ModelViewModel @Inject constructor(
     // Backend management
     fun selectBackend(backend: String) {
         viewModelScope.launch {
-            try {
-                val success = llamaAndroid.setBackend(backend.lowercase())
-                if (success) {
-                    currentBackend = backend
-                    backendError = null
-                    Timber.tag(tag).d("Backend changed to: $backend")
-                } else {
-                    backendError = "Failed to switch backend to $backend"
-                    Timber.tag(tag).e("Failed to set backend: $backend")
-                }
-            } catch (e: Exception) {
-                Timber.tag(tag).e(e, "Exception when setting backend to $backend")
-                backendError = "Failed to switch backend: ${e.message}"
+            setBackend(backend)
+        }
+    }
+
+    private suspend fun setBackend(backend: String): Boolean {
+        return try {
+            val success = withContext(Dispatchers.IO) {
+                llamaAndroid.setBackend(backend.lowercase())
             }
+            if (success) {
+                currentBackend = backend
+                backendError = null
+                Timber.tag(tag).d("Backend changed to: $backend")
+            } else {
+                backendError = "Failed to switch backend to $backend"
+                Timber.tag(tag).e("Failed to set backend: $backend")
+            }
+            success
+        } catch (e: Exception) {
+            Timber.tag(tag).e(e, "Exception when setting backend to $backend")
+            backendError = "Failed to switch backend: ${e.message}"
+            false
         }
     }
 
