@@ -2164,17 +2164,21 @@ class MainViewModel @Inject constructor(
                 Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
 
                 // Check if model is too large for available memory - force CPU if needed
+                // With largeHeap=true, we can use more memory, so be less conservative
                 val shouldUseCpu = when {
-                    modelSizeMB > freeMemoryMB -> {
-                        Timber.w("Model size (${modelSizeMB}MB) exceeds available memory (${freeMemoryMB}MB) - forcing CPU backend")
+                    modelSizeMB > maxMemoryMB * 2 -> { // Model > 2x max heap is too big
+                        Timber.w("Model size (${modelSizeMB}MB) greatly exceeds max heap (${maxMemoryMB}MB) - forcing CPU backend")
                         true
                     }
-                    modelSizeMB > freeMemoryMB * 0.8 -> {
-                        Timber.w("Model size (${modelSizeMB}MB) is close to available memory (${freeMemoryMB}MB) - consider smaller model")
-                        // Still try Vulkan but warn
+                    modelSizeMB > maxMemoryMB * 1.5 -> { // Model > 1.5x max heap may cause issues
+                        Timber.w("Model size (${modelSizeMB}MB) exceeds safe heap limit (${maxMemoryMB}MB) - consider smaller model")
+                        // Still try but warn heavily
                         false
                     }
-                    else -> false
+                    else -> {
+                        Timber.d("Model size (${modelSizeMB}MB) within heap limits (${maxMemoryMB}MB)")
+                        false
+                    }
                 }
 
                 // Override backend selection based on memory constraints
