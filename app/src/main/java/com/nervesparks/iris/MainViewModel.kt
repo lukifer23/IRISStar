@@ -283,7 +283,7 @@ class MainViewModel @Inject constructor(
     var showDownloadInfoModal by mutableStateOf(false)
     var showModelSelection by mutableStateOf(false)
     var selectedModelForSwitch by mutableStateOf("")
-    var user_thread by mutableStateOf(0f)
+    var user_thread by mutableStateOf(4f) // Default to 4 threads
     var topP by mutableStateOf(0.9f)
     var topK by mutableStateOf(40)
     var temp by mutableStateOf(0.7f)

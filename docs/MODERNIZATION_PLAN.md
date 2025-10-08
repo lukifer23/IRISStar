@@ -554,6 +554,7 @@ Milestones & Order of Operations
 - 🔴 **Prompt Sending Crash**: App crashes immediately when sending chat prompts (needs investigation)
 - ✅ **Settings Screen Failure**: Fixed - Settings navigation works from both home screen and chat screen
 - ✅ **New Chat Creation Crash**: Fixed - Improved navigation logic and empty chat persistence
+- ✅ **Models Screen Load Crash**: Fixed - Proper thread count and backend detection for model loading
 
 ### Next Steps
 - Investigate remaining prompt sending crash (model loading now works, crash may be in inference)

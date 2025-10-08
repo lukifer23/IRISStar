@@ -150,7 +150,10 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                         viewModel.showModal = true
                         Timber.d("item.destination.path", item.destination.path.toString())
                         viewModel.currentDownloadable = item
-                        viewModel.load(item.destination.path, userThreads = viewModel.user_thread.toInt())
+                        // Use proper thread count and optimal backend
+                        val threadCount = maxOf(viewModel.user_thread.toInt(), 4) // Minimum 4 threads
+                        val backend = viewModel.optimalBackend.ifEmpty { "cpu" }
+                        viewModel.load(item.destination.path, userThreads = threadCount, backend = backend)
                     }
 
                     is Downloading -> {
