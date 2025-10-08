@@ -91,6 +91,15 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Initialize native library early
+        try {
+            android.util.Log.d("MainActivity", "Initializing native library...")
+            val success = LLamaAndroid.instance().ensureLibraryLoaded()
+            android.util.Log.d("MainActivity", "Native library initialization: $success")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to initialize native library", e)
+        }
+
         // Allow network operations on main thread for development
         val policy = VmPolicy.Builder()
             .detectAll()
