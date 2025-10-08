@@ -37,7 +37,8 @@ class ModelLoader @Inject constructor(
         temperature: Float = 0.7f,
         topP: Float = 0.9f,
         topK: Int = 40,
-        gpuLayers: Int = -1
+        gpuLayers: Int = -1,
+        contextLength: Int = 2048
     ): Result<String> {
         return try {
             Timber.tag(tag).d("Loading model: $modelPath with backend: $backend")

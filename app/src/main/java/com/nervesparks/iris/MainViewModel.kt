@@ -2192,15 +2192,23 @@ class MainViewModel @Inject constructor(
 
                 Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
 
+                // Hard reject models that are too large to avoid crashes
+                val maxSafeModelSize = maxMemoryMB * 0.6 // Only allow models up to 60% of heap
+                if (modelSizeMB > maxSafeModelSize) {
+                    Timber.e("Model too large: ${modelSizeMB}MB exceeds safe limit (${maxSafeModelSize.toInt()}MB)")
+                    // TODO: Show user-friendly error message
+                    return@launch
+                }
+
                 // Check if model is too large for available memory - force CPU if needed
                 // With largeHeap=true, we can use more memory, so be less conservative
                 val shouldUseCpu = when {
-                    modelSizeMB > maxMemoryMB * 2 -> { // Model > 2x max heap is too big
+                    modelSizeMB > maxMemoryMB * 1.2 -> { // Model > 1.2x max heap is too big
                         Timber.w("Model size (${modelSizeMB}MB) greatly exceeds max heap (${maxMemoryMB}MB) - forcing CPU backend")
                         true
                     }
-                    modelSizeMB > maxMemoryMB * 1.5 -> { // Model > 1.5x max heap may cause issues
-                        Timber.w("Model size (${modelSizeMB}MB) exceeds safe heap limit (${maxMemoryMB}MB) - consider smaller model")
+                    modelSizeMB > maxMemoryMB * 0.9 -> { // Model > 0.9x max heap may cause issues
+                        Timber.w("Model size (${modelSizeMB}MB) approaches heap limit (${maxMemoryMB}MB) - consider smaller model")
                         // Still try but warn heavily
                         false
                     }
@@ -2236,15 +2244,46 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
+                // For large models, use more conservative parameters to avoid memory issues
+                val conservativeParams = if (modelSizeMB > maxMemoryMB * 0.5) {
+                    Timber.d("Using conservative parameters for large model")
+                    // Reduce thread count and use smaller defaults
+                    mapOf(
+                        "threadCount" to minOf(userThreads, 2), // Limit threads for large models
+                        "temperature" to modelTemperature,
+                        "topP" to modelTopP,
+                        "topK" to modelTopK,
+                        "gpuLayers" to effectiveGpuLayers
+                    )
+                } else {
+                    mapOf(
+                        "threadCount" to userThreads,
+                        "temperature" to modelTemperature,
+                        "topP" to modelTopP,
+                        "topK" to modelTopK,
+                        "gpuLayers" to effectiveGpuLayers
+                    )
+                }
+
+                // Use conservative context length for large models
+                val contextLength = if (modelSizeMB > maxMemoryMB * 0.4) {
+                    1024 // Smaller context for large models
+                } else {
+                    2048 // Default context length
+                }
+
+                Timber.d("Using context length: $contextLength for model size ${modelSizeMB}MB")
+
                 // Use centralized ModelLoader for consistent error handling and reporting
                 val result = modelLoader.loadModel(
                     modelPath = pathToModel,
-                    threadCount = userThreads,
+                    threadCount = conservativeParams["threadCount"] as Int,
                     backend = finalBackend,
-                    temperature = modelTemperature,
-                    topP = modelTopP,
-                    topK = modelTopK,
-                    gpuLayers = effectiveGpuLayers
+                    temperature = conservativeParams["temperature"] as Float,
+                    topP = conservativeParams["topP"] as Float,
+                    topK = conservativeParams["topK"] as Int,
+                    gpuLayers = conservativeParams["gpuLayers"] as Int,
+                    contextLength = contextLength
                 )
 
                 result.fold(
