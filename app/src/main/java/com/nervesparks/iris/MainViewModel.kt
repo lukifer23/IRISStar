@@ -2144,6 +2144,36 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
+                // Use appropriate gpuLayers based on backend
+                val effectiveGpuLayers = when (backend.lowercase()) {
+                    "cpu" -> 0  // No GPU layers for CPU backend
+                    else -> modelGpuLayers  // Use configured value for GPU backends
+                }
+
+                Timber.d("Using gpuLayers=$effectiveGpuLayers for backend=$backend")
+
+                // Basic model file validation before loading
+                val modelFile = File(pathToModel)
+                if (!modelFile.exists()) {
+                    Timber.e("Model file does not exist: $pathToModel")
+                    return@launch
+                }
+
+                val modelSizeMB = modelFile.length() / (1024 * 1024)
+                Timber.d("Model file size: ${modelSizeMB}MB")
+
+                // Check available memory (rough estimate)
+                val runtime = Runtime.getRuntime()
+                val maxMemoryMB = runtime.maxMemory() / (1024 * 1024)
+                val freeMemoryMB = (runtime.maxMemory() - runtime.totalMemory() + runtime.freeMemory()) / (1024 * 1024)
+
+                Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
+
+                // Warn if model might be too large (rough heuristic)
+                if (modelSizeMB > freeMemoryMB * 0.8) {
+                    Timber.w("Model size (${modelSizeMB}MB) is close to available memory (${freeMemoryMB}MB)")
+                }
+
                 // Use centralized ModelLoader for consistent error handling and reporting
                 val result = modelLoader.loadModel(
                     modelPath = pathToModel,
@@ -2152,7 +2182,7 @@ class MainViewModel @Inject constructor(
                     temperature = modelTemperature,
                     topP = modelTopP,
                     topK = modelTopK,
-                    gpuLayers = modelGpuLayers
+                    gpuLayers = effectiveGpuLayers
                 )
 
                 result.fold(
