@@ -2144,13 +2144,7 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
-                // Use appropriate gpuLayers based on backend
-                val effectiveGpuLayers = when (backend.lowercase()) {
-                    "cpu" -> 0  // No GPU layers for CPU backend
-                    else -> modelGpuLayers  // Use configured value for GPU backends
-                }
-
-                Timber.d("Using gpuLayers=$effectiveGpuLayers for backend=$backend")
+                Timber.d("Using initial backend=$backend for validation")
 
                 // Basic model file validation before loading
                 val modelFile = File(pathToModel)
@@ -2169,16 +2163,51 @@ class MainViewModel @Inject constructor(
 
                 Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
 
-                // Warn if model might be too large (rough heuristic)
-                if (modelSizeMB > freeMemoryMB * 0.8) {
-                    Timber.w("Model size (${modelSizeMB}MB) is close to available memory (${freeMemoryMB}MB)")
+                // Check if model is too large for available memory - force CPU if needed
+                val shouldUseCpu = when {
+                    modelSizeMB > freeMemoryMB -> {
+                        Timber.w("Model size (${modelSizeMB}MB) exceeds available memory (${freeMemoryMB}MB) - forcing CPU backend")
+                        true
+                    }
+                    modelSizeMB > freeMemoryMB * 0.8 -> {
+                        Timber.w("Model size (${modelSizeMB}MB) is close to available memory (${freeMemoryMB}MB) - consider smaller model")
+                        // Still try Vulkan but warn
+                        false
+                    }
+                    else -> false
+                }
+
+                // Override backend selection based on memory constraints
+                val finalBackend = if (shouldUseCpu && backend.lowercase() != "cpu") {
+                    Timber.d("Switching from $backend to CPU due to memory constraints")
+                    "cpu"
+                } else {
+                    backend
+                }
+
+                // Update gpuLayers for final backend choice
+                val effectiveGpuLayers = when (finalBackend.lowercase()) {
+                    "cpu" -> 0  // No GPU layers for CPU backend
+                    else -> modelGpuLayers  // Use configured value for GPU backends
+                }
+
+                Timber.d("Final backend selection: $finalBackend (gpuLayers=$effectiveGpuLayers)")
+
+                // If we switched backends due to memory constraints, actually set the new backend
+                if (finalBackend != backend) {
+                    try {
+                        val switchSuccess = llamaAndroid.setBackend(finalBackend.lowercase())
+                        Timber.d("Backend switch to $finalBackend: $switchSuccess")
+                    } catch (e: Exception) {
+                        Timber.e("Failed to switch to final backend $finalBackend: ${e.message}")
+                    }
                 }
 
                 // Use centralized ModelLoader for consistent error handling and reporting
                 val result = modelLoader.loadModel(
                     modelPath = pathToModel,
                     threadCount = userThreads,
-                    backend = backend,
+                    backend = finalBackend,
                     temperature = modelTemperature,
                     topP = modelTopP,
                     topK = modelTopK,
