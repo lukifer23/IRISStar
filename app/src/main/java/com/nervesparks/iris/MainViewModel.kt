@@ -1337,55 +1337,152 @@ class MainViewModel @Inject constructor(
     // New function to switch between models
     fun switchModel(modelName: String, directory: File) {
         val model = allModels.find { it["name"] == modelName }
-        if (model != null) {
-            val destinationPath = File(directory, model["destination"].toString())
-            if (destinationPath.exists()) {
-                // Set reasoning support based on model configuration
-                Timber.d("=== SWITCH MODEL REASONING DEBUG ===")
-                Timber.d("Switching to model: $modelName")
-                Timber.d("Model configuration: $model")
-                
-                val reasoningSupport = model["supportsReasoning"]
-                Timber.d("Raw reasoning support value: $reasoningSupport")
-                
-                supportsReasoning = reasoningSupport == "true"
-                Timber.d("Final supportsReasoning: $supportsReasoning")
-                Timber.d("=== END SWITCH MODEL DEBUG ===")
-                
-                // Unload current model if any
-                viewModelScope.launch {
-                    try {
-                        val result = modelLoader.unloadModel()
-                        result.fold(
+        if (model == null) {
+            val msg = "Model not found: $modelName"
+            Timber.tag("MainViewModel").e(msg)
+            modelSwitchError = msg
+            modelSwitchMessage = null
+            return
+        }
+
+        val destinationPath = File(directory, model["destination"].toString())
+        if (!destinationPath.exists()) {
+            val msg = "Model file not found: ${destinationPath.path}"
+            Timber.tag("MainViewModel").e(msg)
+            modelSwitchError = msg
+            modelSwitchMessage = null
+            return
+        }
+
+        Timber.d("=== SWITCH MODEL REASONING DEBUG ===")
+        Timber.d("Switching to model: $modelName")
+        Timber.d("Model configuration: $model")
+
+        val reasoningSupport = model["supportsReasoning"]
+        Timber.d("Raw reasoning support value: $reasoningSupport")
+
+        supportsReasoning = reasoningSupport == "true"
+        Timber.d("Final supportsReasoning: $supportsReasoning")
+        Timber.d("=== END SWITCH MODEL DEBUG ===")
+
+        currentDownloadable = Downloadable(
+            model["name"].toString(),
+            Uri.parse(model["source"].toString()),
+            destinationPath
+        )
+
+        applyThinkStripGate()
+
+        viewModelScope.launch {
+            isModelSwitching = true
+            modelSwitchError = null
+            modelSwitchMessage = null
+
+            try {
+                val unloadResult = withContext(Dispatchers.IO) { modelLoader.unloadModel() }
+                unloadResult.fold(
+                    onSuccess = {
+                        Timber.tag("MainViewModel").d("Model unloaded successfully")
+
+                        val backend = "cpu"
+                        val backendSet = try {
+                            llamaAndroid.setBackend(backend)
+                        } catch (backendException: Exception) {
+                            Timber.tag("MainViewModel").e(backendException, "Error setting backend to $backend")
+                            false
+                        }
+
+                        if (!backendSet) {
+                            Timber.tag("MainViewModel").w("Failed to set backend to $backend, attempting CPU fallback")
+                            try {
+                                llamaAndroid.setBackend("cpu")
+                            } catch (cpuFallbackException: Exception) {
+                                Timber.tag("MainViewModel").e(cpuFallbackException, "CPU fallback failed")
+                            }
+                        }
+
+                        val loadResult = withContext(Dispatchers.IO) {
+                            modelLoader.loadModel(
+                                modelPath = destinationPath.path,
+                                threadCount = modelThreadCount,
+                                backend = backend,
+                                temperature = modelTemperature,
+                                topP = modelTopP,
+                                topK = modelTopK,
+                                gpuLayers = modelGpuLayers
+                            )
+                        }
+
+                        loadResult.fold(
                             onSuccess = {
-                                Timber.tag("MainViewModel").d("Model unloaded successfully")
+                                loadedModelName.value = destinationPath.name
+
+                                val validationPassed = validateModelSwitch()
+                                if (validationPassed) {
+                                    setDefaultModelName(modelName)
+                                    modelSwitchError = null
+                                    modelSwitchMessage = "Switched to model: $modelName"
+                                    Timber.tag("MainViewModel").i("Switched to model: $modelName")
+                                } else {
+                                    val error = "Model validation failed after loading $modelName"
+                                    modelSwitchError = error
+                                    modelSwitchMessage = null
+                                    Timber.tag("MainViewModel").e(error)
+                                    withContext(Dispatchers.IO) { modelLoader.unloadModel() }
+                                    loadedModelName.value = ""
+                                }
                             },
-                            onFailure = { e ->
-                                Timber.tag("MainViewModel").e(e, "Error unloading model")
+                            onFailure = { loadError ->
+                                val message = loadError.message ?: "Failed to load model: $modelName"
+                                modelSwitchError = message
+                                modelSwitchMessage = null
+                                loadedModelName.value = ""
+                                Timber.tag("MainViewModel").e(loadError, "Error loading model $modelName")
                             }
                         )
-                    } catch (e: Exception) {
-                        Timber.tag("MainViewModel").e(e, "Error in unload operation")
+                    },
+                    onFailure = { unloadError ->
+                        val message = unloadError.message ?: "Failed to unload current model"
+                        modelSwitchError = message
+                        modelSwitchMessage = null
+                        Timber.tag("MainViewModel").e(unloadError, "Error unloading model before switching")
                     }
-                }
-                
-                // Set new model as current
-                currentDownloadable = Downloadable(
-                    model["name"].toString(),
-                    Uri.parse(model["source"].toString()),
-                    destinationPath
                 )
-                
-                // Load the new model with CPU backend to avoid OpenCL issues
-                Timber.d("Loading model with CPU backend to avoid OpenCL issues")
-                load(destinationPath.path, modelThreadCount, backend = "cpu")
-                
-                // Update default model name
-                setDefaultModelName(modelName)
-                
-                Timber.tag("MainViewModel").i("Switched to model: $modelName")
+            } catch (e: Exception) {
+                val message = e.message ?: "Unexpected error switching model"
+                modelSwitchError = message
+                modelSwitchMessage = null
+                Timber.tag("MainViewModel").e(e, "Unexpected error during model switch")
+            } finally {
+                isModelSwitching = false
             }
         }
+    }
+
+    private suspend fun validateModelSwitch(
+        maxAttempts: Int = 5,
+        delayMillis: Long = 300L
+    ): Boolean {
+        repeat(maxAttempts) { attempt ->
+            val modelHandle = llamaAndroid.getModel()
+            val contextHandle = llamaAndroid.getContext()
+            val batchHandle = llamaAndroid.getBatch()
+            val samplerHandle = llamaAndroid.getSampler()
+
+            val valid = modelHandle != 0L && contextHandle != 0L && batchHandle != 0L && samplerHandle != 0L
+            if (valid) {
+                Timber.tag("MainViewModel").d("Model validation succeeded on attempt ${attempt + 1}")
+                return true
+            }
+
+            Timber.tag("MainViewModel").w(
+                "Model validation attempt ${attempt + 1} failed: model=$modelHandle context=$contextHandle batch=$batchHandle sampler=$samplerHandle"
+            )
+            delay(delayMillis)
+        }
+
+        Timber.tag("MainViewModel").e("Model validation failed after $maxAttempts attempts")
+        return false
     }
 
     // New function to get available models
@@ -1491,6 +1588,12 @@ class MainViewModel @Inject constructor(
     var toggler by mutableStateOf(false)
     var showAlert by mutableStateOf(false)
     var switchModal by mutableStateOf(false)
+    var isModelSwitching by mutableStateOf(false)
+        private set
+    var modelSwitchError by mutableStateOf<String?>(null)
+        private set
+    var modelSwitchMessage by mutableStateOf<String?>(null)
+        private set
     var currentDownloadable: Downloadable? by mutableStateOf(null)
 
     override fun onCleared() {
