@@ -2192,12 +2192,26 @@ class MainViewModel @Inject constructor(
 
                 Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
 
-                // Hard reject models that are too large to avoid crashes
-                val maxSafeModelSize = maxMemoryMB * 0.6 // Only allow models up to 60% of heap
-                if (modelSizeMB > maxSafeModelSize) {
-                    Timber.e("Model too large: ${modelSizeMB}MB exceeds safe limit (${maxSafeModelSize.toInt()}MB)")
-                    // TODO: Show user-friendly error message
+                // Realistic limits based on actual Android constraints
+                val maxSafeModelSize = maxMemoryMB * 0.7 // Conservative: 70% of actual heap
+                val recommendedMaxSize = 350.0 // Practical limit for Android devices
+
+                Timber.i("Device heap limit: ${maxMemoryMB}MB, safe model size: ${maxSafeModelSize.toInt()}MB")
+
+                if (modelSizeMB > recommendedMaxSize) {
+                    Timber.e("Model too large for Android: ${modelSizeMB}MB exceeds recommended maximum (${recommendedMaxSize}MB)")
+                    Timber.i("Android apps are limited to ~512MB heap. Consider:")
+                    Timber.i("1. Smaller models (under 350MB)")
+                    Timber.i("2. Better quantization (Q4_K_M instead of Q8)")
+                    Timber.i("3. Device with more RAM (8GB+ devices)")
+                    Timber.i("4. Cloud inference for large models")
                     return@launch
+                }
+
+                if (modelSizeMB > maxSafeModelSize) {
+                    Timber.w("Model size (${modelSizeMB}MB) approaches heap limit (${maxSafeModelSize.toInt()}MB)")
+                    Timber.i("Loading may be unstable - consider a smaller model")
+                    // Allow but warn
                 }
 
                 // Check if model is too large for available memory - force CPU if needed
