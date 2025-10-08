@@ -7,6 +7,11 @@ import com.nervesparks.iris.llm.ModelPerformanceTracker
 import java.io.File
 import javax.inject.Inject
 
+data class ModelLoadResult(
+    val sessionId: String,
+    val modelPath: String
+)
+
 /**
  * Centralized model loading service to eliminate duplicate code between MainViewModel and ModelViewModel.
  *
@@ -89,6 +94,9 @@ class ModelLoader @Inject constructor(
 
     /**
      * Load a model by name from a directory
+     *
+     * @return [Result] containing a [ModelLoadResult] with both the session identifier and
+     * the absolute path to the loaded model when successful.
      */
     suspend fun loadModelByName(
         modelName: String,
@@ -99,7 +107,7 @@ class ModelLoader @Inject constructor(
         topP: Float = 0.9f,
         topK: Int = 40,
         gpuLayers: Int = -1
-    ): Result<String> {
+    ): Result<ModelLoadResult> {
         return try {
             Timber.tag(tag).d("Loading model by name: $modelName from directory: ${directory.absolutePath}")
 
@@ -117,14 +125,12 @@ class ModelLoader @Inject constructor(
                 gpuLayers = gpuLayers
             )
 
-            loadResult.fold(
-                onSuccess = { sessionId ->
-                    Result.success(modelFile.absolutePath)
-                },
-                onFailure = { error ->
-                    Result.failure(error)
-                }
-            )
+            loadResult.map { sessionId ->
+                ModelLoadResult(
+                    sessionId = sessionId,
+                    modelPath = modelFile.absolutePath
+                )
+            }
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error loading model by name: $modelName")
             ErrorHandler.reportModelError(e, modelName)

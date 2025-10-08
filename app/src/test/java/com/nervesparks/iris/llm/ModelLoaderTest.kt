@@ -89,6 +89,7 @@ class ModelLoaderTest {
         val directory = File("/test/directory")
         val modelFile = File(directory, modelName)
         val modelPath = modelFile.absolutePath
+        val sessionId = "session-123"
 
         // Mock directory listing
         mockkStatic(File::class)
@@ -98,13 +99,24 @@ class ModelLoaderTest {
 
         // Mock successful load
         every { mockLlamaAndroid.load(any(), any(), any(), any(), any(), any()) } returns Unit
+        every {
+            mockPerformanceTracker.startSession(
+                modelName = any(),
+                modelPath = any(),
+                configuration = any(),
+                deviceInfo = any(),
+                backendUsed = any()
+            )
+        } returns sessionId
 
         // When
         val result = modelLoader.loadModelByName(modelName = modelName, directory = directory)
 
         // Then
         assertTrue(result.isSuccess)
-        assertEquals(modelPath, result.getOrNull())
+        val loadResult = result.getOrNull()
+        assertEquals(modelPath, loadResult?.modelPath)
+        assertEquals(sessionId, loadResult?.sessionId)
     }
 
     @Test

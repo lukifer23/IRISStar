@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
+import com.nervesparks.iris.llm.ModelLoadResult
 import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
 import com.nervesparks.iris.llm.ModelComparison
@@ -138,7 +139,7 @@ class ModelViewModel @Inject constructor(
         load(modelPath, modelThreadCount, currentBackend)
     }
 
-    suspend fun loadModelByName(modelName: String, directory: File): Result<String> {
+    suspend fun loadModelByName(modelName: String, directory: File): Result<ModelLoadResult> {
         return try {
             Timber.tag(tag).d("Loading model by name: $modelName")
 
@@ -158,13 +159,14 @@ class ModelViewModel @Inject constructor(
             )
 
             result.fold(
-                onSuccess = { modelPath ->
-                    currentModelName = File(modelPath).name
+                onSuccess = { loadResult ->
+                    currentModelName = File(loadResult.modelPath).name
                     isModelLoaded = true
                     modelLoadingProgress = 1f
+                    currentSessionId = loadResult.sessionId
                     backendError = null
-                    Timber.tag(tag).d("Model loaded successfully: $currentModelName")
-                    Result.success(modelPath)
+                    Timber.tag(tag).d("Model loaded successfully: $currentModelName with session: ${loadResult.sessionId}")
+                    Result.success(loadResult)
                 },
                 onFailure = { e ->
                     Timber.tag(tag).e(e, "Error loading model by name: $modelName")
@@ -179,6 +181,7 @@ class ModelViewModel @Inject constructor(
             Timber.tag(tag).e(e, "Exception loading model by name: $modelName")
             isModelLoaded = false
             modelLoadingProgress = 0f
+            currentSessionId = null
             backendError = "Failed to load model: ${e.message}"
             Result.failure(e)
         }
