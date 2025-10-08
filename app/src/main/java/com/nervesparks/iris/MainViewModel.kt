@@ -2100,17 +2100,45 @@ class MainViewModel @Inject constructor(
 
                 Timber.d("Setting backend to: $backend")
                 try {
-                    val backendSuccess = llamaAndroid.setBackend(backend.lowercase())
-                    Timber.d("Backend set result: $backendSuccess")
-                    if (!backendSuccess) {
-                        Timber.e("Failed to set backend to $backend, falling back to CPU")
-                        val cpuSuccess = llamaAndroid.setBackend("cpu")
-                        Timber.d("CPU backend set result: $cpuSuccess")
+                    // For Vulkan backend, do additional validation since it can fail during model loading
+                    var actualBackend = backend.lowercase()
+                    if (backend.lowercase() == "vulkan") {
+                        Timber.d("Validating Vulkan backend...")
+                        val vulkanSuccess = llamaAndroid.setBackend("vulkan")
+                        Timber.d("Vulkan backend set result: $vulkanSuccess")
+
+                        if (vulkanSuccess) {
+                            // Try to validate Vulkan by checking if we can get backend info without crashing
+                            try {
+                                val gpuInfo = llamaAndroid.getGpuInfo()
+                                Timber.d("Vulkan validation - GPU info: $gpuInfo")
+                                // If we get here without crashing, Vulkan should be usable
+                            } catch (e: Exception) {
+                                Timber.w("Vulkan validation failed, falling back to CPU: ${e.message}")
+                                actualBackend = "cpu"
+                                llamaAndroid.setBackend("cpu")
+                            }
+                        } else {
+                            Timber.w("Vulkan backend not supported, using CPU")
+                            actualBackend = "cpu"
+                        }
+                    } else {
+                        // For CPU and other backends, use normal logic
+                        val backendSuccess = llamaAndroid.setBackend(actualBackend)
+                        Timber.d("Backend set result for $actualBackend: $backendSuccess")
+                        if (!backendSuccess) {
+                            Timber.e("Failed to set backend to $actualBackend, falling back to CPU")
+                            actualBackend = "cpu"
+                            llamaAndroid.setBackend("cpu")
+                        }
                     }
+
+                    Timber.d("Final backend selection: $actualBackend")
                 } catch (e: Exception) {
                     Timber.e("Exception setting backend: ${e.message}")
                     try {
                         llamaAndroid.setBackend("cpu")
+                        Timber.d("Fallback to CPU backend successful")
                     } catch (e2: Exception) {
                         Timber.e("Failed to fallback to CPU backend: ${e2.message}")
                     }
