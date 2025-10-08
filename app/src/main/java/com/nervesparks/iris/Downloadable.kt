@@ -153,6 +153,8 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                         // Use proper thread count and optimal backend
                         val threadCount = maxOf(viewModel.user_thread.toInt(), 4) // Minimum 4 threads
                         val backend = viewModel.optimalBackend.ifEmpty { "cpu" }
+                        Timber.d("Model loading parameters: path=${item.destination.path}, threads=$threadCount, backend=$backend")
+                        Timber.d("Available backends: ${viewModel.availableBackends}, optimal: ${viewModel.optimalBackend}")
                         viewModel.load(item.destination.path, userThreads = threadCount, backend = backend)
                     }
 

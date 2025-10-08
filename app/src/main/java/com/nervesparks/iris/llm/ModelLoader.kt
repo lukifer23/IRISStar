@@ -36,10 +36,12 @@ class ModelLoader @Inject constructor(
     ): Result<String> {
         return try {
             Timber.tag(tag).d("Loading model: $modelPath with backend: $backend")
+            Timber.tag(tag).d("Model loading params: threads=$threadCount, temp=$temperature, topP=$topP, topK=$topK, gpuLayers=$gpuLayers")
 
             val modelName = File(modelPath).name
             val startTime = System.currentTimeMillis()
 
+            Timber.tag(tag).d("Calling llamaAndroid.load()...")
             // Load the model with all parameters
             llamaAndroid.load(
                 pathToModel = modelPath,
@@ -49,6 +51,7 @@ class ModelLoader @Inject constructor(
                 temp = temperature,
                 gpuLayers = gpuLayers
             )
+            Timber.tag(tag).d("llamaAndroid.load() completed successfully")
 
             val loadTime = System.currentTimeMillis() - startTime
 

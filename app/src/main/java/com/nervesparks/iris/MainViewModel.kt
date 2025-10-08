@@ -1973,10 +1973,47 @@ class MainViewModel @Inject constructor(
     var loadedModelName = mutableStateOf("");
 
     fun load(pathToModel: String, userThreads: Int, backend: String = "cpu") {
-        // Use centralized ModelLoader for consistent error handling and reporting
+        // Check if native library is loaded first
+        if (!llamaAndroid.isNativeLibraryLoaded()) {
+            Timber.e("Cannot load model: Native library not loaded")
+            return
+        }
+
+        // Unload any existing model first, then set the backend and load the new model
         viewModelScope.launch {
             try {
-                // Use centralized model loading service
+                Timber.d("Unloading existing model before loading new one")
+                try {
+                    val hasModel = llamaAndroid.getModel() != 0L
+                    Timber.d("Current model pointer: ${llamaAndroid.getModel()}, hasModel: $hasModel")
+                    if (hasModel) {
+                        llamaAndroid.unload()
+                        Timber.d("Successfully unloaded existing model")
+                    }
+                    loadedModelName.value = ""
+                } catch (e: Exception) {
+                    Timber.w("Error unloading existing model: ${e.message}")
+                }
+
+                Timber.d("Setting backend to: $backend")
+                try {
+                    val backendSuccess = llamaAndroid.setBackend(backend.lowercase())
+                    Timber.d("Backend set result: $backendSuccess")
+                    if (!backendSuccess) {
+                        Timber.e("Failed to set backend to $backend, falling back to CPU")
+                        val cpuSuccess = llamaAndroid.setBackend("cpu")
+                        Timber.d("CPU backend set result: $cpuSuccess")
+                    }
+                } catch (e: Exception) {
+                    Timber.e("Exception setting backend: ${e.message}")
+                    try {
+                        llamaAndroid.setBackend("cpu")
+                    } catch (e2: Exception) {
+                        Timber.e("Failed to fallback to CPU backend: ${e2.message}")
+                    }
+                }
+
+                // Use centralized ModelLoader for consistent error handling and reporting
                 val result = modelLoader.loadModel(
                     modelPath = pathToModel,
                     threadCount = userThreads,
@@ -1994,10 +2031,12 @@ class MainViewModel @Inject constructor(
                     },
                     onFailure = { e ->
                         Timber.tag("MainViewModel").e(e, "Error loading model")
+                        loadedModelName.value = "" // Reset on failure
                     }
                 )
             } catch (e: Exception) {
                 Timber.tag("MainViewModel").e(e, "Error in load function")
+                loadedModelName.value = "" // Reset on failure
             }
         }
     }
