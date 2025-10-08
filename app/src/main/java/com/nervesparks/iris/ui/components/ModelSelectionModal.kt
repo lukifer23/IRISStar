@@ -65,9 +65,17 @@ fun ModelSelectionModal(
             availableModels
         }
     }
-    
+
     // Track selected model
     var selectedModel by remember { mutableStateOf("") }
+    var isLoadingModel by remember { mutableStateOf(false) }
+
+    val selectedModelInfo = filteredModels.firstOrNull { it["name"] == selectedModel }
+    val selectedModelDestination = selectedModelInfo?.get("destination")
+    val selectedModelFile = if (selectedModelDestination != null && extFilesDir != null) {
+        File(extFilesDir, selectedModelDestination)
+    } else null
+    val isModelFileAvailable = selectedModelFile?.exists() == true
     
     // Check if any models are downloaded
     val hasDownloadedModels = filteredModels.isNotEmpty()
@@ -338,7 +346,7 @@ fun ModelSelectionModal(
                     Spacer(modifier = Modifier.height(ComponentStyles.defaultPadding))
 
                     // Loading indicator
-                    if (modelLoadingProgress > 0f && modelLoadingProgress < 1f) {
+                    if (isLoadingModel || (modelLoadingProgress > 0f && modelLoadingProgress < 1f)) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -383,21 +391,33 @@ fun ModelSelectionModal(
                         
                         PrimaryButton(
                             onClick = {
-                                if (selectedModel.isNotEmpty() && extFilesDir != null) {
+                                if (isModelFileAvailable && extFilesDir != null) {
                                     if (isForBenchmark) {
-                                        // For benchmark, we'll handle this in the benchmark screen
                                         viewModel.showBenchmarkModelSelection = false
+                                        onDismiss()
                                     } else {
-                                        // Try to load the selected model
-                                        modelViewModel.loadModel(selectedModel)
+                                        val modelName = selectedModel
+                                        isLoadingModel = true
+                                        scope.launch {
+                                            val result = modelViewModel.loadModelByName(modelName, extFilesDir)
+                                            isLoadingModel = false
+                                            result.fold(
+                                                onSuccess = {
+                                                    selectedModel = ""
+                                                    onDismiss()
+                                                },
+                                                onFailure = {
+                                                    selectedModel = modelName
+                                                }
+                                            )
+                                        }
                                     }
-                                    onDismiss()
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            enabled = selectedModel.isNotEmpty() && modelLoadingProgress == 0f
+                            enabled = isModelFileAvailable && !isLoadingModel
                         ) {
-                            if (modelLoadingProgress > 0f && modelLoadingProgress < 1f) {
+                            if (isLoadingModel || (modelLoadingProgress > 0f && modelLoadingProgress < 1f)) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
                                     color = MaterialTheme.colorScheme.onPrimary,
