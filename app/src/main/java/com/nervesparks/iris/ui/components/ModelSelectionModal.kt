@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.SemanticColors
@@ -34,6 +35,7 @@ import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.SecondaryButton
 import com.nervesparks.iris.ui.theme.ThemedModalSurface
 import com.nervesparks.iris.ui.theme.ThemedModalCard
+import com.nervesparks.iris.viewmodel.ModelViewModel
 import java.io.File
 
 @Composable
@@ -46,7 +48,7 @@ fun ModelSelectionModal(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val scope = rememberCoroutineScope()
-    val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val modelViewModel: ModelViewModel = hiltViewModel()
 
     // Get available models and check which ones exist
     val availableModels = remember(extFilesDir) {
