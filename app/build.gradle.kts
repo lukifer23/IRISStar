@@ -123,6 +123,7 @@ dependencies {
     // Hilt
     implementation(libs.dagger.hilt.android)
     kapt(libs.dagger.hilt.android.compiler)
+    implementation(libs.dagger.hilt.navigation.compose)
 
     // Retrofit
     implementation(libs.retrofit)
