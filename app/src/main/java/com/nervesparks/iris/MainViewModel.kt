@@ -2156,6 +2156,35 @@ class MainViewModel @Inject constructor(
                 val modelSizeMB = modelFile.length() / (1024 * 1024)
                 Timber.d("Model file size: ${modelSizeMB}MB")
 
+                // Validate model file is readable and not corrupted
+                try {
+                    val fileSize = modelFile.length()
+                    if (fileSize < 1024) { // Minimum reasonable model size
+                        Timber.e("Model file too small (${fileSize} bytes), likely corrupted")
+                        return@launch
+                    }
+
+                    // Try to read first few bytes to ensure file is accessible
+                    modelFile.inputStream().use { stream ->
+                        val buffer = ByteArray(1024)
+                        val bytesRead = stream.read(buffer)
+                        if (bytesRead < 4) {
+                            Timber.e("Cannot read model file header")
+                            return@launch
+                        }
+                        // Check for GGUF magic number (basic validation)
+                        val magic = String(buffer, 0, 4, Charsets.US_ASCII)
+                        if (magic != "GGUF") {
+                            Timber.w("File doesn't appear to be a valid GGUF model (magic: $magic)")
+                            // Continue anyway as some models might have different headers
+                        }
+                    }
+                    Timber.d("Model file validation passed")
+                } catch (e: Exception) {
+                    Timber.e("Error validating model file: ${e.message}")
+                    return@launch
+                }
+
                 // Check available memory (rough estimate)
                 val runtime = Runtime.getRuntime()
                 val maxMemoryMB = runtime.maxMemory() / (1024 * 1024)

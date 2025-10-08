@@ -192,7 +192,7 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
             ) {
                 Button(
                     onClick = { onClick() },
-                    enabled = status !is Downloading && !viewModel.getIsSending(),
+                    enabled = status !is Downloading && !viewModel.getIsSending() && viewModel.loadedModelName.value.isEmpty(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
