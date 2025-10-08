@@ -36,6 +36,7 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 
+import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import com.nervesparks.iris.data.repository.ChatRepository
@@ -2192,27 +2193,31 @@ class MainViewModel @Inject constructor(
 
                 Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
 
-                // Realistic limits based on actual Android constraints
-                val maxSafeModelSize = maxMemoryMB * 0.7 // Conservative: 70% of actual heap
-                val recommendedMaxSize = 350.0 // Practical limit for Android devices
+                // Let llama.cpp handle memory management - other Android LLM apps work
+                // Only reject models that are truly impossible (e.g., larger than device RAM)
+                val deviceRamGB = try {
+                    val activityManager = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    val memoryInfo = ActivityManager.MemoryInfo()
+                    activityManager.getMemoryInfo(memoryInfo)
+                    memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0) // Convert to GB
+                } catch (e: Exception) {
+                    Timber.w("Could not detect device RAM: ${e.message}")
+                    8.0 // Assume 8GB if detection fails
+                }
 
-                Timber.i("Device heap limit: ${maxMemoryMB}MB, safe model size: ${maxSafeModelSize.toInt()}MB")
+                Timber.i("Device RAM: ${deviceRamGB}GB, Model size: ${modelSizeMB}MB")
 
-                if (modelSizeMB > recommendedMaxSize) {
-                    Timber.e("Model too large for Android: ${modelSizeMB}MB exceeds recommended maximum (${recommendedMaxSize}MB)")
-                    Timber.i("Android apps are limited to ~512MB heap. Consider:")
-                    Timber.i("1. Smaller models (under 350MB)")
-                    Timber.i("2. Better quantization (Q4_K_M instead of Q8)")
-                    Timber.i("3. Device with more RAM (8GB+ devices)")
-                    Timber.i("4. Cloud inference for large models")
+                // Only reject if model is larger than device RAM (accounting for OS usage)
+                val maxModelSizeMB = (deviceRamGB * 1024 * 0.7).toInt() // 70% of RAM
+
+                if (modelSizeMB > maxModelSizeMB) {
+                    Timber.e("Model too large: ${modelSizeMB}MB exceeds device capacity (${maxModelSizeMB}MB)")
+                    Timber.i("This model requires more RAM than your device has available")
                     return@launch
                 }
 
-                if (modelSizeMB > maxSafeModelSize) {
-                    Timber.w("Model size (${modelSizeMB}MB) approaches heap limit (${maxSafeModelSize.toInt()}MB)")
-                    Timber.i("Loading may be unstable - consider a smaller model")
-                    // Allow but warn
-                }
+                // Allow llama.cpp to manage memory - it uses native allocation
+                Timber.i("Allowing model load - llama.cpp will manage memory allocation")
 
                 // Check if model is too large for available memory - force CPU if needed
                 // With largeHeap=true, we can use more memory, so be less conservative
