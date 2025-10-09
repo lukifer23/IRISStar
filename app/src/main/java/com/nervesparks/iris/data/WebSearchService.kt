@@ -10,16 +10,21 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.net.URLEncoder
 
+/** Abstraction describing a component capable of performing web search. */
+interface WebSearcher {
+    suspend fun searchWeb(query: String): SearchResponse
+}
+
 class WebSearchService(
     private val client: OkHttpClient,
     private val userPreferencesRepository: UserPreferencesRepository
-) {
+) : WebSearcher {
     private val tag = "WebSearchService"
 
     /**
      * Perform a web search using Google Custom Search API or fallback to DuckDuckGo
      */
-    suspend fun searchWeb(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    override suspend fun searchWeb(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Searching web for: $query")
             val apiKey = userPreferencesRepository.googleApiKey

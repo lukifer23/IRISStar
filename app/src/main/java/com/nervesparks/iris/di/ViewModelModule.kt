@@ -46,10 +46,17 @@ object ViewModelModule {
     @Provides
     @ViewModelScoped
     fun provideSearchViewModel(
-        webSearchService: com.nervesparks.iris.data.WebSearchService,
-        androidSearchService: com.nervesparks.iris.data.AndroidSearchService
+        webSearcher: com.nervesparks.iris.data.WebSearcher,
+        androidSearcher: com.nervesparks.iris.data.AndroidSearcher,
+        documentRepository: com.nervesparks.iris.data.DocumentRepository,
+        embeddingService: com.nervesparks.iris.llm.EmbeddingService
     ): SearchViewModel {
-        return SearchViewModel(webSearchService, androidSearchService)
+        return SearchViewModel(
+            webSearcher,
+            androidSearcher,
+            documentRepository,
+            embeddingService
+        )
     }
 
     @Provides

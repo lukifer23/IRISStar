@@ -48,6 +48,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.R
 import com.nervesparks.iris.data.HuggingFaceApiService
@@ -55,6 +56,7 @@ import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.ui.components.DownloadInfoModal
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.ModelCard
+import com.nervesparks.iris.viewmodel.SearchViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -66,7 +68,12 @@ import java.net.URL
 import java.net.UnknownHostException
 
 @Composable
-fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDir: File) {
+fun SearchResultScreen(
+    viewModel: MainViewModel,
+    dm: DownloadManager,
+    extFilesDir: File,
+    searchViewModel: SearchViewModel = hiltViewModel()
+) {
     var modelData by rememberSaveable { mutableStateOf<List<Map<String, String>>?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -244,7 +251,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
 
         // Web search status/progress
         when {
-            viewModel.isSearching -> {
+            searchViewModel.isSearching -> {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -257,23 +264,97 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                         strokeWidth = 2.dp
                     )
                     Text(
-                        text = viewModel.searchProgress,
+                        text = searchViewModel.searchStatusMessage,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
-            viewModel.searchProgress.isNotBlank() -> {
-                val isError = viewModel.searchProgress.contains("failed", ignoreCase = true) ||
-                    viewModel.searchProgress.contains("error", ignoreCase = true)
+            searchViewModel.searchStatusMessage.isNotBlank() -> {
+                val statusMessage = searchViewModel.searchStatusMessage
+                val isError = statusMessage.contains("failed", ignoreCase = true) ||
+                    statusMessage.contains("error", ignoreCase = true)
                 Text(
-                    text = viewModel.searchProgress,
+                    text = statusMessage,
                     color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                 )
+            }
+        }
+
+        searchViewModel.searchSummary?.let { summary ->
+            if (summary.isNotBlank()) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
+            }
+        }
+
+        searchViewModel.searchError?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            )
+        }
+
+        if (searchViewModel.searchResults.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Search Results",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                searchViewModel.searchResults.forEach { result ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = result.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = result.snippet,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = result.url,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = result.source,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
             }
         }
 

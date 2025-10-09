@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.viewmodel.SearchViewModel
 import com.nervesparks.iris.ui.LocalActionHandler
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.ModernChatInput
@@ -48,6 +49,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun NavDrawer(
@@ -155,7 +157,8 @@ fun NavDrawer(
 @Composable
 fun MainChatScreen2(
     navController: NavController,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    searchViewModel: SearchViewModel = hiltViewModel()
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -242,10 +245,10 @@ fun MainChatScreen2(
                     ChatMessageList(viewModel = viewModel, scrollState = scrollState)
                     
                     // Show search loading modal when searching
-                    if (viewModel.isSearching) {
+                    if (searchViewModel.isSearching) {
                         SearchLoadingModal(
-                            message = viewModel.searchProgress,
-                            searchQuery = viewModel.currentSearchQuery,
+                            message = searchViewModel.searchStatusMessage,
+                            searchQuery = searchViewModel.currentQuery,
                             onDismiss = { }
                         )
                     }
@@ -277,9 +280,9 @@ fun MainChatScreen2(
                         onCodeClick = { viewModel.toggleCodeMode() },
                         isCodeMode = viewModel.isCodeMode,
                         onTranslateClick = { viewModel.translate(viewModel.message, "English") },
-                        onWebSearchClick = { 
+                        onWebSearchClick = {
                             if (viewModel.message.isNotBlank()) {
-                                viewModel.performWebSearch(viewModel.message)
+                                searchViewModel.performWebSearch(viewModel.message)
                             }
                         },
                         enabled = !viewModel.isGenerating

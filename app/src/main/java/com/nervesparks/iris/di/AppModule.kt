@@ -3,6 +3,8 @@ package com.nervesparks.iris.di
 import android.content.Context
 import android.llama.cpp.LLamaAndroid
 import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.llm.EmbeddingService
+import com.nervesparks.iris.llm.LlamaEmbeddingService
 import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
 import dagger.Module
@@ -41,5 +43,13 @@ object AppModule {
     @Singleton
     fun provideModelPerformanceTracker(): ModelPerformanceTracker {
         return ModelPerformanceTracker()
+    }
+
+    @Provides
+    @Singleton
+    fun provideEmbeddingService(
+        llamaAndroid: LLamaAndroid
+    ): EmbeddingService {
+        return LlamaEmbeddingService(llamaAndroid)
     }
 }

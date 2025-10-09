@@ -11,16 +11,25 @@ import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 
 /**
+ * Abstraction describing the Android system search capabilities.
+ */
+interface AndroidSearcher {
+    suspend fun launchBrowserSearch(query: String): SearchResponse
+    suspend fun launchMultiSearch(query: String): SearchResponse
+    fun formatSearchResults(results: List<SearchResult>, query: String): String
+}
+
+/**
  * Android system integration for web search
  * This service can launch searches in the user's default browser
  */
-class AndroidSearchService(private val context: Context) {
+class AndroidSearchService(private val context: Context) : AndroidSearcher {
     private val tag = "AndroidSearchService"
 
     /**
      * Launch search in user's default browser
      */
-    suspend fun launchBrowserSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    override suspend fun launchBrowserSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Launching browser search for: $query")
             
@@ -64,7 +73,7 @@ class AndroidSearchService(private val context: Context) {
     /**
      * Launch search with multiple search engines
      */
-    suspend fun launchMultiSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    override suspend fun launchMultiSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Launching multi-search for: $query")
             
@@ -113,7 +122,7 @@ class AndroidSearchService(private val context: Context) {
     /**
      * Format search results for display
      */
-    fun formatSearchResults(results: List<SearchResult>, query: String): String {
+    override fun formatSearchResults(results: List<SearchResult>, query: String): String {
         if (results.isEmpty()) {
             return "I couldn't launch any search for \"$query\". Please try again."
         }

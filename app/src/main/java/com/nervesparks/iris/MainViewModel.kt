@@ -2940,13 +2940,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    // Search state management
-    var isSearching by mutableStateOf(false)
-    var searchResults by mutableStateOf<List<SearchResult>>(emptyList())
-    var currentSearchQuery by mutableStateOf("")
-    var searchError by mutableStateOf<String?>(null)
-    var searchProgress by mutableStateOf("")
-
 }
 
 // Add data class for search response with proper structure
