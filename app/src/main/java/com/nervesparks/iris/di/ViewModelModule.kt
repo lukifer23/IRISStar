@@ -20,9 +20,10 @@ object ViewModelModule {
     @ViewModelScoped
     fun provideChatViewModel(
         chatRepository: com.nervesparks.iris.data.repository.ChatRepository,
-        documentRepository: com.nervesparks.iris.data.DocumentRepository
+        documentRepository: com.nervesparks.iris.data.DocumentRepository,
+        embeddingService: com.nervesparks.iris.llm.EmbeddingService
     ): ChatViewModel {
-        return ChatViewModel(chatRepository, documentRepository)
+        return ChatViewModel(chatRepository, documentRepository, embeddingService)
     }
 
     @Provides

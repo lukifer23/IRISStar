@@ -58,6 +58,9 @@ import com.nervesparks.iris.data.search.SearchResult
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.nervesparks.iris.llm.EmbeddingService
+import com.nervesparks.iris.llm.performDocumentIndexing
+import com.nervesparks.iris.data.exceptions.ValidationException
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -68,6 +71,7 @@ class MainViewModel @Inject constructor(
     private val modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
     private val documentRepository: DocumentRepository,
+    private val embeddingService: EmbeddingService,
     private val webSearchService: WebSearchService,
     private val androidSearchService: AndroidSearchService,
     application: Application
@@ -105,19 +109,15 @@ class MainViewModel @Inject constructor(
                 documentIndexingSuccess = null
             }
 
-            if (text.isBlank()) {
-                withContext(Dispatchers.Main) {
-                    isDocumentIndexing = false
-                    documentIndexingError = "Document is empty"
-                }
-                return@launch
-            }
-
             try {
-                val embedding = embedText(text).toList()
-                documentRepository.addDocument(text, embedding)
+                performDocumentIndexing(text, embeddingService, documentRepository)
                 withContext(Dispatchers.Main) {
                     documentIndexingSuccess = "Document indexed successfully"
+                }
+            } catch (e: ValidationException) {
+                Timber.e(e, "Validation error while indexing document")
+                withContext(Dispatchers.Main) {
+                    documentIndexingError = e.message ?: "Failed to index document"
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to index document")
@@ -131,11 +131,6 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-
-    suspend fun embedText(text: String): FloatArray =
-        withContext(Dispatchers.Default) {
-            llamaAndroid.getEmbeddings(text)
-        }
 
     private var currentChat: com.nervesparks.iris.data.db.Chat? = null
     companion object {
@@ -1715,7 +1710,7 @@ class MainViewModel @Inject constructor(
 
             viewModelScope.launch {
                 try {
-                    val userEmbedding = embedText(userMessage).toList()
+                    val userEmbedding = embeddingService.embed(userMessage)
                     val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
                     val contextDocs = similarDocs.joinToString("\n") { it.text }
                     val fullMessage = if (contextDocs.isNotEmpty()) {
