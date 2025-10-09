@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.database.Cursor
 import androidx.core.net.toUri
+import com.nervesparks.iris.viewmodel.ModelViewModel
 
 // Extension function for Cursor
 private fun Cursor.getLongOrNull(columnIndex: Int): Long? {
@@ -44,7 +45,7 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
 
 
         @Composable
-        fun Button(viewModel: MainViewModel, dm: DownloadManager, item: Downloadable) {
+        fun Button(viewModel: MainViewModel, modelViewModel: ModelViewModel, dm: DownloadManager, item: Downloadable) {
 
             var status: State by remember  {
                 mutableStateOf(
@@ -91,27 +92,11 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                     if (sofar == total) {
                         Timber.d("Download complete: ${item.destination.path}")
 
-//                         Ensure model is added dynamically
-                        withContext(Dispatchers.Main) {
-                            if (!viewModel.allModels.any { it["name"] == item.name }) {
-                                Timber.d("testing")
-                                Timber.d(item.source.toString())
-                                val newModel = mapOf(
-                                    "name" to item.name,
-                                    "source" to item.source.toString(),
-                                    "destination" to item.destination.path
-                                )
-                                viewModel.allModels = viewModel.allModels + newModel
-                                Timber.d("Model dynamically added to viewModel: $newModel")
+                        item.destination.parentFile?.let { parentDir ->
+                            withContext(Dispatchers.Main) {
+                                modelViewModel.loadExistingModels(parentDir)
                             }
                         }
-//                        val newModel = mapOf(
-//                            "name" to item.name,
-//                            "source" to item.source.toString(),
-//                            "destination" to item.destination.path
-//                        )
-//                        viewModel.allModels = viewModel.allModels + newModel
-//                        Timber.d("Model dynamically added to viewModel: $newModel")
 
                         viewModel.currentDownloadable = item
                         if(viewModel.loadedModelName.value == "") {
@@ -121,16 +106,6 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                             )
                         }
 
-                        Timber.d(viewModel.allModels.any {it["name"] == item.name}.toString())
-                        if (!viewModel.allModels.any { it["name"] == item.name }) {
-                            val newModel = mapOf(
-                                "name" to item.name,
-                                "source" to item.source.toString(),
-                                "destination" to item.destination.path
-                            )
-                            viewModel.allModels += newModel
-                            Timber.d("Outer : Model dynamically added to viewModel: $newModel")
-                        }
                         return Downloaded(item)
                     }
 

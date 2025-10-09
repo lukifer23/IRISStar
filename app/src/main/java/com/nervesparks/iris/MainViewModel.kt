@@ -244,11 +244,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val models = modelRepository.refreshAvailableModels()
-                allModels = models
+                availableModelMetadata = models
                 Timber.d("Loaded ${models.size} models from repository (defaults + API)")
             } catch (e: Exception) {
                 Timber.e(e, "Error refreshing available models from API; repository will provide curated defaults")
-                allModels = emptyList()
+                availableModelMetadata = emptyList()
             }
         }
     }
@@ -289,7 +289,7 @@ class MainViewModel @Inject constructor(
     var topK by mutableStateOf(40)
     var temp by mutableStateOf(0.7f)
 
-    var allModels by mutableStateOf<List<Map<String, String>>>(emptyList())
+    private var availableModelMetadata: List<Map<String, String>> = emptyList()
 
     private var first by mutableStateOf(
         true
@@ -1257,87 +1257,74 @@ class MainViewModel @Inject constructor(
         Timber.d("loadExistingModels called with directory: ${directory.absolutePath}")
         Timber.d("Directory exists: ${directory.exists()}")
         Timber.d("Directory is readable: ${directory.canRead()}")
-        
-        // List all files in directory first
-        val allFiles = directory.listFiles()
-        Timber.d("All files in directory: ${allFiles?.size ?: 0}")
-        allFiles?.forEach { file ->
-            Timber.d("File: ${file.name}, extension: ${file.extension}, isFile: ${file.isFile}")
-        }
-        
-        // List models in the directory that end with .gguf
-        val ggufFiles = directory.listFiles { file -> file.extension == "gguf" }
-        Timber.d("Found ${ggufFiles?.size ?: 0} .gguf files")
-        
-        ggufFiles?.forEach { file ->
-            val modelName = file.name
-            Timber.tag("This is the modelname").i(modelName)
-            if (!allModels.any { it["name"] == modelName }) {
-                allModels += mapOf(
-                    "name" to modelName,
-                    "source" to "local",
-                    "destination" to file.name,
-                    "supportsReasoning" to "false"
-                )
-                Timber.d("Added model to allModels: $modelName")
-            } else {
-                Timber.d("Model already in allModels: $modelName")
+
+        viewModelScope.launch {
+            try {
+                val installedModels = withContext(Dispatchers.IO) {
+                    modelRepository.getAvailableModels(directory)
+                }
+
+                Timber.d("Repository returned ${installedModels.size} installed models")
+
+                availableModelMetadata = mergeModelMetadata(availableModelMetadata, installedModels)
+
+                if (installedModels.isNotEmpty()) {
+                    Timber.d("Models available, setting up UI for model selection")
+
+                    val firstModel = installedModels.first()
+                    val destinationPath = File(directory, firstModel["destination"].toString())
+                    currentDownloadable = Downloadable(
+                        firstModel["name"].toString(),
+                        Uri.parse(firstModel["source"].toString()),
+                        destinationPath
+                    )
+
+                    if (defaultModelName.value.isNotEmpty()) {
+                        val defaultModel = installedModels.find { model -> model["name"] == defaultModelName.value }
+                        if (defaultModel != null) {
+                            val defaultPath = File(directory, defaultModel["destination"].toString())
+                            currentDownloadable = Downloadable(
+                                defaultModel["name"].toString(),
+                                Uri.parse(defaultModel["source"].toString()),
+                                defaultPath
+                            )
+                        }
+                    }
+
+                    showModal = false
+                    showModelSelection = true
+                    Timber.d("Set showModal=false, showModelSelection=true")
+                } else {
+                    Timber.d("No models available, showing download modal")
+                    showModal = true
+                    showModelSelection = false
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error loading existing models")
             }
         }
-        
-        Timber.d("Found ${allModels.size} total models")
-        
-        // Check if we have any models available
-        val availableModels = allModels.filter { model ->
-            val destinationPath = File(directory, model["destination"].toString())
-            destinationPath.exists()
-        }
-        
-        Timber.d("Available models: ${availableModels.size}")
-        availableModels.forEach { model ->
-            Timber.d("Available model: ${model["name"]}")
+    }
+
+    private fun mergeModelMetadata(
+        existing: List<Map<String, String>>,
+        updates: List<Map<String, String>>
+    ): List<Map<String, String>> {
+        if (updates.isEmpty()) {
+            return existing
         }
 
-        if (availableModels.isNotEmpty()) {
-            Timber.d("Models available, setting up UI for model selection")
-            
-            // Set the first available model as currentDownloadable but don't auto-load
-            val firstModel = availableModels.first()
-            val destinationPath = File(directory, firstModel["destination"].toString())
-            currentDownloadable = Downloadable(
-                firstModel["name"].toString(),
-                Uri.parse(firstModel["source"].toString()),
-                destinationPath
-            )
-            
-            // If we have a default model and it exists, use it
-            if (defaultModelName.value.isNotEmpty()) {
-                val defaultModel = availableModels.find { model -> model["name"] == defaultModelName.value }
-                if (defaultModel != null) {
-                    val defaultPath = File(directory, defaultModel["destination"].toString())
-                    currentDownloadable = Downloadable(
-                        defaultModel["name"].toString(),
-                        Uri.parse(defaultModel["source"].toString()),
-                        defaultPath
-                    )
-                }
-            }
-            
-            // DON'T show download modal when models exist - show model selection instead
-            showModal = false
-            showModelSelection = true
-            Timber.d("Set showModal=false, showModelSelection=true")
-        } else {
-            Timber.d("No models available, showing download modal")
-            // No models available, show download modal
-            showModal = true
-            showModelSelection = false
+        val updateKeys = updates.mapNotNull { it["name"] }.toSet()
+        val mergedUpdates = updates.map { update ->
+            val existingEntry = existing.firstOrNull { it["name"] == update["name"] }
+            existingEntry?.toMutableMap()?.apply { putAll(update) } ?: update
         }
+        val retained = existing.filter { it["name"] !in updateKeys }
+        return mergedUpdates + retained
     }
 
     // New function to switch between models
     fun switchModel(modelName: String, directory: File) {
-        val model = allModels.find { it["name"] == modelName }
+        val model = availableModelMetadata.find { it["name"] == modelName }
         if (model == null) {
             val msg = "Model not found: $modelName"
             Timber.tag("MainViewModel").e(msg)
@@ -1484,14 +1471,6 @@ class MainViewModel @Inject constructor(
 
         Timber.tag("MainViewModel").e("Model validation failed after $maxAttempts attempts")
         return false
-    }
-
-    // New function to get available models
-    fun getAvailableModels(directory: File): List<Map<String, String>> {
-        return allModels.filter { model ->
-            val destinationPath = File(directory, model["destination"].toString())
-            destinationPath.exists()
-        }
     }
 
     // Model selection UI functions
@@ -2013,7 +1992,7 @@ class MainViewModel @Inject constructor(
 
             // Save the currently loaded model so we can restore it later
             val previousModelName = loadedModelName.value
-            val previousModelPath = allModels
+            val previousModelPath = availableModelMetadata
                 .find { it["name"] == previousModelName }
                 ?.let { File(directory, it["destination"].toString()).path }
 
@@ -2353,11 +2332,11 @@ class MainViewModel @Inject constructor(
                 // Add reasoning support detection here
                 Timber.d("=== REASONING SUPPORT DEBUG ===")
                 Timber.d("Loading model: ${loadedModelName.value}")
-                Timber.d("All models count: ${allModels.size}")
-                Timber.d("All model names: ${allModels.map { it["name"] }}")
+                Timber.d("All models count: ${availableModelMetadata.size}")
+                Timber.d("All model names: ${availableModelMetadata.map { it["name"] }}")
                 
-                val foundModel = allModels.find { it["name"] == loadedModelName.value }
-                Timber.d("Found model in allModels: $foundModel")
+                val foundModel = availableModelMetadata.find { it["name"] == loadedModelName.value }
+                Timber.d("Found model in availableModelMetadata: $foundModel")
                 
                 val reasoningSupport = foundModel?.get("supportsReasoning")
                 Timber.d("Raw reasoning support value: $reasoningSupport")
@@ -2371,7 +2350,7 @@ class MainViewModel @Inject constructor(
                     val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                         loadedModelName.value.lowercase().contains(keyword.lowercase())
                     }
-                    Timber.d("Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+                    Timber.d("Model not found in availableModelMetadata, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
                     hasReasoningKeyword
                 } else {
                     false
@@ -2443,11 +2422,11 @@ class MainViewModel @Inject constructor(
         val modelName = modelPath.substringAfterLast("/")
         Timber.d("=== REASONING SUPPORT DEBUG ===")
         Timber.d("Loading model: $modelName")
-        Timber.d("All models count: ${allModels.size}")
-        Timber.d("All model names: ${allModels.map { it["name"] }}")
+        Timber.d("All models count: ${availableModelMetadata.size}")
+        Timber.d("All model names: ${availableModelMetadata.map { it["name"] }}")
         
-        val foundModel = allModels.find { it["name"] == modelName }
-        Timber.d("Found model in allModels: $foundModel")
+        val foundModel = availableModelMetadata.find { it["name"] == modelName }
+        Timber.d("Found model in availableModelMetadata: $foundModel")
         
         val reasoningSupport = foundModel?.get("supportsReasoning")
         Timber.d("Raw reasoning support value: $reasoningSupport")
@@ -2461,7 +2440,7 @@ class MainViewModel @Inject constructor(
             val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                 modelName.lowercase().contains(keyword.lowercase())
             }
-            Timber.d("Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+            Timber.d("Model not found in availableModelMetadata, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
             hasReasoningKeyword
         } else {
             false
@@ -2502,11 +2481,11 @@ class MainViewModel @Inject constructor(
             Timber.w("Failed to set backend search dir: ${e.message}")
         }
         Timber.d("=== REASONING SUPPORT DEBUG ===")
-        Timber.d("All models count: ${allModels.size}")
-        Timber.d("All model names: ${allModels.map { it["name"] }}")
+        Timber.d("All models count: ${availableModelMetadata.size}")
+        Timber.d("All model names: ${availableModelMetadata.map { it["name"] }}")
 
-        val foundModel = allModels.find { it["name"] == modelName }
-        Timber.d("Found model in allModels: $foundModel")
+        val foundModel = availableModelMetadata.find { it["name"] == modelName }
+        Timber.d("Found model in availableModelMetadata: $foundModel")
 
         val reasoningSupport = foundModel?.get("supportsReasoning")
         Timber.d("Raw reasoning support value: $reasoningSupport")
@@ -2519,7 +2498,7 @@ class MainViewModel @Inject constructor(
             val hasReasoningKeyword = reasoningKeywords.any { keyword ->
                 modelName.lowercase().contains(keyword.lowercase())
             }
-            Timber.d("Model not found in allModels, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
+            Timber.d("Model not found in availableModelMetadata, checking keywords. Has reasoning keyword: $hasReasoningKeyword")
             hasReasoningKeyword
         } else {
             false
@@ -2540,7 +2519,7 @@ class MainViewModel @Inject constructor(
         // Remove forced reasoning; trust metadata / keyword fallback only
 
         return try {
-            val model = allModels.find { it["name"] == modelName }
+            val model = availableModelMetadata.find { it["name"] == modelName }
             if (model != null) {
                 val destinationPath = File(directory, model["destination"].toString())
                 if (destinationPath.exists()) {

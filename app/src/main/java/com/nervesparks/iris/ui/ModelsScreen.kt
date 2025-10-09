@@ -31,9 +31,17 @@ import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.ModelCard
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import java.io.File
+import com.nervesparks.iris.viewmodel.ModelViewModel
 
 @Composable
-fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButtonClick: () -> Unit, dm: DownloadManager, onQuantizeScreenButtonClicked: () -> Unit) {
+fun ModelsScreen(
+    extFileDir: File?,
+    viewModel: MainViewModel,
+    modelViewModel: ModelViewModel,
+    onSearchResultButtonClick: () -> Unit,
+    dm: DownloadManager,
+    onQuantizeScreenButtonClicked: () -> Unit
+) {
     // Observe viewModel.refresh to trigger recomposition
     val refresh = viewModel.refresh
 
@@ -51,7 +59,8 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
             )
         }
 
-        val suggestedModels = viewModel.allModels.filter { it["supportsReasoning"] == "true" }.take(3)
+        val installedModels = modelViewModel.availableModels
+        val suggestedModels = installedModels.filter { it["supportsReasoning"] == "true" }.take(3)
 
         LazyColumn(modifier = Modifier.padding(horizontal = ComponentStyles.defaultPadding)) {
             item {
@@ -144,6 +153,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                             supportsReasoning = model["supportsReasoning"] == "true",
                             supportsVision = model["supportsVision"] == "true",
                             viewModel = viewModel,
+                            modelViewModel = modelViewModel,
                             dm = dm,
                             extFilesDir = extFileDir,
                             downloadLink = source,
@@ -172,7 +182,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
             }
 
             // Display all models not in Suggested Models
-            items(viewModel.allModels.filterNot { suggestedModels.contains(it) }, key = { it["name"] ?: it["source"] ?: "" }) { model ->
+            items(installedModels.filterNot { suggestedModels.contains(it) }, key = { it["name"] ?: it["source"] ?: "" }) { model ->
                 extFileDir?.let {
                     model["source"]?.let { source ->
                         ModelCard(
@@ -180,6 +190,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                             supportsReasoning = model["supportsReasoning"] == "true",
                             supportsVision = model["supportsVision"] == "true",
                             viewModel = viewModel,
+                            modelViewModel = modelViewModel,
                             dm = dm,
                             extFilesDir = extFileDir,
                             downloadLink = source,
@@ -189,7 +200,7 @@ fun ModelsScreen(extFileDir: File?, viewModel: MainViewModel, onSearchResultButt
                 }
             }
             item {
-                if (viewModel.allModels.drop(3).isEmpty()) {
+                if (installedModels.drop(3).isEmpty()) {
                     Text(
                         text = "No models to show",
                         color = MaterialTheme.colorScheme.onSurface,
