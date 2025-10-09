@@ -31,6 +31,7 @@ class ChatViewModel @Inject constructor(
 
     // Chat list from repository
     val chats = chatRepository.observeChats()
+    val chatStats = chatRepository.observeChatStats()
 
     // Current chat state
     private var currentChat: Chat? = null

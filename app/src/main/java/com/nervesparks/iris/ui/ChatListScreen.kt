@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.data.db.Chat
+import com.nervesparks.iris.data.repository.ChatStats
 import com.nervesparks.iris.ui.components.ModernTopAppBar
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.ModernIconButton
@@ -35,7 +36,6 @@ import com.nervesparks.iris.ui.theme.ModernTextField
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.max
 
 enum class FilterType {
     ALL, TODAY, WEEK, MONTH
@@ -74,15 +74,29 @@ private fun getStartOfMonth(): Long {
     return calendar.timeInMillis
 }
 
-private fun exportChatAsMarkdown(chat: Chat): String {
+private fun exportChatAsMarkdown(chat: Chat, stats: ChatStats?): String {
     val sb = StringBuilder()
     sb.append("# ${chat.title}\n\n")
     sb.append("Created: ${formatDate(chat.created)}\n")
     sb.append("Last Modified: ${formatDate(chat.updated)}\n\n")
 
-    // Note: Messages are not directly available on Chat object
-    // This would need to be implemented by loading messages separately
-    sb.append("Messages: (Not available in current implementation)\n\n")
+    val totalMessages = stats?.totalMessages ?: 0
+    val userMessages = stats?.userMessages ?: 0
+    val assistantMessages = stats?.assistantMessages ?: 0
+    val averageResponse = stats?.averageResponseTime ?: 0L
+    val totalTokens = stats?.totalTokens ?: 0
+
+    sb.append("## Statistics\n")
+    sb.append("- Total messages: $totalMessages\n")
+    sb.append("- User messages: $userMessages\n")
+    sb.append("- Assistant messages: $assistantMessages\n")
+    sb.append("- Estimated tokens: $totalTokens\n")
+    if (averageResponse > 0) {
+        sb.append("- Average response time: ${formatDuration(averageResponse)}\n")
+    } else {
+        sb.append("- Average response time: N/A\n")
+    }
+    sb.append("\n")
 
     return sb.toString()
 }
@@ -92,10 +106,19 @@ private fun formatDate(timestamp: Long): String {
     return sdf.format(Date(timestamp))
 }
 
+private fun formatDuration(durationMs: Long): String {
+    return if (durationMs < 1000) {
+        "$durationMs ms"
+    } else {
+        String.format(Locale.getDefault(), "%.1f s", durationMs / 1000.0)
+    }
+}
+
 private suspend fun exportAllChatsAsMarkdown(
     context: Context,
     extFilesDir: File?,
-    chats: List<Chat>
+    chats: List<Chat>,
+    stats: Map<Long, ChatStats>
 ) {
     try {
         val exportDir = File(extFilesDir, "exports")
@@ -107,7 +130,7 @@ private suspend fun exportAllChatsAsMarkdown(
             val fileName = "${chat.title.replace("[^a-zA-Z0-9.-]".toRegex(), "_")}.md"
             val file = File(exportDir, fileName)
 
-            file.writeText(exportChatAsMarkdown(chat))
+            file.writeText(exportChatAsMarkdown(chat, stats[chat.id]))
 
             // Share the file
             shareFile(context, file, "text/markdown")
@@ -152,6 +175,7 @@ fun ChatListScreen(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val chats by viewModel.chats.collectAsState(initial = emptyList())
+    val chatStatsMap by viewModel.chatStats.collectAsState(initial = emptyMap())
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -178,7 +202,7 @@ fun ChatListScreen(
         when (sortBy) {
             SortBy.LAST_MODIFIED -> filtered.sortedByDescending { it.updated }
             SortBy.TITLE -> filtered.sortedBy { it.title }
-            SortBy.MESSAGE_COUNT -> filtered.sortedByDescending { 0 } // TODO: Implement message count
+            SortBy.MESSAGE_COUNT -> filtered.sortedByDescending { chatStatsMap[it.id]?.totalMessages ?: 0 }
         }
     }
 
@@ -207,7 +231,7 @@ fun ChatListScreen(
                         // Export all chats button
                         ModernIconButton(onClick = {
                             scope.launch {
-                                exportAllChatsAsMarkdown(context, extFilesDir, chats)
+                                exportAllChatsAsMarkdown(context, extFilesDir, chats, chatStatsMap)
                             }
                         }) {
                             Icon(
@@ -382,8 +406,10 @@ fun ChatListScreen(
             } else {
                 LazyColumn(Modifier.weight(1f)) {
                     items(filteredChats, key = { it.id }) { chat ->
+                        val stats = chatStatsMap[chat.id]
                         ChatRow(
                             chat = chat,
+                            stats = stats,
                             onClick = { onChatSelected(chat.id) },
                             onRename = { title -> scope.launch { viewModel.renameChat(chat, title) } },
                             onDelete = { scope.launch { viewModel.deleteChat(chat) } },
@@ -395,7 +421,7 @@ fun ChatListScreen(
                                     }
                                     val fileName = "${chat.title.replace("[^a-zA-Z0-9.-]".toRegex(), "_")}.md"
                                     val file = File(exportDir, fileName)
-                                    file.writeText(exportChatAsMarkdown(chat))
+                                    file.writeText(exportChatAsMarkdown(chat, stats))
                                     shareFile(context, file, "text/markdown")
                                 }
                             },
@@ -434,6 +460,7 @@ fun ChatListScreen(
 @Composable
 private fun ChatRow(
     chat: Chat,
+    stats: ChatStats?,
     onClick: () -> Unit,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
@@ -475,6 +502,13 @@ private fun ChatRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (stats != null) {
+                    Text(
+                        text = "${stats.totalMessages} messages",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Box {
                 IconButton(onClick = { showMenu = true }) {
