@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.IrisStarTheme
+import com.nervesparks.iris.viewmodel.GenerationViewModel
 
 data class PerformanceMonitorState(
     val tps: Double,
@@ -29,19 +30,19 @@ data class PerformanceMonitorState(
 )
 
 @Composable
-fun PerformanceMonitor(viewModel: MainViewModel) {
+fun PerformanceMonitor(generationViewModel: GenerationViewModel, mainViewModel: MainViewModel) {
     PerformanceMonitor(
         state = PerformanceMonitorState(
-            tps = viewModel.tps,
-            ttft = viewModel.ttft,
-            latency = viewModel.latency,
-            memoryUsage = viewModel.memoryUsage,
-            contextLimit = viewModel.contextLimit,
-            maxContextLimit = viewModel.maxContextLimit,
-            tokensGenerated = viewModel.tokensGenerated,
-            isGenerating = viewModel.isGenerating,
-            backend = viewModel.currentBackend,
-            offload = (viewModel.offloadedLayers to viewModel.totalLayers)
+            tps = generationViewModel.tps,
+            ttft = generationViewModel.ttft,
+            latency = generationViewModel.latency,
+            memoryUsage = generationViewModel.memoryUsage,
+            contextLimit = generationViewModel.contextLimit,
+            maxContextLimit = generationViewModel.maxContextLimit,
+            tokensGenerated = generationViewModel.tokensGenerated,
+            isGenerating = generationViewModel.isGenerating,
+            backend = mainViewModel.currentBackend,
+            offload = (generationViewModel.offloadedLayers to generationViewModel.totalLayers)
         )
     )
 }

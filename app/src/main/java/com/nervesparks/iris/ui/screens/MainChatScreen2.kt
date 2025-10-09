@@ -160,7 +160,8 @@ fun NavDrawer(
 fun MainChatScreen2(
     navController: NavController,
     viewModel: MainViewModel,
-    modelViewModel: ModelViewModel
+    modelViewModel: ModelViewModel,
+    generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -280,7 +281,7 @@ fun MainChatScreen2(
                 Column(
                     modifier = Modifier.navigationBarsPadding()
                 ) {
-                    PerformanceMonitor(viewModel = viewModel)
+                    PerformanceMonitor(generationViewModel = generationViewModel, mainViewModel = viewModel)
                     ModernChatInput(
                         value = viewModel.message,
                         onValueChange = { viewModel.updateMessage(it) },
@@ -298,7 +299,7 @@ fun MainChatScreen2(
                                 viewModel.performWebSearch(viewModel.message)
                             }
                         },
-                        enabled = !viewModel.isGenerating
+                        enabled = !generationViewModel.isGenerating
                     )
                 }
             }
@@ -308,7 +309,7 @@ fun MainChatScreen2(
         if (showPerChatSettings) {
             PerChatSettingsBottomSheet(
                 chatViewModel = chatViewModel,
-                chatId = 1L, // TODO: Get actual chat ID from MainViewModel
+                chatId = viewModel.currentChatPublic?.id ?: 1L,
                 currentSettings = currentChatSettings,
                 onDismiss = { showPerChatSettings = false },
                 onSave = { settings ->

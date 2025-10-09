@@ -3,6 +3,7 @@ package com.nervesparks.iris.di
 import android.content.Context
 import android.llama.cpp.LLamaAndroid
 import com.nervesparks.iris.data.UserPreferencesRepository
+import com.nervesparks.iris.data.exceptions.ErrorHandler
 import com.nervesparks.iris.llm.EmbeddingService
 import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
@@ -61,5 +62,11 @@ object AppModule {
         @Named("embedding_dispatcher") dispatcher: CoroutineDispatcher
     ): EmbeddingService {
         return EmbeddingService(llamaAndroid, dispatcher)
+    }
+
+    @Provides
+    @Singleton
+    fun provideErrorHandler(): ErrorHandler {
+        return ErrorHandler
     }
 }

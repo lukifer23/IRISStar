@@ -1,5 +1,6 @@
 package com.nervesparks.iris.di
 
+import android.content.Context
 import com.nervesparks.iris.viewmodel.*
 import dagger.Module
 import dagger.Provides
@@ -75,5 +76,46 @@ object ViewModelModule {
         userPreferencesRepository: com.nervesparks.iris.data.UserPreferencesRepository
     ): BenchmarkViewModel {
         return BenchmarkViewModel(llamaAndroid, userPreferencesRepository)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideDocumentViewModel(
+        llamaAndroid: android.llama.cpp.LLamaAndroid,
+        documentRepository: com.nervesparks.iris.data.DocumentRepository,
+        embeddingService: com.nervesparks.iris.llm.EmbeddingService,
+        errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler
+    ): DocumentViewModel {
+        return DocumentViewModel(llamaAndroid, documentRepository, embeddingService, errorHandler)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideGenerationViewModel(
+        @dagger.hilt.android.qualifiers.ApplicationContext context: Context,
+        errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler
+    ): GenerationViewModel {
+        return GenerationViewModel(context, errorHandler)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideToolViewModel(
+        llamaAndroid: android.llama.cpp.LLamaAndroid,
+        webSearchService: com.nervesparks.iris.data.WebSearchService,
+        errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler
+    ): ToolViewModel {
+        return ToolViewModel(llamaAndroid, webSearchService, errorHandler)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideDownloadViewModel(
+        huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
+        modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
+        userPreferencesRepository: com.nervesparks.iris.data.UserPreferencesRepository,
+        errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler
+    ): DownloadViewModel {
+        return DownloadViewModel(huggingFaceApiService, modelRepository, userPreferencesRepository, errorHandler)
     }
 }

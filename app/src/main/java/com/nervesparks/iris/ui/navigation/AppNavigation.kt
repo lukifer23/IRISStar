@@ -48,6 +48,12 @@ fun AppNavigation(
     extFilesDir: File?,
     preferencesRepository: UserPreferencesRepository
 ) {
+    // Extract specialized ViewModels from MainViewModel
+    val chatViewModel = viewModel.chatViewModel
+    val documentViewModel = viewModel.documentViewModel
+    val generationViewModel = viewModel.generationViewModel
+    val toolViewModel = viewModel.toolViewModel
+    val downloadViewModel = viewModel.downloadViewModel
     val navController = rememberNavController()
     NavHost(
         navController = navController,
@@ -81,12 +87,14 @@ fun AppNavigation(
             MainChatScreen2(
                 navController = navController,
                 viewModel = viewModel,
-                modelViewModel = modelViewModel
+                modelViewModel = modelViewModel,
+                generationViewModel = generationViewModel
             )
         }
         composable(AppDestinations.SETTINGS) {
             SettingsScreen(
                 viewModel = viewModel,
+                generationViewModel = generationViewModel,
                 preferencesRepository = preferencesRepository,
                 onModelsScreenButtonClicked = { navController.navigate(AppDestinations.MODELS) },
                 onParamsScreenButtonClicked = { navController.navigate(AppDestinations.PARAMS) },

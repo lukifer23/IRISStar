@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
+    generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel,
     preferencesRepository: UserPreferencesRepository,
     onModelsScreenButtonClicked: () -> Unit,
     onParamsScreenButtonClicked: () -> Unit,
@@ -426,8 +427,8 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    val offText = if (viewModel.offloadedLayers >= 0 && viewModel.totalLayers > 0) {
-                        "Offload: ${viewModel.offloadedLayers}/${viewModel.totalLayers}"
+                    val offText = if (generationViewModel.offloadedLayers >= 0 && generationViewModel.totalLayers > 0) {
+                        "Offload: ${generationViewModel.offloadedLayers}/${generationViewModel.totalLayers}"
                     } else {
                         "Offload: n/a"
                     }

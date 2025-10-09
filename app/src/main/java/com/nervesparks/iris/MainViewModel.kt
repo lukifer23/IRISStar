@@ -51,6 +51,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
@@ -75,10 +76,15 @@ class MainViewModel @Inject constructor(
     private val embeddingService: EmbeddingService,
     private val webSearchService: WebSearchService,
     private val androidSearchService: AndroidSearchService,
-    private val searchViewModel: com.nervesparks.iris.viewmodel.SearchViewModel,
-    private val voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel,
-    private val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel,
-    private val chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
+    // Specialized ViewModels
+    val searchViewModel: com.nervesparks.iris.viewmodel.SearchViewModel,
+    val voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel,
+    val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel,
+    val chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
+    val documentViewModel: com.nervesparks.iris.viewmodel.DocumentViewModel,
+    val generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel,
+    val toolViewModel: com.nervesparks.iris.viewmodel.ToolViewModel,
+    val downloadViewModel: com.nervesparks.iris.viewmodel.DownloadViewModel,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -98,47 +104,11 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    var isDocumentIndexing by mutableStateOf(false)
-        private set
-
-    var documentIndexingError by mutableStateOf<String?>(null)
-        private set
-
-    var documentIndexingSuccess by mutableStateOf<String?>(null)
-        private set
-
-    fun indexDocument(text: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            withContext(Dispatchers.Main) {
-                isDocumentIndexing = true
-                documentIndexingError = null
-                documentIndexingSuccess = null
-            }
-
-            try {
-                performDocumentIndexing(text, embeddingService, documentRepository)
-                withContext(Dispatchers.Main) {
-                    documentIndexingSuccess = "Document indexed successfully"
-                }
-            } catch (e: ValidationException) {
-                Timber.e(e, "Validation error while indexing document")
-                withContext(Dispatchers.Main) {
-                    documentIndexingError = e.message ?: "Failed to index document"
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to index document")
-                withContext(Dispatchers.Main) {
-                    documentIndexingError = e.message ?: "Failed to index document"
-                }
-            } finally {
-                withContext(Dispatchers.Main) {
-                    isDocumentIndexing = false
-                }
-            }
-        }
-    }
 
     private var currentChat: com.nervesparks.iris.data.db.Chat? = null
+
+    val currentChatPublic: com.nervesparks.iris.data.db.Chat?
+        get() = currentChat
     companion object {
 //        @JvmStatic
 //        private val NanosPerSecond = 1_000_000_000.0
@@ -334,7 +304,7 @@ class MainViewModel @Inject constructor(
         addMessage("user", "Search the web for: $query")
 
         // Use SearchViewModel from UI layer for proper separation of concerns
-        searchViewModel.performWebSearch(query, summarize = true)
+        searchViewModel.performWebSearch(query, summarize)
 
         // Monitor search results and add to chat when complete (optimized)
         viewModelScope.launch {
@@ -356,97 +326,6 @@ class MainViewModel @Inject constructor(
         }
     }
     
-    private fun processWebSearch(prompt: String) {
-        viewModelScope.launch {
-            try {
-                startGeneration()
-                
-                var workingMessages = messages.toMutableList()
-                val reserve = 256
-
-                // Trim history until it fits within the context window
-                var finalPrompt = ""
-                while (true) {
-                    finalPrompt = if (template.isNotBlank()) {
-                        val jinjava = com.hubspot.jinjava.Jinjava()
-                        val context = mapOf("messages" to workingMessages)
-                        jinjava.render(template, context)
-                    } else {
-                        com.nervesparks.iris.llm.TemplateRegistry.render(
-                            modelChatFormat,
-                            workingMessages,
-                            modelSystemPrompt,
-                            includeThinkingTags = supportsReasoning
-                        )
-                    }
-                    val promptTokens = llamaAndroid.countTokens(finalPrompt)
-                    if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
-                        break
-                    }
-                    val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
-                    if (removeIdx >= 0) {
-                        workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
-                    } else {
-                        break
-                    }
-                }
-
-                if (workingMessages.size != messages.size) {
-                    messages = workingMessages
-                    addMessage(
-                        "system",
-                        "⚠️ Earlier messages were removed to stay within the model's context limit."
-                    )
-                }
-
-                contextLimit = llamaAndroid.countTokens(finalPrompt)
-                maxContextLimit = modelContextLength
-
-                var generatedTokens = 0
-                llamaAndroid.send(finalPrompt)
-                    .catch {
-                        Timber.e(it, "processWebSearch() failed")
-                        addMessage("error", it.message ?: "")
-                    }
-                    .collect {
-                        generatedTokens++
-                        updateTokenCount(generatedTokens)
-                        contextLimit = llamaAndroid.countTokens(finalPrompt) + generatedTokens
-
-                        if (getIsMarked()) {
-                            addMessage("codeBlock", it)
-                        } else {
-                            try {
-                                val json = org.json.JSONObject(it)
-                                if (json.has("tool")) {
-                                    val tool = json.getString("tool")
-                                    val args = json.getJSONObject("args")
-                                    val argsMap = mutableMapOf<String, Any>()
-                                    args.keys().forEach { key ->
-                                        argsMap[key] = args.get(key)
-                                    }
-                                    handleToolCall(com.nervesparks.iris.data.ToolCall(tool, argsMap))
-                                } else {
-                                    val cleanedResponse = cleanThinkingResponse(it)
-                                    addMessage("assistant", cleanedResponse)
-                                }
-                            } catch (e: org.json.JSONException) {
-                                val cleanedResponse = cleanThinkingResponse(it)
-                                addMessage("assistant", cleanedResponse)
-                            }
-                        }
-                    }
-                    .also {
-                        endGeneration()
-                        persistChat()
-                    }
-            } catch (e: Exception) {
-                Timber.e(e, "Error in processWebSearch")
-                addMessage("error", "Failed to process web search: ${e.message}")
-                endGeneration()
-            }
-        }
-    }
 
     fun startVoiceRecognition(context: Context) {
         // Use VoiceViewModel from UI layer for proper separation of concerns
@@ -537,17 +416,12 @@ class MainViewModel @Inject constructor(
     }
 
     fun summarizeDocument(text: String) {
-        viewModelScope.launch {
-            val prompt = "Summarize the following text:\n\n$text"
-            pruneForNewTokens(llamaAndroid.countTokens(prompt))
-            addMessage("user", prompt)
-            send()
-        }
+        documentViewModel.summarizeDocument(text)
     }
 
     fun handleToolCall(toolCall: com.nervesparks.iris.data.ToolCall) {
         Timber.d("Handling tool call: $toolCall")
-        
+
         viewModelScope.launch {
             try {
                 when (toolCall.name) {
@@ -555,13 +429,13 @@ class MainViewModel @Inject constructor(
                         val query = toolCall.args["query"] as? String
                         if (query != null) {
                             Timber.d("Executing web search for: $query")
-                            
+
                             // Show tool execution in progress
                             addMessage("assistant", "🔍 Executing web search for \"$query\"...")
-                            
+
                             // Perform the search
                             val searchResponse = webSearchService.searchWeb(query)
-                            
+
                             if (searchResponse.success && searchResponse.results != null) {
                                 // Format and display results
                                 val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
@@ -574,24 +448,17 @@ class MainViewModel @Inject constructor(
                             addMessage("assistant", "❌ Invalid search query provided")
                         }
                     }
-                    "wolfram_alpha" -> {
-                        val query = toolCall.args["query"] as? String
-                        if (query != null) {
-                            addMessage("assistant", "🧮 Wolfram Alpha calculation for \"$query\"\n\nThis feature is not yet implemented. Please try a different approach.")
-                        } else {
-                            addMessage("assistant", "❌ Invalid Wolfram Alpha query")
-                        }
-                    }
-                    "python", "code_interpreter" -> {
-                        val code = toolCall.args["code"] as? String
-                        if (code != null) {
-                            addMessage("assistant", "🐍 Python code execution:\n\n```python\n$code\n```\n\nThis feature is not yet implemented. Please try a different approach.")
-                        } else {
-                            addMessage("assistant", "❌ Invalid Python code")
-                        }
-                    }
                     else -> {
-                        addMessage("assistant", "❌ Unknown tool: ${toolCall.name}\n\nAvailable tools: web_search, brave_search, wolfram_alpha, python")
+                        // Delegate other tools to ToolViewModel
+                        toolViewModel.handleToolCall(toolCall)
+                        // Handle the result - wait a bit for async processing
+                        kotlinx.coroutines.delay(100)
+                        toolViewModel.toolCallResult?.let { result ->
+                            addMessage("assistant", result)
+                        }
+                        toolViewModel.toolCallError?.let { error ->
+                            addMessage("assistant", "❌ Tool execution error: $error")
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -614,7 +481,7 @@ class MainViewModel @Inject constructor(
                         val extractedText = visionText.text
                         if (extractedText.isNotBlank()) {
                             // Index the document for retrieval and summarize for the chat
-                            indexDocument(extractedText)
+                            documentViewModel.indexDocument(extractedText)
                             summarizeDocument(extractedText)
                         } else {
                             addMessage("assistant", "❌ No text found in image")
@@ -646,19 +513,19 @@ class MainViewModel @Inject constructor(
         addMessage("user", prompt)
         // Don't call send() to avoid infinite recursion
         // Instead, directly process the code analysis
-        processCodeAnalysis(prompt)
+        processCodeAnalysis()
     }
 
-    private fun processCodeAnalysis(prompt: String) {
+    private fun processCodeAnalysis() {
         viewModelScope.launch {
             try {
-                startGeneration()
+                generationViewModel.startGeneration()
                 
                 var workingMessages = messages.toMutableList()
                 val reserve = 256
 
                 // Trim history until it fits within the context window
-                var finalPrompt = ""
+                var finalPrompt: String
                 while (true) {
                     finalPrompt = if (template.isNotBlank()) {
                         val jinjava = com.hubspot.jinjava.Jinjava()
@@ -692,8 +559,7 @@ class MainViewModel @Inject constructor(
                     )
                 }
 
-                contextLimit = llamaAndroid.countTokens(finalPrompt)
-                maxContextLimit = modelContextLength
+                generationViewModel.updateContextLimit(llamaAndroid.countTokens(finalPrompt), modelContextLength)
 
                 var generatedTokens = 0
                 llamaAndroid.send(finalPrompt)
@@ -703,8 +569,8 @@ class MainViewModel @Inject constructor(
                     }
                     .collect {
                         generatedTokens++
-                        updateTokenCount(generatedTokens)
-                        contextLimit = llamaAndroid.countTokens(finalPrompt) + generatedTokens
+                        generationViewModel.updateTokenCount(generatedTokens)
+                        generationViewModel.updateContextLimit(llamaAndroid.countTokens(finalPrompt) + generatedTokens, generationViewModel.maxContextLimit)
 
                         if (getIsMarked()) {
                             addMessage("codeBlock", it)
@@ -713,24 +579,20 @@ class MainViewModel @Inject constructor(
                         }
                     }
                     .also {
-                        endGeneration()
+                        generationViewModel.endGeneration()
                         persistChat()
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Error in processCodeAnalysis")
                 addMessage("error", "Failed to analyze code: ${e.message}")
-                endGeneration()
+                generationViewModel.endGeneration()
             }
         }
     }
 
     fun translate(text: String, targetLanguage: String) {
-        val prompt = "Translate the following text to $targetLanguage:\n\n$text"
-        viewModelScope.launch {
-            pruneForNewTokens(llamaAndroid.countTokens(prompt))
-        }
-        addMessage("user", prompt)
-        processTranslation(prompt)
+        toolViewModel.translate(text, targetLanguage)
+        // The result will be handled by observing toolViewModel.translationResult
     }
 
     /**
@@ -765,80 +627,6 @@ class MainViewModel @Inject constructor(
         return cleaned.trim()
     }
 
-    private fun processTranslation(prompt: String) {
-        viewModelScope.launch {
-            try {
-                startGeneration()
-                
-                var workingMessages = messages.toMutableList()
-                val reserve = 256
-
-                // Trim history until it fits within the context window
-                var finalPrompt = ""
-                while (true) {
-                    finalPrompt = if (template.isNotBlank()) {
-                        val jinjava = com.hubspot.jinjava.Jinjava()
-                        val context = mapOf("messages" to workingMessages)
-                        jinjava.render(template, context)
-                    } else {
-                        com.nervesparks.iris.llm.TemplateRegistry.render(
-                            modelChatFormat,
-                            workingMessages,
-                            modelSystemPrompt,
-                            includeThinkingTags = supportsReasoning
-                        )
-                    }
-                    val promptTokens = llamaAndroid.countTokens(finalPrompt)
-                    if (promptTokens <= modelContextLength - reserve || workingMessages.size <= 1) {
-                        break
-                    }
-                    val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
-                    if (removeIdx >= 0) {
-                        workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
-                    } else {
-                        break
-                    }
-                }
-
-                if (workingMessages.size != messages.size) {
-                    messages = workingMessages
-                    addMessage(
-                        "system",
-                        "⚠️ Earlier messages were removed to stay within the model's context limit."
-                    )
-                }
-
-                contextLimit = llamaAndroid.countTokens(finalPrompt)
-                maxContextLimit = modelContextLength
-
-                var generatedTokens = 0
-                llamaAndroid.send(finalPrompt)
-                    .catch {
-                        Timber.e(it, "processTranslation() failed")
-                        addMessage("error", it.message ?: "")
-                    }
-                    .collect {
-                        generatedTokens++
-                        updateTokenCount(generatedTokens)
-                        contextLimit = llamaAndroid.countTokens(finalPrompt) + generatedTokens
-
-                        if (getIsMarked()) {
-                            addMessage("codeBlock", it)
-                        } else {
-                            addMessage("assistant", it)
-                        }
-                    }
-                    .also {
-                        endGeneration()
-                        persistChat()
-                    }
-            } catch (e: Exception) {
-                Timber.e(e, "Error in processTranslation")
-                addMessage("error", "Failed to translate: ${e.message}")
-                endGeneration()
-            }
-        }
-    }
 
     private fun stripThinking(input: String): String {
         // Remove <think>...</think> segments and any stray tags for display-only purposes
@@ -914,113 +702,6 @@ class MainViewModel @Inject constructor(
         lastAttachmentAction = null
     }
 
-    // Performance monitoring variables
-    var tps by mutableStateOf(0.0) // Tokens per second
-    var ttft by mutableStateOf(0L) // Time to first token (milliseconds)
-    var latency by mutableStateOf(0L) // Average latency per token (milliseconds)
-    var memoryUsage by mutableStateOf(0L) // Memory usage in MB
-    var contextLimit by mutableStateOf(0) // Current context length
-    var maxContextLimit by mutableStateOf(0) // Maximum context limit
-    var isGenerating by mutableStateOf(false) // Whether currently generating
-    var generationStartTime by mutableStateOf(0L) // Start time of generation
-    var tokensGenerated by mutableStateOf(0) // Number of tokens generated in current session
-    var totalGenerationTime by mutableStateOf(0L) // Total generation time in milliseconds
-
-    // GPU offload reporting (N/N)
-    var offloadedLayers by mutableStateOf(-1)
-    var totalLayers by mutableStateOf(-1)
-
-    // Performance monitoring functions
-    fun startGeneration() {
-        isGenerating = true
-        generationStartTime = System.currentTimeMillis()
-        tokensGenerated = 0
-        totalGenerationTime = 0L
-        ttft = 0L
-        tps = 0.0
-        latency = 0L
-    }
-
-    fun endGeneration() {
-        isGenerating = false
-        val endTime = System.currentTimeMillis()
-        totalGenerationTime = endTime - generationStartTime
-        
-        // Calculate TPS if we have tokens and time
-        if (tokensGenerated > 0 && totalGenerationTime > 0) {
-            tps = (tokensGenerated * 1000.0) / totalGenerationTime
-        }
-        
-        // Calculate average latency
-        if (tokensGenerated > 0) {
-            latency = totalGenerationTime / tokensGenerated
-        persistChat()
-        }
-    }
-
-    fun updateTokenCount(count: Int) {
-        tokensGenerated = count
-        if (ttft == 0L && count > 0) {
-            // Calculate time to first token
-            ttft = System.currentTimeMillis() - generationStartTime
-        }
-        
-        // Update total generation time
-        totalGenerationTime = System.currentTimeMillis() - generationStartTime
-        
-        // Calculate TPS in real-time
-        val elapsedTime = totalGenerationTime.toDouble()
-        if (elapsedTime > 0) {
-            tps = (count * 1000.0) / elapsedTime
-        }
-        
-        // Calculate average latency
-        if (count > 0) {
-            latency = totalGenerationTime / count
-        }
-        
-        // Update memory usage periodically
-        viewModelScope.launch {
-            try {
-                val memoryUsage = getMemoryUsage()
-                updateMemoryUsage(memoryUsage / (1024 * 1024)) // Convert to MB
-            } catch (e: Exception) {
-                Timber.e(e, "Error updating memory usage")
-            }
-        }
-    }
-
-    fun updateMemoryUsage(usageMB: Long) {
-        memoryUsage = usageMB
-    }
-    
-    fun getCurrentMemoryUsage(): Long {
-        return memoryUsage
-    }
-    
-    suspend fun refreshMemoryUsage() {
-        try {
-            val usage = llamaAndroid.getMemoryUsage()
-            updateMemoryUsage(usage)
-        } catch (e: Exception) {
-            Timber.e("Error getting memory usage: ${e.message}")
-            updateMemoryUsage(0)
-        }
-    }
-
-    fun updateContextLimit(current: Int, max: Int) {
-        contextLimit = current
-        maxContextLimit = max
-    }
-
-    fun resetPerformanceMetrics() {
-        tps = 0.0
-        ttft = 0L
-        latency = 0L
-        tokensGenerated = 0
-        totalGenerationTime = 0L
-        isGenerating = false
-    }
 
     var showModelSettings by mutableStateOf(false)
 
@@ -1064,11 +745,9 @@ class MainViewModel @Inject constructor(
         modelChatFormat = chatFormat
         modelThreadCount = threadCount
         // only set if provided
+        // GPU layers configuration - TODO: implement persistent storage
         if (gpuLayers != -2) {
-            try {
-                val v = gpuLayers
-                // store in a backing pref via repository if available later in file
-            } catch (_: Exception) {}
+            // gpuLayers value available but not yet persisted
         }
 
         // Save to preferences
@@ -1136,7 +815,7 @@ class MainViewModel @Inject constructor(
                     Timber.tag("MainViewModel").e(e, "Error loading contextLength, using default")
                     modelContextLength = 32768  // Increased for Qwen3 support
                 }
-                maxContextLimit = modelContextLength
+                generationViewModel.updateContextLimit(0, modelContextLength)
 
                 try {
                     modelSystemPrompt = userPreferencesRepository.getModelSystemPrompt()
@@ -1515,6 +1194,7 @@ class MainViewModel @Inject constructor(
                                 }
                             }
 
+                            @Suppress("DEPRECATION")
                             override fun onError(utteranceId: String?) {
                                 CoroutineScope(Dispatchers.Main).launch {
                                     stateForTextToSpeech = true
@@ -1596,7 +1276,7 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun pruneForNewTokens(additionalTokens: Int) {
-        if (contextLimit + additionalTokens <= modelContextLength) return
+        if (generationViewModel.contextLimit + additionalTokens <= modelContextLength) return
 
         var workingMessages = messages.toMutableList()
         var currentContextLimit = calculateContextLimit(workingMessages)
@@ -1654,7 +1334,7 @@ class MainViewModel @Inject constructor(
 
         if (wasPruned) {
             messages = workingMessages
-            contextLimit = currentContextLimit
+            generationViewModel.updateContextLimit(currentContextLimit, generationViewModel.maxContextLimit)
             addMessage(
                 "system",
                 "Earlier messages were summarized to stay within the model's context limit."
@@ -1758,31 +1438,39 @@ class MainViewModel @Inject constructor(
                 first = false
             }
 
-            viewModelScope.launch {
-                pruneForNewTokens(llamaAndroid.countTokens(userMessage))
-            }
-            addMessage("user", userMessage)
-            persistChat()
-
-            // Start performance monitoring
-            startGeneration()
-
-            viewModelScope.launch {
+            // Compute RAG context before adding message
+            val effectiveMessage = runBlocking {
                 try {
                     val userEmbedding = embeddingService.embed(userMessage)
                     val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
                     val contextDocs = similarDocs.joinToString("\n") { it.text }
-                    val fullMessage = if (contextDocs.isNotEmpty()) {
+                    if (contextDocs.isNotEmpty()) {
                         "Context: $contextDocs\n\nQuestion: $userMessage"
                     } else {
                         userMessage
                     }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to compute RAG context, using plain message")
+                    userMessage
+                }
+            }
 
-            var workingMessages = messages.toMutableList()
+            viewModelScope.launch {
+                pruneForNewTokens(llamaAndroid.countTokens(effectiveMessage))
+            }
+            addMessage("user", effectiveMessage)
+            persistChat()
+
+            // Start performance monitoring
+            generationViewModel.startGeneration()
+
+            viewModelScope.launch {
+                try {
+                    var workingMessages = messages.toMutableList()
                     val reserve = reserveTokens
 
                     // Trim history until it fits within the context window
-                    var prompt = ""
+                    var prompt: String
                     while (true) {
                         prompt = if (template.isNotBlank()) {
                             val jinjava = com.hubspot.jinjava.Jinjava()
@@ -1819,8 +1507,7 @@ class MainViewModel @Inject constructor(
                     }
 
                     val countPrompt2 = if (supportsReasoning && showThinkingTokens) prompt else stripThinking(prompt)
-                    contextLimit = llamaAndroid.countTokens(countPrompt2)
-                    maxContextLimit = modelContextLength
+                    generationViewModel.updateContextLimit(llamaAndroid.countTokens(countPrompt2), modelContextLength)
 
                     var generatedTokens = 0
                     val inferenceStartTime = System.currentTimeMillis()
@@ -1842,8 +1529,8 @@ class MainViewModel @Inject constructor(
                                 memoryUsage = getMemoryUsage()
                             )
 
-                            updateTokenCount(generatedTokens)
-                            contextLimit = llamaAndroid.countTokens(prompt) + generatedTokens
+                            generationViewModel.updateTokenCount(generatedTokens)
+                            generationViewModel.updateContextLimit(llamaAndroid.countTokens(prompt) + generatedTokens, generationViewModel.maxContextLimit)
 
                             if (getIsMarked()) {
                                 addMessage("codeBlock", it)
@@ -1869,7 +1556,7 @@ class MainViewModel @Inject constructor(
                             }
                         }
                 } finally {
-                    endGeneration()
+                    generationViewModel.endGeneration()
                     if (!getIsCompleteEOT()) {
                         trimEOT()
                     }
@@ -1942,10 +1629,12 @@ class MainViewModel @Inject constructor(
 
                 llamaAndroid.myCustomBenchmark()
                     .collect { emittedString ->
-                        if (emittedString != null) {
-                            tokensList.add(emittedString) // Add each token to the list
-                            Timber.d("Token collected: $emittedString")
-                        }
+                        // emittedString is guaranteed to be non-null from Flow.collect
+                        tokensList.add(emittedString) // Add each token to the list
+                        Timber.d("Token collected: $emittedString")
+                    }
+                    .also {
+                        isBenchmarkingComplete = true // Mark benchmarking as complete
                     }
             } catch (exc: IllegalStateException) {
                 Timber.e(exc, "myCustomBenchmark() failed")
@@ -2363,7 +2052,7 @@ class MainViewModel @Inject constructor(
                 )
 
                 result.fold(
-                    onSuccess = { sessionId ->
+                    onSuccess = { _ ->
                         Timber.tag("MainViewModel").d("Model loaded: $pathToModel")
                         loadedModelName.value = File(pathToModel).name
                     },
@@ -2468,8 +2157,7 @@ class MainViewModel @Inject constructor(
                 try {
                     val counts = llamaAndroid.getOffloadCounts()
                     if (counts.size == 2) {
-                        offloadedLayers = counts[0]
-                        totalLayers = counts[1]
+                        generationViewModel.updateGpuLayers(counts[0], counts[1])
                         Timber.d("Offload counts: ${counts[0]}/${counts[1]}")
                     }
                 } catch (_: Exception) {}
@@ -2841,23 +2529,17 @@ class MainViewModel @Inject constructor(
     }
 
     // Add missing methods for compilation fixes
-    fun searchModels(query: String): SearchResponse {
-        // This is now a synchronous wrapper for the async search
-        // The actual search should be called from a coroutine scope
-        return SearchResponse(
-            success = false,
-            data = null,
-            error = "Use searchModelsAsync() for proper async search"
-        )
+    fun searchModels(query: String) {
+        downloadViewModel.searchModels(query)
     }
 
     suspend fun searchModelsAsync(query: String): SearchResponse {
         return try {
             val token = userPreferencesRepository.huggingFaceToken
             val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
-            
+
             val models = huggingFaceApiService.searchModels(query, authHeader)
-            
+
             val searchResults = models.map { model ->
                 ModelSearchResult(
                     id = model.id,
@@ -2868,7 +2550,7 @@ class MainViewModel @Inject constructor(
                     tags = model.tags
                 )
             }
-            
+
             SearchResponse(
                 success = true,
                 data = searchResults,
@@ -2931,11 +2613,8 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun setTestHuggingFaceToken() {
-        // SECURITY: Removed hardcoded test token
-        // In production, tokens should only be set by user input
-        // This function now serves as a placeholder for proper token management
-        Timber.w("Test token setting is disabled for security. Please set HuggingFace token through settings.")
+    fun setTestHuggingFaceToken(token: String = "") {
+        downloadViewModel.setTestHuggingFaceToken(token)
     }
 
     // Memory management functions

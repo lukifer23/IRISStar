@@ -18,9 +18,10 @@ import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.viewmodel.DocumentViewModel
 
 @Composable
-fun DocumentManager(viewModel: MainViewModel, modifier: Modifier = Modifier) {
+fun DocumentManager(viewModel: MainViewModel, documentViewModel: DocumentViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val errorMessage = remember { mutableStateOf<String?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -40,8 +41,8 @@ fun DocumentManager(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                         }
                         pdfDocument.close()
                         val text = stringBuilder.toString()
-                        viewModel.indexDocument(text)
-                        viewModel.summarizeDocument(text)
+                        documentViewModel.indexDocument(text)
+                        documentViewModel.summarizeDocument(text)
                     }
                     "image/jpeg", "image/png" -> {
                         viewModel.sendImage(it)
@@ -50,8 +51,8 @@ fun DocumentManager(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                         val text = context.contentResolver.openInputStream(it)?.bufferedReader()
                             .use { reader -> reader?.readText() }
                         if (text != null) {
-                            viewModel.indexDocument(text)
-                            viewModel.summarizeDocument(text)
+                            documentViewModel.indexDocument(text)
+                            documentViewModel.summarizeDocument(text)
                         } else {
                             errorMessage.value = "Failed to read document"
                         }
@@ -73,24 +74,24 @@ fun DocumentManager(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         Button(onClick = { launcher.launch("image/*") }) {
             Text("Import Image")
         }
-        if (viewModel.isDocumentIndexing) {
+        if (documentViewModel.isDocumentIndexing) {
             Spacer(modifier = Modifier.height(8.dp))
             Text("Indexing document…")
         }
 
-        viewModel.documentIndexingSuccess?.let { msg ->
+        documentViewModel.documentIndexingSuccess?.let { msg ->
             Spacer(modifier = Modifier.height(8.dp))
-            Text(msg, color = MaterialTheme.colorScheme.primary)
+            Text(text = msg, color = MaterialTheme.colorScheme.primary)
         }
 
-        viewModel.documentIndexingError?.let { msg ->
+        documentViewModel.documentIndexingError?.let { msg ->
             Spacer(modifier = Modifier.height(8.dp))
-            Text(msg, color = MaterialTheme.colorScheme.error)
+            Text(text = msg, color = MaterialTheme.colorScheme.error)
         }
 
         errorMessage.value?.let { msg ->
             Spacer(modifier = Modifier.height(8.dp))
-            Text(msg, color = MaterialTheme.colorScheme.error)
+            Text(text = msg, color = MaterialTheme.colorScheme.error)
         }
     }
 }
