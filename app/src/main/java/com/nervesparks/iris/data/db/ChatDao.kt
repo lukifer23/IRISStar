@@ -47,4 +47,46 @@ interface ChatDao {
 
     @Query("DELETE FROM messages WHERE chatId = :chatId")
     suspend fun deleteMessages(chatId: Long)
+
+    @Query(
+        """
+        SELECT 
+            :chatId AS chatId,
+            COUNT(*) AS totalMessages,
+            IFNULL(SUM(CASE WHEN LOWER(role) = 'user' THEN 1 ELSE 0 END), 0) AS userMessages,
+            IFNULL(SUM(CASE WHEN LOWER(role) = 'assistant' THEN 1 ELSE 0 END), 0) AS assistantMessages,
+            IFNULL(SUM(LENGTH(content)), 0) AS totalCharacters,
+            MIN(timestamp) AS firstTimestamp,
+            MAX(timestamp) AS lastTimestamp
+        FROM messages
+        WHERE chatId = :chatId
+        """
+    )
+    suspend fun getChatAggregate(chatId: Long): ChatAggregate?
+
+    @Query(
+        """
+        SELECT 
+            chatId AS chatId,
+            COUNT(*) AS totalMessages,
+            IFNULL(SUM(CASE WHEN LOWER(role) = 'user' THEN 1 ELSE 0 END), 0) AS userMessages,
+            IFNULL(SUM(CASE WHEN LOWER(role) = 'assistant' THEN 1 ELSE 0 END), 0) AS assistantMessages,
+            IFNULL(SUM(LENGTH(content)), 0) AS totalCharacters,
+            MIN(timestamp) AS firstTimestamp,
+            MAX(timestamp) AS lastTimestamp
+        FROM messages
+        GROUP BY chatId
+        """
+    )
+    fun observeChatAggregates(): Flow<List<ChatAggregate>>
 }
+
+data class ChatAggregate(
+    val chatId: Long,
+    val totalMessages: Long,
+    val userMessages: Long,
+    val assistantMessages: Long,
+    val totalCharacters: Long,
+    val firstTimestamp: Long?,
+    val lastTimestamp: Long?
+)

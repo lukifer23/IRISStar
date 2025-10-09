@@ -28,6 +28,11 @@ interface ChatRepository {
      * Observe chat changes
      */
     fun observeChat(chatId: Long): Flow<Chat>
+
+    /**
+     * Observe lightweight chat statistics keyed by chat ID
+     */
+    fun observeChatStats(): Flow<Map<Long, ChatStats>>
     
     /**
      * Create a new chat

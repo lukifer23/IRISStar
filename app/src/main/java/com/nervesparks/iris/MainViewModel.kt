@@ -79,6 +79,7 @@ class MainViewModel @Inject constructor(
 
     // Chat operations
     val chats = chatRepository.observeChats()
+    val chatStats = chatRepository.observeChatStats()
 
     fun renameChat(chat: Chat, title: String) {
         viewModelScope.launch {

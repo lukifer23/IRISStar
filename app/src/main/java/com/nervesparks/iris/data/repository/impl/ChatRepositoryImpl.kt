@@ -1,6 +1,7 @@
 package com.nervesparks.iris.data.repository.impl
 
 import com.nervesparks.iris.data.db.Chat
+import com.nervesparks.iris.data.db.ChatAggregate
 import com.nervesparks.iris.data.db.ChatDao
 import com.nervesparks.iris.data.db.Message
 import com.nervesparks.iris.data.exceptions.ValidationException
@@ -8,6 +9,7 @@ import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.repository.ChatStats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -26,6 +28,14 @@ class ChatRepositoryImpl @Inject constructor(
     override fun observeChats(): Flow<List<Chat>> = chatDao.observeChats()
 
     override fun observeChat(chatId: Long): Flow<Chat> = chatDao.observeChat(chatId)
+
+    override fun observeChatStats(): Flow<Map<Long, ChatStats>> {
+        return chatDao.observeChatAggregates().map { aggregates ->
+            aggregates.associate { aggregate ->
+                aggregate.chatId to aggregate.toChatStats()
+            }
+        }
+    }
 
     override suspend fun createChat(title: String): Long = withContext(Dispatchers.IO) {
         // Validate input parameters
@@ -146,8 +156,35 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getChatStats(chatId: Long): ChatStats {
-        // Not implemented
-        return ChatStats(0, 0, 0, 0, 0)
+        return withContext(Dispatchers.IO) {
+            val aggregate = chatDao.getChatAggregate(chatId)
+            aggregate?.toChatStats() ?: ChatStats(0, 0, 0, 0, 0)
+        }
+    }
+
+    private fun ChatAggregate.toChatStats(): ChatStats {
+        val totalMessagesInt = totalMessages.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val userMessagesInt = userMessages.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val assistantMessagesInt = assistantMessages.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val totalTokens = if (totalCharacters > 0) {
+            kotlin.math.ceil(totalCharacters / 4.0).toInt()
+        } else {
+            0
+        }
+        val averageResponseTime = if (
+            totalMessagesInt > 1 && firstTimestamp != null && lastTimestamp != null
+        ) {
+            (lastTimestamp - firstTimestamp) / (totalMessagesInt - 1)
+        } else {
+            0L
+        }
+        return ChatStats(
+            totalMessages = totalMessagesInt,
+            userMessages = userMessagesInt,
+            assistantMessages = assistantMessagesInt,
+            totalTokens = totalTokens,
+            averageResponseTime = averageResponseTime
+        )
     }
 }
 
