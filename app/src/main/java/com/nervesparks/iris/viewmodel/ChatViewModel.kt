@@ -7,10 +7,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.DocumentRepository
+import com.nervesparks.iris.data.exceptions.ValidationException
+import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.db.Message
+import com.nervesparks.iris.llm.EmbeddingService
+import com.nervesparks.iris.llm.performDocumentIndexing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,7 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
+    private val embeddingService: EmbeddingService
 ) : ViewModel() {
 
     private val tag = "ChatViewModel"
@@ -163,21 +167,15 @@ class ChatViewModel @Inject constructor(
                 documentIndexingSuccess = null
             }
 
-            if (text.isBlank()) {
-                withContext(Dispatchers.Main) {
-                    isDocumentIndexing = false
-                    documentIndexingError = "Document is empty"
-                }
-                return@launch
-            }
-
             try {
-                // Note: embedText functionality is still in MainViewModel
-                // This would need to be moved to a service or the embedding logic needs refactoring
-                // For now, we'll mark as not implemented
-                Timber.tag(tag).d("Document indexing requires embedText functionality from MainViewModel")
+                performDocumentIndexing(text, embeddingService, documentRepository)
                 withContext(Dispatchers.Main) {
-                    documentIndexingError = "Document indexing not yet fully implemented"
+                    documentIndexingSuccess = "Document indexed successfully"
+                }
+            } catch (e: ValidationException) {
+                Timber.tag(tag).e(e, "Validation error indexing document")
+                withContext(Dispatchers.Main) {
+                    documentIndexingError = e.message ?: "Failed to index document"
                 }
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error indexing document")
