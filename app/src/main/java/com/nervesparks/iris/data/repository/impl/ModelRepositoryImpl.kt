@@ -135,9 +135,32 @@ class ModelRepositoryImpl @Inject constructor(
 
     override suspend fun getAvailableModels(directory: File): List<Map<String, String>> {
         return try {
-            if (cachedModels == null) {
-                val json = userPreferencesRepository.getCachedModels()
-                if (json.isNotEmpty()) {
+            val installedModels = listInstalledModels(directory)
+            if (installedModels.isEmpty()) {
+                return emptyList()
+            }
+
+            val metadata = ensureCachedModels()
+            val metadataByDestination = metadata.associateBy { entry ->
+                entry["destination"].orEmpty().ifEmpty { entry["name"].orEmpty() }
+            }
+
+            installedModels.map { file ->
+                val cached = metadataByDestination[file.name]
+                    ?: metadataByDestination[file.nameWithoutExtension]
+                buildLocalModelEntry(file, cached)
+            }
+        } catch (e: Exception) {
+            Timber.tag(tag).e(e, "Error getting available models")
+            emptyList()
+        }
+    }
+
+    private suspend fun ensureCachedModels(): List<Map<String, String>> {
+        if (cachedModels == null) {
+            val json = userPreferencesRepository.getCachedModels()
+            if (json.isNotEmpty()) {
+                runCatching {
                     val listType = Types.newParameterizedType(List::class.java, CachedModel::class.java)
                     val adapter = moshi.adapter<List<CachedModel>>(listType)
                     cachedModels = adapter.fromJson(json)?.map { model ->
@@ -148,20 +171,44 @@ class ModelRepositoryImpl @Inject constructor(
                             "supportsReasoning" to model.supportsReasoning.toString()
                         )
                     }
+                }.onFailure { error ->
+                    Timber.tag(tag).e(error, "Error parsing cached models JSON")
+                    cachedModels = null
                 }
             }
-            if (cachedModels == null) {
-                refreshAvailableModels()
-            }
-
-            (cachedModels ?: emptyList()).filter { model ->
-                val destinationPath = File(directory, model["destination"].orEmpty())
-                destinationPath.exists()
-            }
-        } catch (e: Exception) {
-            Timber.tag(tag).e(e, "Error getting available models")
-            emptyList()
         }
+
+        if (cachedModels == null) {
+            cachedModels = refreshAvailableModels()
+        }
+
+        return cachedModels ?: emptyList()
+    }
+
+    private fun listInstalledModels(directory: File): List<File> {
+        if (!directory.exists() || !directory.isDirectory) {
+            return emptyList()
+        }
+
+        return directory.listFiles { file ->
+            file.isFile && file.extension.equals("gguf", ignoreCase = true)
+        }?.toList().orEmpty()
+    }
+
+    private fun buildLocalModelEntry(file: File, cached: Map<String, String>?): Map<String, String> {
+        val base = mutableMapOf(
+            "name" to file.name,
+            "source" to file.toURI().toString(),
+            "destination" to file.name,
+            "supportsReasoning" to "false"
+        )
+
+        cached?.let { cachedEntry ->
+            base.putAll(cachedEntry)
+            base["destination"] = cachedEntry["destination"].orEmpty().ifEmpty { file.name }
+        }
+
+        return base
     }
     
     override suspend fun loadModel(modelPath: String): Result<Unit> {

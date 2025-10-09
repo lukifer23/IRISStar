@@ -25,6 +25,7 @@ import com.nervesparks.iris.ui.theme.ThemedWarningButton
 import com.nervesparks.iris.ui.theme.SecondaryButton
 import kotlinx.coroutines.launch
 import java.io.File
+import com.nervesparks.iris.viewmodel.ModelViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -33,6 +34,7 @@ fun ModelCard(
     supportsReasoning: Boolean = false,
     supportsVision: Boolean = false,
     viewModel: MainViewModel,
+    modelViewModel: ModelViewModel,
     dm: DownloadManager,
     extFilesDir: File,
     downloadLink: String,
@@ -141,6 +143,7 @@ fun ModelCard(
                 if (!showDeletedMessage) {
                     Downloadable.Button(
                         viewModel,
+                        modelViewModel,
                         dm,
                         Downloadable(
                             modelName,
@@ -179,6 +182,7 @@ fun ModelCard(
                                                     if (modelName == viewModel.loadedModelName.value) { viewModel.loadedModelName.value = "" }
                                                     isDeleted = true
                                                     viewModel.refresh = true
+                                                    modelViewModel.loadExistingModels(extFilesDir)
                                                 }, modifier = Modifier.weight(1f)) { Text("Delete") }
                                             }
                                         }

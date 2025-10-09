@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.viewmodel.ModelViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.PrimaryButton
 import java.io.File
@@ -38,10 +39,11 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuantizeScreen(
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    modelViewModel: ModelViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val models = viewModel.allModels.mapNotNull { it["name"] }
+    val models = modelViewModel.availableModels.mapNotNull { it["name"] }
     var selectedModel by remember { mutableStateOf(models.firstOrNull() ?: "") }
 
     var expandedQuantization by remember { mutableStateOf(false) }

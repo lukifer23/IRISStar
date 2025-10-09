@@ -408,23 +408,22 @@ class ModelViewModel @Inject constructor(
 
     // Available models management
     fun loadExistingModels(directory: File) {
-        viewModelScope.launch {
-            try {
-                availableModels = modelRepository.getAvailableModels(directory)
-                Timber.tag(tag).d("Loaded ${availableModels.size} existing models")
-            } catch (e: Exception) {
-                Timber.tag(tag).e(e, "Error loading existing models")
-            }
-        }
+        getAvailableModels(directory)
     }
 
-    fun getAvailableModels(directory: File): List<Map<String, String>> {
-        return try {
-            // TODO: This should be called from a coroutine
-            emptyList()
-        } catch (e: Exception) {
-            Timber.tag(tag).e(e, "Error getting available models")
-            emptyList()
+    fun getAvailableModels(directory: File) {
+        viewModelScope.launch {
+            try {
+                val models = withContext(Dispatchers.IO) {
+                    modelRepository.getAvailableModels(directory)
+                }
+                withContext(Dispatchers.Main) {
+                    availableModels = models
+                }
+                Timber.tag(tag).d("Loaded ${models.size} existing models")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error getting available models")
+            }
         }
     }
 }

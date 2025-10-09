@@ -27,6 +27,7 @@ import java.io.File
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.viewmodel.ModelViewModel
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.ui.components.ModernTopAppBar
 import com.nervesparks.iris.ui.theme.ComponentStyles
@@ -145,6 +146,7 @@ private fun shareFile(context: Context, file: File, mimeType: String) {
 @Composable
 fun ChatListScreen(
     viewModel: MainViewModel,
+    modelViewModel: ModelViewModel,
     onChatSelected: (Long) -> Unit,
     onNewChat: () -> Unit,
     onMenuClick: () -> Unit = {},
@@ -189,7 +191,7 @@ fun ChatListScreen(
                 onMenuClick = onMenuClick,
                 onModelClick = { showModelDropdown = true },
                 currentModel = viewModel.loadedModelName.value,
-                availableModels = viewModel.allModels.map { it["name"] ?: "" },
+                availableModels = modelViewModel.availableModels.map { it["name"] ?: "" },
                 showModelDropdown = showModelDropdown,
                 onModelDropdownDismiss = { showModelDropdown = false },
                 viewModel = viewModel,

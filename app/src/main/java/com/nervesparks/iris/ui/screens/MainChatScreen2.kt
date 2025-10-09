@@ -155,7 +155,8 @@ fun NavDrawer(
 @Composable
 fun MainChatScreen2(
     navController: NavController,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    modelViewModel: ModelViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -226,7 +227,7 @@ fun MainChatScreen2(
                     },
                     onModelClick = { showModelDropdown = true },
                     currentModel = viewModel.loadedModelName.value,
-                    availableModels = viewModel.allModels.map { it["name"] ?: "" },
+                    availableModels = modelViewModel.availableModels.map { it["name"] ?: "" },
                     showModelDropdown = showModelDropdown,
                     onModelDropdownDismiss = { showModelDropdown = false },
                     viewModel = viewModel,
@@ -254,6 +255,7 @@ fun MainChatScreen2(
                     if (viewModel.showModelSelection) {
                         ModelSelectionModal(
                             viewModel = viewModel,
+                            modelViewModel = modelViewModel,
                             onDismiss = { viewModel.hideModelSelectionDialog() },
                             onNavigateToModels = { navController.navigate(AppDestinations.MODELS) }
                         )
@@ -289,3 +291,4 @@ fun MainChatScreen2(
         )
     }
 }
+import com.nervesparks.iris.viewmodel.ModelViewModel

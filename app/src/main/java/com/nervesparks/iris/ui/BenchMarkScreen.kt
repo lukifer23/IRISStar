@@ -21,6 +21,7 @@ import com.nervesparks.iris.ui.theme.PrimaryButton
 import com.nervesparks.iris.ui.theme.ModernCard
 import com.nervesparks.iris.ui.components.ModelSelectionModal
 import kotlinx.coroutines.launch
+import com.nervesparks.iris.viewmodel.ModelViewModel
 
 data class BenchmarkState(
     val isRunning: Boolean = false,
@@ -32,7 +33,7 @@ data class BenchmarkState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BenchMarkScreen(viewModel: MainViewModel) {
+fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
@@ -303,7 +304,7 @@ fun BenchMarkScreen(viewModel: MainViewModel) {
     }
     
     // Model Selection Modal for Benchmark
-    BenchmarkModelSelectionModal(viewModel)
+    BenchmarkModelSelectionModal(viewModel, modelViewModel)
 }
 
 
@@ -321,10 +322,11 @@ private fun buildDeviceInfo(viewModel: MainViewModel): String {
 
 // Model Selection Modal for Benchmark
 @Composable
-fun BenchmarkModelSelectionModal(viewModel: MainViewModel) {
+fun BenchmarkModelSelectionModal(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
     if (viewModel.showBenchmarkModelSelection) {
         ModelSelectionModal(
             viewModel = viewModel,
+            modelViewModel = modelViewModel,
             onDismiss = { viewModel.hideBenchmarkModelSelection() },
             onNavigateToModels = { /* Navigate to models screen */ },
             isForBenchmark = true

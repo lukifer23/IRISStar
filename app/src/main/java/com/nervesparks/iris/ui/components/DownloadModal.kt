@@ -34,10 +34,11 @@ import com.nervesparks.iris.ui.theme.ThemedAccentButton
 import com.nervesparks.iris.ui.theme.ThemedSuccessButton
 import com.nervesparks.iris.ui.theme.ThemedWarningButton
 import com.nervesparks.iris.ui.theme.SemanticColors
+import com.nervesparks.iris.viewmodel.ModelViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Downloadable>) {
+fun DownloadModal(viewModel: MainViewModel, modelViewModel: ModelViewModel, dm: DownloadManager, models: List<Downloadable>) {
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<Map<String, String>>?>(null) }
@@ -129,7 +130,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
                             Timber.tag("DownloadModal").d("Model: ${model.name}, exists: ${model.destination.exists()}")
                         }
                         items(filteredModels, key = { it.name }) { model ->
-                            DefaultModelCard(viewModel, dm, model)
+                            DefaultModelCard(viewModel, modelViewModel, dm, model)
                         }
                     }
                 } else {
@@ -256,7 +257,7 @@ fun DownloadModal(viewModel: MainViewModel, dm: DownloadManager, models: List<Do
 }
 
 @Composable
-private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, model: Downloadable) {
+private fun DefaultModelCard(viewModel: MainViewModel, modelViewModel: ModelViewModel, dm: DownloadManager, model: Downloadable) {
     ThemedModalCard(
         modifier = Modifier.fillMaxWidth().padding(vertical = ComponentStyles.smallPadding)
     ) {
@@ -272,7 +273,7 @@ private fun DefaultModelCard(viewModel: MainViewModel, dm: DownloadManager, mode
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(ComponentStyles.defaultSpacing))
-            Downloadable.Button(viewModel, dm, model)
+            Downloadable.Button(viewModel, modelViewModel, dm, model)
         }
     }
 }

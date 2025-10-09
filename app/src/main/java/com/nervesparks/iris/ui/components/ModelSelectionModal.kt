@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.SemanticColors
@@ -41,6 +40,7 @@ import java.io.File
 @Composable
 fun ModelSelectionModal(
     viewModel: MainViewModel,
+    modelViewModel: ModelViewModel,
     onDismiss: () -> Unit,
     onNavigateToModels: () -> Unit = {},
     isForBenchmark: Boolean = false
@@ -48,12 +48,9 @@ fun ModelSelectionModal(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val scope = rememberCoroutineScope()
-    val modelViewModel: ModelViewModel = hiltViewModel()
 
     // Get available models and check which ones exist
-    val availableModels = remember(extFilesDir) {
-        extFilesDir?.let { viewModel.getAvailableModels(it) } ?: emptyList()
-    }
+    val availableModels = modelViewModel.availableModels
 
     // Model loading state - simplified for now
     val modelLoadingProgress = modelViewModel.modelLoadingProgress
@@ -101,6 +98,7 @@ fun ModelSelectionModal(
                         }
                         // Refresh the model list
                         viewModel.refresh = true
+                        modelViewModel.loadExistingModels(dir)
                     } catch (e: Exception) {
                         // Handle error
                     }

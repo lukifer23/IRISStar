@@ -20,6 +20,7 @@ import com.nervesparks.iris.ui.screens.MainChatScreen2
 import com.nervesparks.iris.ui.ModelPerformanceScreen
 import com.nervesparks.iris.data.UserPreferencesRepository
 import java.io.File
+import com.nervesparks.iris.viewmodel.ModelViewModel
 
 object AppDestinations {
     const val CHAT_LIST = "chat_list"
@@ -38,6 +39,7 @@ object AppDestinations {
 @Composable
 fun AppNavigation(
     viewModel: MainViewModel,
+    modelViewModel: ModelViewModel,
     clipboardManager: ClipboardManager,
     downloadManager: DownloadManager,
     models: List<Downloadable>,
@@ -56,6 +58,7 @@ fun AppNavigation(
         composable(AppDestinations.CHAT_LIST) {
             ChatListScreen(
                 viewModel = viewModel,
+                modelViewModel = modelViewModel,
                 onChatSelected = { chatId ->
                     navController.navigate("${AppDestinations.CHAT}?chatId=$chatId")
                 },
@@ -75,7 +78,8 @@ fun AppNavigation(
             }
             MainChatScreen2(
                 navController = navController,
-                viewModel = viewModel
+                viewModel = viewModel,
+                modelViewModel = modelViewModel
             )
         }
         composable(AppDestinations.SETTINGS) {
@@ -100,6 +104,7 @@ fun AppNavigation(
             ModelsScreen(
                 extFileDir = extFilesDir,
                 viewModel = viewModel,
+                modelViewModel = modelViewModel,
                 onSearchResultButtonClick = { navController.popBackStack() },
                 dm = downloadManager,
                 onQuantizeScreenButtonClicked = { navController.navigate(AppDestinations.QUANTIZE) }
@@ -112,10 +117,13 @@ fun AppNavigation(
             AboutScreen()
         }
         composable(AppDestinations.BENCHMARK) {
-            BenchMarkScreen(viewModel = viewModel)
+            BenchMarkScreen(viewModel = viewModel, modelViewModel = modelViewModel)
         }
         composable(AppDestinations.QUANTIZE) {
-            com.nervesparks.iris.ui.screens.QuantizeScreen(viewModel = viewModel)
+            com.nervesparks.iris.ui.screens.QuantizeScreen(
+                viewModel = viewModel,
+                modelViewModel = modelViewModel
+            )
         }
         composable(AppDestinations.TEMPLATES) {
             com.nervesparks.iris.ui.screens.TemplatesScreen(viewModel = viewModel)
