@@ -61,6 +61,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.nervesparks.iris.llm.EmbeddingService
 import com.nervesparks.iris.llm.performDocumentIndexing
 import com.nervesparks.iris.data.exceptions.ValidationException
+import com.nervesparks.iris.data.exceptions.ErrorHandler
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -74,6 +75,10 @@ class MainViewModel @Inject constructor(
     private val embeddingService: EmbeddingService,
     private val webSearchService: WebSearchService,
     private val androidSearchService: AndroidSearchService,
+    private val searchViewModel: com.nervesparks.iris.viewmodel.SearchViewModel,
+    private val voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel,
+    private val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel,
+    private val chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -328,20 +333,25 @@ class MainViewModel @Inject constructor(
         }
         addMessage("user", "Search the web for: $query")
 
-        // TODO: Use SearchViewModel from UI layer
+        // Use SearchViewModel from UI layer for proper separation of concerns
+        searchViewModel.performWebSearch(query, summarize = true)
+
+        // Monitor search results and add to chat when complete (optimized)
         viewModelScope.launch {
-            try {
-                val response = webSearchService.searchWeb(query)
-                if (response.success && response.results?.isNotEmpty() == true) {
-                    val formattedResults = "Found ${response.results.size} results:\n" +
-                        response.results.joinToString("\n") { "${it.title}: ${it.snippet}" }
-                    addMessage("assistant", formattedResults)
-                } else {
-                    addMessage("assistant", "No search results found")
-                }
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error performing web search")
-                addMessage("assistant", "Search failed: ${e.message}")
+            var attempts = 0
+            val maxAttempts = 300 // 30 seconds max wait
+
+            while (searchViewModel.isSearching && attempts < maxAttempts) {
+                kotlinx.coroutines.delay(100)
+                attempts++
+            }
+
+            if (searchViewModel.searchResults.isNotEmpty()) {
+                // Use the optimized summary method for better performance
+                val summary = searchViewModel.summarizeSearchResults()
+                addMessage("assistant", summary)
+            } else if (searchViewModel.searchError != null) {
+                addMessage("assistant", "Search failed: ${searchViewModel.searchError}")
             }
         }
     }
@@ -439,8 +449,8 @@ class MainViewModel @Inject constructor(
     }
 
     fun startVoiceRecognition(context: Context) {
-        // TODO: Use VoiceViewModel from UI layer
-        Timber.tag("MainViewModel").d("Voice recognition not implemented in MainViewModel")
+        // Use VoiceViewModel from UI layer for proper separation of concerns
+        voiceViewModel.startVoiceRecognition(context)
     }
 
     // Legacy voice recognition function
@@ -1026,22 +1036,11 @@ class MainViewModel @Inject constructor(
         threadCount: Int,
         gpuLayers: Int
     ) {
-        // TODO: Use ModelViewModel from UI layer
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                userPreferencesRepository.setModelTemperature(temperature)
-                userPreferencesRepository.setModelTopP(topP)
-                userPreferencesRepository.setModelTopK(topK)
-                userPreferencesRepository.setModelMaxTokens(maxTokens)
-                userPreferencesRepository.setModelContextLength(contextLength)
-                userPreferencesRepository.setModelSystemPrompt(systemPrompt)
-                userPreferencesRepository.setModelChatFormat(chatFormat)
-                userPreferencesRepository.setModelThreadCount(threadCount)
-                userPreferencesRepository.setModelGpuLayers(gpuLayers)
-            } catch (e: Exception) {
-                Timber.tag("MainViewModel").e(e, "Error updating model settings")
-            }
-        }
+        // Use ModelViewModel from UI layer for proper separation of concerns
+        modelViewModel.updateModelSettings(
+            temperature, topP, topK, maxTokens, contextLength,
+            systemPrompt, chatFormat, threadCount, gpuLayers
+        )
     }
 
     // Legacy model settings function
@@ -1187,17 +1186,13 @@ class MainViewModel @Inject constructor(
     }
 
     fun updateShowThinkingTokens(show: Boolean) {
-        // TODO: Use ChatViewModel from UI layer
-        viewModelScope.launch {
-            userPreferencesRepository.setShowThinkingTokens(show)
-        }
+        // Use ChatViewModel from UI layer for proper separation of concerns
+        chatViewModel.updateShowThinkingTokens(show)
     }
 
     fun updateThinkingTokenStyle(style: String) {
-        // TODO: Use ChatViewModel from UI layer
-        viewModelScope.launch {
-            userPreferencesRepository.setThinkingTokenStyle(style)
-        }
+        // Use ChatViewModel from UI layer for proper separation of concerns
+        chatViewModel.updateThinkingTokenStyle(style)
     }
 
     private fun loadThinkingTokenSettings() {
@@ -1493,8 +1488,8 @@ class MainViewModel @Inject constructor(
 
 
     fun textToSpeech(context: Context, text: String) {
-        // TODO: Use VoiceViewModel from UI layer
-        Timber.tag("MainViewModel").d("Text-to-speech not implemented in MainViewModel")
+        // Use VoiceViewModel from UI layer for proper separation of concerns
+        voiceViewModel.textToSpeech(context, text)
     }
 
     // Legacy text-to-speech function
@@ -1604,51 +1599,134 @@ class MainViewModel @Inject constructor(
         if (contextLimit + additionalTokens <= modelContextLength) return
 
         var workingMessages = messages.toMutableList()
-        var pruned = false
-        while (contextLimit + additionalTokens > modelContextLength && workingMessages.size > 1) {
-            val removeIdx = workingMessages.indexOfFirst { it["role"] != "system" }
-            if (removeIdx >= 0) {
-                workingMessages = workingMessages.drop(removeIdx + 1).toMutableList()
-                val prompt = if (template.isNotBlank()) {
-                    val jinjava = com.hubspot.jinjava.Jinjava()
-                    val context = mapOf("messages" to workingMessages)
-                    jinjava.render(template, context)
-                } else {
-                    com.nervesparks.iris.llm.TemplateRegistry.render(
-                        modelChatFormat,
-                        workingMessages,
-                        modelSystemPrompt,
-                        includeThinkingTags = supportsReasoning
-                    )
-                }
-                contextLimit = llamaAndroid.countTokens(prompt)
-                pruned = true
+        var currentContextLimit = calculateContextLimit(workingMessages)
+
+        // If we have room, no need to prune
+        if (currentContextLimit + additionalTokens <= modelContextLength) {
+            return
+        }
+
+        var wasPruned = false
+
+        // Strategy 1: Remove oldest non-system messages first
+        while (currentContextLimit + additionalTokens > modelContextLength && workingMessages.size > 1) {
+            val oldestNonSystemIndex = workingMessages.indexOfFirst { it["role"] != "system" }
+            if (oldestNonSystemIndex >= 0) {
+                workingMessages.removeAt(oldestNonSystemIndex)
+                currentContextLimit = calculateContextLimit(workingMessages)
+                wasPruned = true
             } else {
                 break
             }
         }
 
-        if (pruned) {
+        // Strategy 2: If still over limit, summarize the conversation
+        if (currentContextLimit + additionalTokens > modelContextLength && workingMessages.size > 2) {
+            val summary = generateConversationSummary(workingMessages)
+            if (summary != null) {
+                // Replace old messages with summary
+                val systemMessage = workingMessages.firstOrNull { it["role"] == "system" }
+                val lastFewMessages = workingMessages.takeLast(3) // Keep last 3 messages
+
+                @Suppress("TYPE_MISMATCH")
+                workingMessages = mutableListOf<Map<String, Any>>().apply {
+                    systemMessage?.let { add(it) }
+                    add(mapOf<String, Any>(
+                        "role" to "assistant",
+                        "content" to "Previous conversation summary: $summary",
+                        "timestamp" to System.currentTimeMillis()
+                    ))
+                    addAll(lastFewMessages)
+                }
+
+                // Convert to proper types for template rendering
+                val stringMessages = workingMessages.map { msg ->
+                    mapOf(
+                        "role" to msg["role"].toString(),
+                        "content" to msg["content"].toString()
+                    )
+                }
+
+                currentContextLimit = calculateContextLimitWithStringMessages(workingMessages, stringMessages)
+                wasPruned = true
+            }
+        }
+
+        if (wasPruned) {
             messages = workingMessages
+            contextLimit = currentContextLimit
             addMessage(
                 "system",
-                "⚠️ Earlier messages were removed to stay within the model's context limit."
+                "Earlier messages were summarized to stay within the model's context limit."
             )
-            val prompt = if (template.isNotBlank()) {
-                val jinjava = com.hubspot.jinjava.Jinjava()
-                val context = mapOf("messages" to messages)
-                jinjava.render(template, context)
-            } else {
-                com.nervesparks.iris.llm.TemplateRegistry.render(
-                    modelChatFormat,
-                    messages,
-                    modelSystemPrompt,
-                    includeThinkingTags = supportsReasoning
-                )
-            }
-            contextLimit = llamaAndroid.countTokens(prompt)
         }
     }
+
+    private suspend fun calculateContextLimit(messages: List<Map<String, Any>>): Int {
+        return llamaAndroid.countTokens(buildPromptForContext(messages))
+    }
+
+    private suspend fun calculateContextLimitWithStringMessages(messages: List<Map<String, Any>>, stringMessages: List<Map<String, String>>): Int {
+        return if (template.isNotBlank()) {
+            val jinjava = com.hubspot.jinjava.Jinjava()
+            val context = mapOf("messages" to messages)
+            llamaAndroid.countTokens(jinjava.render(template, context))
+        } else {
+            llamaAndroid.countTokens(com.nervesparks.iris.llm.TemplateRegistry.render(
+                modelChatFormat,
+                stringMessages,
+                modelSystemPrompt,
+                includeThinkingTags = supportsReasoning
+            ))
+        }
+    }
+
+    private fun buildPromptForContext(messages: List<Map<String, Any>>): String {
+        return if (template.isNotBlank()) {
+            val jinjava = com.hubspot.jinjava.Jinjava()
+            val context = mapOf("messages" to messages)
+            jinjava.render(template, context)
+        } else {
+            // Convert Map<String, Any> to Map<String, String> for TemplateRegistry
+            val stringMessages: List<Map<String, String>> = messages.map { msg ->
+                mapOf(
+                    "role" to msg["role"].toString(),
+                    "content" to msg["content"].toString()
+                )
+            }
+            com.nervesparks.iris.llm.TemplateRegistry.render(
+                modelChatFormat,
+                stringMessages,
+                modelSystemPrompt,
+                includeThinkingTags = supportsReasoning
+            )
+        }
+    }
+
+    private suspend fun generateConversationSummary(messages: List<Map<String, Any>>): String? {
+        try {
+            // Extract key points from the conversation
+            val userMessages = messages.filter { it["role"] == "user" }
+            val assistantMessages = messages.filter { it["role"] == "assistant" }
+
+            if (userMessages.size < 2 && assistantMessages.size < 2) return null
+
+            // Simple summary based on message count and key topics
+            val summary = StringBuilder()
+            summary.append("Previous conversation involved ${userMessages.size} user queries and ${assistantMessages.size} responses. ")
+
+            // Extract key topics (very basic - could be enhanced with NLP)
+            val allContent = messages.joinToString(" ") { it["content"].toString() }
+            val words = allContent.split(" ").take(20) // Take first 20 words as key topics
+            summary.append("Key topics discussed: ${words.joinToString(", ")}.")
+
+            return summary.toString()
+        } catch (e: Exception) {
+            Timber.tag("MainViewModel").e(e, "Error generating conversation summary")
+            return null
+        }
+    }
+
 
     fun send() {
         Timber.d("Send button clicked")
@@ -1656,7 +1734,8 @@ class MainViewModel @Inject constructor(
         // Check if model is loaded before proceeding
         if (!isModelLoaded()) {
             Timber.w("Cannot send message: No model is loaded")
-            // TODO: Show user feedback that no model is loaded
+            // Show user feedback that no model is loaded
+            addMessage("error", "No model is loaded. Please load a model from the Models screen first.")
             return
         }
 
@@ -1756,9 +1835,12 @@ class MainViewModel @Inject constructor(
                             val currentTime = System.currentTimeMillis()
                             val inferenceTime = currentTime - inferenceStartTime
 
-                            // Record performance metrics (if ModelViewModel is available)
-                            // TODO: Integrate ModelViewModel properly for performance tracking
-                            // For now, performance tracking is handled in ModelViewModel directly
+                            // Record performance metrics through ModelViewModel for proper separation of concerns
+                            modelViewModel.recordInferencePerformance(
+                                tokensGenerated = 1,
+                                inferenceTime = inferenceTime,
+                                memoryUsage = getMemoryUsage()
+                            )
 
                             updateTokenCount(generatedTokens)
                             contextLimit = llamaAndroid.countTokens(prompt) + generatedTokens
@@ -2620,9 +2702,11 @@ class MainViewModel @Inject constructor(
                 }
 
                 // Try to detect real hardware capabilities
-                val backends = llamaAndroid.getAvailableBackends().split(",").map { it.trim() }
+                val rawBackends = llamaAndroid.getAvailableBackends().split(",").map { it.trim() }
+                // Filter out Vulkan to avoid crashes - force CPU-only for stability
+                val backends = rawBackends.filter { it.lowercase() != "vulkan" }
                 availableBackends = backends.joinToString(",")
-                optimalBackend = llamaAndroid.getOptimalBackend()
+                optimalBackend = "cpu" // Force CPU as optimal to avoid Vulkan issues
                 gpuInfo = llamaAndroid.getGpuInfo()
                 isAdrenoGpu = llamaAndroid.isAdrenoGpu()
                 currentBackend = optimalBackend
@@ -2892,7 +2976,7 @@ class MainViewModel @Inject constructor(
         return loadedModelName.value
     }
     
-    // Memory optimization
+    // Enhanced memory optimization
     fun optimizeMemory() {
         viewModelScope.launch {
             try {
@@ -2902,18 +2986,37 @@ class MainViewModel @Inject constructor(
                     messages = messages.takeLast(keepCount)
                     Timber.d("Cleared message history, kept last $keepCount messages")
                 }
-                
+
+                // Clean up ViewModels
+                searchViewModel.cleanup()
+                chatViewModel.cleanup()
+                modelViewModel.cleanupResources()
+
                 // Force garbage collection if memory usage is high
                 val memoryUsage = getMemoryUsage()
                 if (memoryUsage > 500 * 1024 * 1024) { // 500MB threshold
                     System.gc()
+                    System.runFinalization()
                     Timber.d("Forced garbage collection due to high memory usage: ${memoryUsage / (1024 * 1024)}MB")
                 }
+
+                // Clear any temporary processing data
+                clearTempData()
             } catch (e: Exception) {
                 Timber.e(e, "Error optimizing memory")
+                ErrorHandler.reportError(e, "Memory Optimization", ErrorHandler.ErrorSeverity.LOW, "Memory optimization completed with warnings.")
             }
         }
     }
+
+    private fun clearTempData() {
+        // Clear any temporary processing data
+        tempProcessingData.clear()
+        Timber.tag("MainViewModel").d("Temporary data cleared")
+    }
+
+    // Track temporary processing data for cleanup
+    private val tempProcessingData = mutableMapOf<String, Any>()
 
     // Search state management
     var isSearching by mutableStateOf(false)
@@ -2965,3 +3068,4 @@ data class ModelFile(
 fun sentThreadsValue(){
 
 }
+

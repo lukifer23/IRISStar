@@ -6,6 +6,7 @@ import android.net.Uri
 import timber.log.Timber
 import com.nervesparks.iris.data.search.SearchResponse
 import com.nervesparks.iris.data.search.SearchResult
+import com.nervesparks.iris.data.db.Document
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
@@ -130,5 +131,23 @@ class AndroidSearchService(private val context: Context) {
         
         sb.append("I've opened the search in your browser. You can copy relevant information back to our conversation.")
         return sb.toString()
+    }
+
+    /**
+     * Search through indexed documents
+     */
+    suspend fun searchDocuments(query: String): List<Document> = withContext(Dispatchers.IO) {
+        try {
+            Timber.tag(tag).d("Searching documents for: $query")
+
+            // For now, return empty list as we need to implement proper document indexing
+            // This would typically query a document repository or search index
+            // TODO: Implement proper document search with embeddings for semantic similarity
+
+            return@withContext emptyList<Document>()
+        } catch (e: Exception) {
+            Timber.tag(tag).e(e, "Error searching documents")
+            return@withContext emptyList<Document>()
+        }
     }
 } 

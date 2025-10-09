@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.Downloadable
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.repository.ModelRepository
+import com.nervesparks.iris.data.exceptions.ErrorHandler
 import com.nervesparks.iris.llm.ModelLoadResult
 import com.nervesparks.iris.llm.ModelLoader
 import com.nervesparks.iris.llm.ModelPerformanceTracker
@@ -179,6 +180,7 @@ class ModelViewModel @Inject constructor(
             )
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Exception loading model by name: $modelName")
+            ErrorHandler.reportError(e, "Model Load", ErrorHandler.ErrorSeverity.HIGH, "Failed to load model $modelName. Please check the model file and try again.")
             isModelLoaded = false
             modelLoadingProgress = 0f
             currentSessionId = null
@@ -214,12 +216,13 @@ class ModelViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error in unloadModel function")
+                ErrorHandler.reportError(e, "Model Unload", ErrorHandler.ErrorSeverity.MEDIUM, "Failed to unload model properly. Please restart the app if you experience issues.")
             }
         }
     }
 
     /**
-     * Force cleanup of resources to help with memory management
+     * Enhanced cleanup of resources with memory optimization
      */
     fun cleanupResources() {
         viewModelScope.launch {
@@ -231,13 +234,67 @@ class ModelViewModel @Inject constructor(
                 // Clear any error states
                 backendError = null
 
-                // Force garbage collection
-                System.gc()
-                System.runFinalization()
+                // Clear performance tracking data if it's large
+                performanceTracker.clearAllData()
+
+                // Force garbage collection only if memory usage is high
+                val runtime = Runtime.getRuntime()
+                val usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)
+                if (usedMemory > 200) { // If using more than 200MB
+                    System.gc()
+                    System.runFinalization()
+                }
 
                 Timber.tag(tag).d("Resources cleaned up")
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error during resource cleanup")
+                ErrorHandler.reportError(e, "Resource Cleanup", ErrorHandler.ErrorSeverity.LOW, "Resource cleanup completed with warnings.")
+            }
+        }
+    }
+
+    // Model settings management
+    fun updateModelSettings(
+        temperature: Float,
+        topP: Float,
+        topK: Int,
+        maxTokens: Int,
+        contextLength: Int,
+        systemPrompt: String,
+        chatFormat: String,
+        threadCount: Int,
+        gpuLayers: Int
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                Timber.tag(tag).d("Updating model settings")
+
+                // Update local state
+                modelTemperature = temperature
+                modelTopP = topP
+                modelTopK = topK
+                modelMaxTokens = maxTokens
+                modelContextLength = contextLength
+                modelSystemPrompt = systemPrompt
+                modelChatFormat = chatFormat
+                modelThreadCount = threadCount
+                modelGpuLayers = gpuLayers
+
+                // Persist to repository
+                userPreferencesRepository.setModelTemperature(temperature)
+                userPreferencesRepository.setModelTopP(topP)
+                userPreferencesRepository.setModelTopK(topK)
+                userPreferencesRepository.setModelMaxTokens(maxTokens)
+                userPreferencesRepository.setModelContextLength(contextLength)
+                userPreferencesRepository.setModelSystemPrompt(systemPrompt)
+                userPreferencesRepository.setModelChatFormat(chatFormat)
+                userPreferencesRepository.setModelThreadCount(threadCount)
+                userPreferencesRepository.setModelGpuLayers(gpuLayers)
+
+                Timber.tag(tag).d("Model settings updated successfully")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error updating model settings")
+                backendError = "Failed to update model settings: ${e.message}"
             }
         }
     }
@@ -328,45 +385,6 @@ class ModelViewModel @Inject constructor(
         }
     }
 
-    // Model settings
-    fun updateModelSettings(
-        temperature: Float,
-        topP: Float,
-        topK: Int,
-        maxTokens: Int,
-        contextLength: Int,
-        systemPrompt: String,
-        chatFormat: String,
-        threadCount: Int,
-        gpuLayers: Int
-    ) {
-        // Validate all inputs
-        val isValidTemperature = InputValidator.isValidTemperature(temperature)
-        val isValidTopP = InputValidator.isValidTopP(topP)
-        val isValidTopK = InputValidator.isValidTopK(topK)
-        val isValidMaxTokens = InputValidator.isValidMaxTokens(maxTokens)
-        val isValidContextLength = InputValidator.isValidContextLength(contextLength)
-        val sanitizedPrompt = InputValidator.sanitizeTextInput(systemPrompt)
-
-        if (isValidTemperature && isValidTopP && isValidTopK &&
-            isValidMaxTokens && isValidContextLength) {
-
-            modelTemperature = temperature
-            modelTopP = topP
-            modelTopK = topK
-            modelMaxTokens = maxTokens
-            modelContextLength = contextLength
-            modelSystemPrompt = sanitizedPrompt
-            modelChatFormat = chatFormat
-            modelThreadCount = threadCount
-            modelGpuLayers = gpuLayers
-
-            saveModelSettings()
-            Timber.tag(tag).d("Model settings updated and validated")
-        } else {
-            Timber.tag(tag).w("Invalid model settings provided - validation failed")
-        }
-    }
 
     private fun loadModelSettings() {
         viewModelScope.launch {
@@ -425,5 +443,10 @@ class ModelViewModel @Inject constructor(
                 Timber.tag(tag).e(e, "Error getting available models")
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        cleanupResources()
     }
 }

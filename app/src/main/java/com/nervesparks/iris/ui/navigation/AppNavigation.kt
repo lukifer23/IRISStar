@@ -3,6 +3,7 @@ package com.nervesparks.iris.ui.navigation
 import android.app.DownloadManager
 import android.content.ClipboardManager
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +22,7 @@ import com.nervesparks.iris.ui.ModelPerformanceScreen
 import com.nervesparks.iris.data.UserPreferencesRepository
 import java.io.File
 import com.nervesparks.iris.viewmodel.ModelViewModel
+import com.nervesparks.iris.viewmodel.ChatViewModel
 
 object AppDestinations {
     const val CHAT_LIST = "chat_list"

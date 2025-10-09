@@ -93,11 +93,29 @@ interface ChatRepository {
      * Save chat with associated messages
      */
     suspend fun saveChatWithMessages(chat: Chat, messages: List<Message>): Long
-    
+
     /**
      * Get chat statistics
      */
     suspend fun getChatStats(chatId: Long): ChatStats
+
+    /**
+     * Update chat settings (per-chat model configuration)
+     */
+    suspend fun updateChatSettings(
+        chatId: Long,
+        modelName: String? = null,
+        temperature: Float? = null,
+        topP: Float? = null,
+        topK: Int? = null,
+        maxTokens: Int? = null,
+        contextLength: Int? = null,
+        systemPrompt: String? = null,
+        chatFormat: String? = null,
+        threadCount: Int? = null,
+        gpuLayers: Int? = null,
+        backend: String? = null
+    )
 }
 
 /**

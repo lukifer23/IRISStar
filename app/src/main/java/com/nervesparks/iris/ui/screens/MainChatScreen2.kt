@@ -19,11 +19,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nervesparks.iris.ui.components.PerChatSettingsBottomSheet
+import com.nervesparks.iris.viewmodel.ChatViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.viewmodel.ModelViewModel
 import com.nervesparks.iris.ui.LocalActionHandler
 import com.nervesparks.iris.ui.components.ChatMessageList
 import com.nervesparks.iris.ui.components.ModernChatInput
@@ -165,8 +169,11 @@ fun MainChatScreen2(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val actionHandler = remember { LocalActionHandler(context) }
+    val chatViewModel: ChatViewModel = viewModel()
 
     var showModelDropdown by remember { mutableStateOf(false) }
+    var showPerChatSettings by remember { mutableStateOf(false) }
+    var currentChatSettings by remember { mutableStateOf<com.nervesparks.iris.viewmodel.ChatSettings>(com.nervesparks.iris.viewmodel.ChatSettings()) }
 
     LaunchedEffect(viewModel.lastQuickAction) {
         viewModel.lastQuickAction?.let {
@@ -219,7 +226,7 @@ fun MainChatScreen2(
             modifier = Modifier.imePadding(),
             topBar = {
                 ModernTopAppBar(
-                    title = "Iris ✨",
+                    title = "Iris",
                     onMenuClick = {
                         scope.launch {
                             drawerState.open()
@@ -231,7 +238,14 @@ fun MainChatScreen2(
                     showModelDropdown = showModelDropdown,
                     onModelDropdownDismiss = { showModelDropdown = false },
                     viewModel = viewModel,
-                    extFilesDir = extFilesDir
+                    extFilesDir = extFilesDir,
+                    onSettingsClick = {
+                        scope.launch {
+                            // For now, just show the settings dialog
+                            currentChatSettings = com.nervesparks.iris.viewmodel.ChatSettings() // Default for now
+                            showPerChatSettings = true
+                        }
+                    }
                 )
             },
             content = {
@@ -289,6 +303,19 @@ fun MainChatScreen2(
                 }
             }
         )
+
+        // Per-chat settings dialog
+        if (showPerChatSettings) {
+            PerChatSettingsBottomSheet(
+                chatViewModel = chatViewModel,
+                chatId = 1L, // TODO: Get actual chat ID from MainViewModel
+                currentSettings = currentChatSettings,
+                onDismiss = { showPerChatSettings = false },
+                onSave = { settings ->
+                    currentChatSettings = settings
+                    showPerChatSettings = false
+                }
+            )
+        }
     }
 }
-import com.nervesparks.iris.viewmodel.ModelViewModel

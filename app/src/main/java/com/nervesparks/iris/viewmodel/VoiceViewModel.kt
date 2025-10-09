@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nervesparks.iris.data.exceptions.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -150,6 +151,7 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
 
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error starting voice recognition")
+            ErrorHandler.reportError(e, "Voice Recognition", ErrorHandler.ErrorSeverity.MEDIUM, "Failed to start voice recognition. Please check microphone permissions and try again.")
             speechRecognitionError = "Failed to start voice recognition: ${e.message}"
         }
     }
@@ -182,6 +184,7 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
 
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error in text-to-speech")
+            ErrorHandler.reportError(e, "Text-to-Speech", ErrorHandler.ErrorSeverity.MEDIUM, "Text-to-speech failed. Please check if TTS is properly initialized.")
             ttsError = "Text-to-speech error: ${e.message}"
         }
     }

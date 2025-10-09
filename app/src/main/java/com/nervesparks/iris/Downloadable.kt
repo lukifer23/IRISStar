@@ -125,9 +125,9 @@ data class Downloadable(val name: String, val source: Uri, val destination: File
                         viewModel.showModal = true
                         Timber.d("item.destination.path", item.destination.path.toString())
                         viewModel.currentDownloadable = item
-                        // Force CPU backend for stability until Vulkan issues are resolved
+                        // Use optimal backend (now CPU due to Vulkan filtering)
                         val threadCount = maxOf(viewModel.user_thread.toInt(), 4) // Minimum 4 threads
-                        val backend = "cpu" // Force CPU to avoid Vulkan crashes
+                        val backend = viewModel.optimalBackend.ifEmpty { "cpu" } // Now safe (CPU-only)
                         Timber.d("Model loading parameters: path=${item.destination.path}, threads=$threadCount, backend=$backend")
                         Timber.d("Available backends: ${viewModel.availableBackends}, optimal: ${viewModel.optimalBackend}")
                         viewModel.load(item.destination.path, userThreads = threadCount, backend = backend)

@@ -186,6 +186,74 @@ class ChatRepositoryImpl @Inject constructor(
             averageResponseTime = averageResponseTime
         )
     }
+
+    override suspend fun updateChatSettings(
+        chatId: Long,
+        modelName: String?,
+        temperature: Float?,
+        topP: Float?,
+        topK: Int?,
+        maxTokens: Int?,
+        contextLength: Int?,
+        systemPrompt: String?,
+        chatFormat: String?,
+        threadCount: Int?,
+        gpuLayers: Int?,
+        backend: String?
+    ) = withContext(Dispatchers.IO) {
+        // Validate chat exists
+        val existingChat = chatDao.getChat(chatId)
+            ?: throw ValidationException("Chat with ID $chatId not found")
+
+        // Validate parameters if provided
+        modelName?.let {
+            if (it.isBlank()) throw ValidationException("Model name cannot be blank")
+        }
+
+        temperature?.let {
+            if (it < 0.0f || it > 2.0f) throw ValidationException("Temperature must be between 0.0 and 2.0")
+        }
+
+        topP?.let {
+            if (it < 0.0f || it > 1.0f) throw ValidationException("Top P must be between 0.0 and 1.0")
+        }
+
+        topK?.let {
+            if (it < 1 || it > 1000) throw ValidationException("Top K must be between 1 and 1000")
+        }
+
+        maxTokens?.let {
+            if (it < 1 || it > 32768) throw ValidationException("Max tokens must be between 1 and 32768")
+        }
+
+        contextLength?.let {
+            if (it < 512 || it > 131072) throw ValidationException("Context length must be between 512 and 131072")
+        }
+
+        threadCount?.let {
+            if (it < 1 || it > 32) throw ValidationException("Thread count must be between 1 and 32")
+        }
+
+        gpuLayers?.let {
+            if (it < -1) throw ValidationException("GPU layers must be -1 or greater")
+        }
+
+        // Update chat settings
+        chatDao.updateChatSettings(
+            chatId = chatId,
+            modelName = modelName,
+            temperature = temperature,
+            topP = topP,
+            topK = topK,
+            maxTokens = maxTokens,
+            contextLength = contextLength,
+            systemPrompt = systemPrompt,
+            chatFormat = chatFormat,
+            threadCount = threadCount,
+            gpuLayers = gpuLayers,
+            backend = backend
+        )
+    }
 }
 
  

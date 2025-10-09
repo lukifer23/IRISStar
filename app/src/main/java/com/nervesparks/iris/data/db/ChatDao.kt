@@ -27,6 +27,23 @@ interface ChatDao {
     @Query("SELECT * FROM chats WHERE id = :chatId")
     suspend fun getChat(chatId: Long): Chat?
 
+    @Query("UPDATE chats SET modelName = :modelName, temperature = :temperature, topP = :topP, topK = :topK, maxTokens = :maxTokens, contextLength = :contextLength, systemPrompt = :systemPrompt, chatFormat = :chatFormat, threadCount = :threadCount, gpuLayers = :gpuLayers, backend = :backend, updated = :updated WHERE id = :chatId")
+    suspend fun updateChatSettings(
+        chatId: Long,
+        modelName: String?,
+        temperature: Float?,
+        topP: Float?,
+        topK: Int?,
+        maxTokens: Int?,
+        contextLength: Int?,
+        systemPrompt: String?,
+        chatFormat: String?,
+        threadCount: Int?,
+        gpuLayers: Int?,
+        backend: String?,
+        updated: Long = System.currentTimeMillis()
+    )
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<Message>)
 

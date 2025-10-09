@@ -40,10 +40,10 @@ To enable real web search functionality in Iris, you need to set up Google Custo
 
 ## Benefits
 
-- ✅ **Real Google search results**
-- ✅ **100 free searches per day**
-- ✅ **Reliable and fast**
-- ✅ **Comprehensive results**
+- **Real Google search results**
+- **100 free searches per day**
+- **Reliable and fast**
+- **Comprehensive results**
 
 ## Fallback System
 
