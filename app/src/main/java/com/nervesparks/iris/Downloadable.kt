@@ -30,7 +30,13 @@ private fun Cursor.getLongOrNull(columnIndex: Int): Long? {
     return if (isNull(columnIndex)) null else getLong(columnIndex)
 }
 
-data class Downloadable(val name: String, val source: Uri, val destination: File) {
+data class Downloadable(
+    val name: String,
+    val source: Uri,
+    val destination: File,
+    val sizeBytes: Long? = null,
+    val expectedChecksum: String? = null
+) {
     companion object {
         @JvmStatic
         private val tag: String? = this::class.qualifiedName
