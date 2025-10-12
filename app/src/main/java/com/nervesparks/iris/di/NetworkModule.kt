@@ -1,14 +1,16 @@
 package com.nervesparks.iris.di
 
 import android.content.Context
+import com.nervesparks.iris.data.AndroidSearchService
+import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.HuggingFaceApiService
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.WebSearchService
-import com.nervesparks.iris.data.AndroidSearchService
 import com.nervesparks.iris.data.network.CacheControlInterceptor
 import com.nervesparks.iris.data.network.NetworkConfig
 import com.nervesparks.iris.data.network.RequestDeduplicationInterceptor
 import com.nervesparks.iris.data.network.CertificatePins
+import com.nervesparks.iris.llm.EmbeddingService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -100,6 +102,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAndroidSearchService(
-        @ApplicationContext context: Context
-    ): AndroidSearchService = AndroidSearchService(context)
+        @ApplicationContext context: Context,
+        documentRepository: DocumentRepository,
+        embeddingService: EmbeddingService
+    ): AndroidSearchService = AndroidSearchService(context, documentRepository, embeddingService)
 }

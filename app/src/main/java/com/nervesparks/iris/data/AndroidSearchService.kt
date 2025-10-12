@@ -3,19 +3,27 @@ package com.nervesparks.iris.data
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import timber.log.Timber
+import com.nervesparks.iris.data.db.Document
+import com.nervesparks.iris.data.exceptions.ValidationException
 import com.nervesparks.iris.data.search.SearchResponse
 import com.nervesparks.iris.data.search.SearchResult
-import com.nervesparks.iris.data.db.Document
+import com.nervesparks.iris.llm.EmbeddingService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.net.URLEncoder
+import java.util.Locale
+import javax.inject.Inject
 
 /**
  * Android system integration for web search
  * This service can launch searches in the user's default browser
  */
-class AndroidSearchService(private val context: Context) {
+class AndroidSearchService @Inject constructor(
+    private val context: Context,
+    private val documentRepository: DocumentRepository,
+    private val embeddingService: EmbeddingService
+) {
     private val tag = "AndroidSearchService"
 
     /**
@@ -126,6 +134,9 @@ class AndroidSearchService(private val context: Context) {
             sb.append("**${index + 1}. ${result.title}**\n")
             sb.append("${result.snippet}\n")
             sb.append("URL: ${result.url}\n")
+            result.confidence?.let {
+                sb.append("Confidence: ${String.format(Locale.US, "%.2f", it)}\n")
+            }
             sb.append("---\n\n")
         }
         
@@ -136,18 +147,72 @@ class AndroidSearchService(private val context: Context) {
     /**
      * Search through indexed documents
      */
-    suspend fun searchDocuments(query: String): List<Document> = withContext(Dispatchers.IO) {
+    suspend fun searchDocuments(query: String, desiredK: Int = DEFAULT_DOCUMENT_RESULT_COUNT): List<SearchResult> = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Searching documents for: $query")
 
-            // For now, return empty list as we need to implement proper document indexing
-            // This would typically query a document repository or search index
-            // TODO: Implement proper document search with embeddings for semantic similarity
+            if (query.isBlank()) {
+                Timber.tag(tag).w("Cannot search documents with a blank query")
+                return@withContext emptyList<SearchResult>()
+            }
 
-            return@withContext emptyList<Document>()
+            val queryEmbedding = embeddingService.embed(query)
+
+            val documents = try {
+                documentRepository.topKSimilar(queryEmbedding, desiredK)
+            } catch (validation: ValidationException) {
+                Timber.tag(tag).w(validation, "Validation error while searching documents")
+                return@withContext emptyList<SearchResult>()
+            }
+
+            documents.map { document ->
+                val similarity = cosineSimilarity(document.embedding, queryEmbedding)
+                SearchResult(
+                    title = buildTitle(document),
+                    snippet = buildSnippet(document),
+                    url = "document://${document.id}",
+                    source = "Local Document",
+                    confidence = similarity
+                )
+            }
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error searching documents")
-            return@withContext emptyList<Document>()
+            return@withContext emptyList<SearchResult>()
         }
     }
-} 
+
+    private fun buildTitle(document: Document): String {
+        val firstLine = document.text.lineSequence().firstOrNull()?.trim()
+        return when {
+            !firstLine.isNullOrEmpty() -> firstLine.take(MAX_TITLE_LENGTH)
+            document.text.length <= MAX_TITLE_LENGTH -> document.text
+            else -> "Document ${document.id}"
+        }
+    }
+
+    private fun buildSnippet(document: Document): String {
+        val snippet = document.text.take(MAX_SNIPPET_LENGTH)
+        return if (document.text.length > MAX_SNIPPET_LENGTH) "$snippet..." else snippet
+    }
+
+    private fun cosineSimilarity(a: List<Float>, b: List<Float>): Float {
+        if (a.isEmpty() || b.isEmpty()) return 0f
+        val size = minOf(a.size, b.size)
+        var dot = 0.0
+        var magnitudeA = 0.0
+        var magnitudeB = 0.0
+        for (i in 0 until size) {
+            dot += (a[i] * b[i])
+            magnitudeA += (a[i] * a[i])
+            magnitudeB += (b[i] * b[i])
+        }
+        val denominator = kotlin.math.sqrt(magnitudeA) * kotlin.math.sqrt(magnitudeB)
+        return if (denominator == 0.0) 0f else (dot / denominator).toFloat()
+    }
+
+    companion object {
+        private const val DEFAULT_DOCUMENT_RESULT_COUNT = 5
+        private const val MAX_TITLE_LENGTH = 80
+        private const val MAX_SNIPPET_LENGTH = 200
+    }
+}

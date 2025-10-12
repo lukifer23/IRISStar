@@ -6,10 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
+import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.exceptions.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Locale
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -120,18 +121,19 @@ class SearchViewModel @Inject constructor(
 
                 Timber.tag(tag).d("Searching documents for: $query")
 
-                // Perform semantic search on indexed documents
-                // For now, we'll do a simple text-based search
-                // In the future, this could use embeddings for semantic similarity
                 val results = androidSearchService.searchDocuments(query)
 
-                searchResults = results.map { doc ->
-                    mapOf(
-                        "title" to "Document ${doc.id}",
-                        "snippet" to (doc.text.take(200) + if (doc.text.length > 200) "..." else ""),
-                        "link" to "document://${doc.id}",
-                        "type" to "document"
-                    )
+                searchResults = results.map { result ->
+                    buildMap {
+                        put("title", result.title)
+                        put("snippet", result.snippet)
+                        put("link", result.url)
+                        put("type", "document")
+                        put("source", result.source)
+                        result.confidence?.let { confidence ->
+                            put("confidence", String.format(Locale.US, "%.2f", confidence))
+                        }
+                    }
                 }
 
                 // Cache the results
