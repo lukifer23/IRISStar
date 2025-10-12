@@ -105,6 +105,21 @@ class ChatViewModelTest {
         }
     }
 
+    @Test
+    fun cleanup_retainsMostRecentMessages() {
+        val viewModel = createViewModel()
+
+        repeat(120) { index ->
+            viewModel.addMessage("user", "Message $index")
+        }
+
+        viewModel.cleanup()
+
+        assertEquals(50, viewModel.messages.size)
+        assertEquals("Message 70", viewModel.messages.first()["content"])
+        assertEquals("Message 119", viewModel.messages.last()["content"])
+    }
+
     private fun createViewModel(): ChatViewModel {
         return ChatViewModel(chatRepository, documentRepository, embeddingService)
     }
