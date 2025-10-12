@@ -313,8 +313,9 @@ class ChatViewModel @Inject constructor(
         // Clear messages if they are too many to prevent memory issues
         if (messages.size > 100) {
             // Keep only recent messages (last 50)
+            val recentMessages = messages.takeLast(50)
             messages.clear()
-            messages.addAll(messages.takeLast(50))
+            messages.addAll(recentMessages)
         }
 
         Timber.tag(tag).d("ChatViewModel cleaned up")
