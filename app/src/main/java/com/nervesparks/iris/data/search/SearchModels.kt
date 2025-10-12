@@ -7,7 +7,8 @@ data class SearchResult(
     val title: String,
     val snippet: String,
     val url: String,
-    val source: String
+    val source: String,
+    val confidence: Float? = null
 )
 
 /**

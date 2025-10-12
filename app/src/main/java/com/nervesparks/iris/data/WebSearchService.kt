@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.util.Locale
 
 class WebSearchService(
     private val client: OkHttpClient,
@@ -243,6 +244,9 @@ class WebSearchService(
             sb.append("**${index + 1}. ${result.title}**\n")
             sb.append("${result.snippet}\n")
             sb.append("Source: ${result.url}\n")
+            result.confidence?.let {
+                sb.append("Confidence: ${String.format(Locale.US, "%.2f", it)}\n")
+            }
             sb.append("---\n\n")
         }
         
