@@ -4,8 +4,6 @@ import timber.log.Timber
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 /**
  * Centralized error handling and reporting system for the IRIS Star application.
@@ -61,10 +59,8 @@ object ErrorHandler {
         val errorEvent = ErrorEvent(error, context, severity, userMessage)
         Timber.tag("ErrorHandler").e(error, "Error in $context: ${error.message}")
 
-        // Emit to flow for UI handling
-        GlobalScope.launch {
-            _errorFlow.emit(errorEvent)
-        }
+        // Emit to flow for UI handling synchronously to avoid orphaned jobs
+        _errorFlow.tryEmit(errorEvent)
     }
 
     /**

@@ -1,6 +1,13 @@
 package com.nervesparks.iris.data.exceptions
 
-import io.mockk.*
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -13,7 +20,6 @@ class ErrorHandlerTest {
 
     @Before
     fun setUp() {
-        mockkStatic("kotlinx.coroutines.GlobalScope")
         mockkStatic("timber.log.Timber")
     }
 
@@ -31,8 +37,9 @@ class ErrorHandlerTest {
         val userMessage = "User-friendly message"
 
         // Mock Timber
-        mockkStatic("timber.log.Timber")
         every { com.nervesparks.iris.data.exceptions.Timber.tag(any()).e(any<Throwable>(), any()) } just Runs
+
+        val eventDeferred = async { ErrorHandler.errorFlow.first() }
 
         // When
         ErrorHandler.reportError(error, context, severity, userMessage)
@@ -42,8 +49,11 @@ class ErrorHandlerTest {
             com.nervesparks.iris.data.exceptions.Timber.tag("ErrorHandler").e(error, "Error in $context: ${error.message}")
         }
 
-        // Verify flow emission (would need to collect from errorFlow in real test)
-        // This tests that the method doesn't throw and calls the expected logging
+        val emittedEvent = eventDeferred.await()
+        assertEquals(error, emittedEvent.error)
+        assertEquals(context, emittedEvent.context)
+        assertEquals(severity, emittedEvent.severity)
+        assertEquals(userMessage, emittedEvent.userMessage)
     }
 
     @Test
