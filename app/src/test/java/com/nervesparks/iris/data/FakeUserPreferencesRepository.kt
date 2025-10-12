@@ -30,6 +30,7 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
     private val perfEnableMemoryOptimizationState = MutableStateFlow(true)
     private val perfEnableBackgroundProcessingState = MutableStateFlow(true)
     private val securityBiometricEnabledState = MutableStateFlow(false)
+    private val appLanguageState = MutableStateFlow<String?>(null)
 
     private val modelConfigurations = mutableMapOf<String, ModelConfiguration>()
 
@@ -141,6 +142,12 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         uiEnableHapticFeedbackState.value = value
     }
 
+    override val appLanguageFlow: Flow<String?> = appLanguageState.distinctUntilChanged()
+    override suspend fun getAppLanguage(): String? = appLanguageState.value
+    override suspend fun setAppLanguage(value: String?) {
+        appLanguageState.value = value
+    }
+
     override val perfEnableMemoryOptimizationFlow: Flow<Boolean> =
         perfEnableMemoryOptimizationState.distinctUntilChanged()
     override suspend fun getPerfEnableMemoryOptimization(): Boolean = perfEnableMemoryOptimizationState.value
@@ -193,6 +200,7 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         perfEnableMemoryOptimizationState.value = true
         perfEnableBackgroundProcessingState.value = true
         securityBiometricEnabledState.value = false
+        appLanguageState.value = null
         modelConfigurations.clear()
     }
 
@@ -214,7 +222,8 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
             "\"uiEnableAnimations\":${uiEnableAnimationsState.value}," +
             "\"uiEnableHapticFeedback\":${uiEnableHapticFeedbackState.value}," +
             "\"perfEnableMemoryOptimization\":${perfEnableMemoryOptimizationState.value}," +
-            "\"perfEnableBackgroundProcessing\":${perfEnableBackgroundProcessingState.value}" +
+            "\"perfEnableBackgroundProcessing\":${perfEnableBackgroundProcessingState.value}," +
+            "\"appLanguage\":\"${appLanguageState.value ?: ""}\"" +
             "}"
     }
 
@@ -238,6 +247,7 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
             if (json.has("uiEnableHapticFeedback")) setUIEnableHapticFeedback(json.getBoolean("uiEnableHapticFeedback"))
             if (json.has("perfEnableMemoryOptimization")) setPerfEnableMemoryOptimization(json.getBoolean("perfEnableMemoryOptimization"))
             if (json.has("perfEnableBackgroundProcessing")) setPerfEnableBackgroundProcessing(json.getBoolean("perfEnableBackgroundProcessing"))
+            if (json.has("appLanguage")) setAppLanguage(json.optString("appLanguage").takeIf { it.isNotBlank() })
             true
         } catch (e: Exception) {
             false

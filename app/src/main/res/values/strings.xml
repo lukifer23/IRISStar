@@ -9,4 +9,10 @@
     <string name="about_screen_title">About</string>
     <string name="benchmark_screen_title">BenchMark</string>
     <string name="refresh_button">Refresh</string>
+    <string name="language_settings_title">Language</string>
+    <string name="language_settings_description">Choose your preferred app language. Some Android versions require an app restart.</string>
+    <string name="language_settings_current">Current: %1$s</string>
+    <string name="language_settings_system_default">System default</string>
+    <string name="language_restart_required">Restart the app to apply language changes on this device.</string>
+    <string name="language_restart_not_required">Language changes apply immediately on this device.</string>
 </resources>

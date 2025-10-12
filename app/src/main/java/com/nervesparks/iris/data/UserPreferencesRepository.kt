@@ -56,6 +56,7 @@ private const val KEY_UI_ENABLE_HAPTIC_FEEDBACK = "ui_enable_haptic_feedback"
 private const val KEY_PERF_ENABLE_MEMORY_OPTIMIZATION = "perf_enable_memory_optimization"
 private const val KEY_PERF_ENABLE_BACKGROUND_PROCESSING = "perf_enable_background_processing"
 private const val KEY_SECURITY_BIOMETRIC_ENABLED = "security_biometric_enabled"
+private const val KEY_APP_LANGUAGE = "app_language"
 
 private val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = USER_PREFERENCES_NAME
@@ -100,11 +101,18 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         val perfEnableMemoryOptimization = booleanPreferencesKey(KEY_PERF_ENABLE_MEMORY_OPTIMIZATION)
         val perfEnableBackgroundProcessing = booleanPreferencesKey(KEY_PERF_ENABLE_BACKGROUND_PROCESSING)
         val securityBiometricEnabled = booleanPreferencesKey(KEY_SECURITY_BIOMETRIC_ENABLED)
+        val appLanguage = stringPreferencesKey(KEY_APP_LANGUAGE)
     }
 
     private fun <T> preferenceFlow(key: Preferences.Key<T>, default: T): Flow<T> {
         return dataStore.data
             .map { prefs -> prefs[key] ?: default }
+            .distinctUntilChanged()
+    }
+
+    private fun <T> preferenceFlowNullable(key: Preferences.Key<T>): Flow<T?> {
+        return dataStore.data
+            .map { prefs -> prefs[key] }
             .distinctUntilChanged()
     }
 
@@ -346,6 +354,20 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         setPreference(PreferenceKeys.uiEnableHapticFeedback, value)
     }
 
+    open val appLanguageFlow: Flow<String?> = preferenceFlowNullable(PreferenceKeys.appLanguage)
+
+    open suspend fun getAppLanguage(): String? = appLanguageFlow.first()
+
+    open suspend fun setAppLanguage(value: String?) {
+        dataStore.edit { prefs ->
+            if (value.isNullOrBlank()) {
+                prefs.remove(PreferenceKeys.appLanguage)
+            } else {
+                prefs[PreferenceKeys.appLanguage] = value
+            }
+        }
+    }
+
     open val perfEnableMemoryOptimizationFlow: Flow<Boolean> =
         preferenceFlow(PreferenceKeys.perfEnableMemoryOptimization, true)
 
@@ -451,6 +473,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         jsonObject.put("uiEnableHapticFeedback", prefs[PreferenceKeys.uiEnableHapticFeedback] ?: true)
         jsonObject.put("perfEnableMemoryOptimization", prefs[PreferenceKeys.perfEnableMemoryOptimization] ?: true)
         jsonObject.put("perfEnableBackgroundProcessing", prefs[PreferenceKeys.perfEnableBackgroundProcessing] ?: true)
+        jsonObject.put("appLanguage", prefs[PreferenceKeys.appLanguage] ?: "")
         return jsonObject.toString()
     }
 
@@ -476,6 +499,10 @@ open class UserPreferencesRepository protected constructor(context: Context) {
             if (json.has("uiEnableHapticFeedback")) setUIEnableHapticFeedback(json.getBoolean("uiEnableHapticFeedback"))
             if (json.has("perfEnableMemoryOptimization")) setPerfEnableMemoryOptimization(json.getBoolean("perfEnableMemoryOptimization"))
             if (json.has("perfEnableBackgroundProcessing")) setPerfEnableBackgroundProcessing(json.getBoolean("perfEnableBackgroundProcessing"))
+            if (json.has("appLanguage")) {
+                val language = json.optString("appLanguage")
+                setAppLanguage(language.takeIf { it.isNotBlank() })
+            }
             true
         } catch (e: Exception) {
             Timber.tag("UserPreferencesRepository").e(e, "Error importing configuration")

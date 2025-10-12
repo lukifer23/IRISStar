@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -25,6 +27,9 @@ import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.data.UserPreferencesRepository
 import android.llama.cpp.LLamaAndroid
 import com.nervesparks.iris.MainViewModel
+import com.nervesparks.iris.R
+import com.nervesparks.iris.platform.getCurrentAppLanguage
+import com.nervesparks.iris.platform.supportsPerAppLanguagePreferences
 import com.nervesparks.iris.ui.components.LoadingModal
 import com.nervesparks.iris.ui.components.MemoryManager
 import com.nervesparks.iris.ui.theme.ComponentStyles
@@ -36,6 +41,8 @@ import com.nervesparks.iris.ui.animations.BounceButton
 import com.nervesparks.iris.ui.theme.IrisAnimations
 import com.nervesparks.iris.security.BiometricAuthenticator
 import kotlinx.coroutines.launch
+import java.util.Locale
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,6 +187,10 @@ fun SettingsScreen(
                 }
             }
         }
+
+        LanguageSettingsCard(
+            modifier = Modifier.fillMaxWidth()
+        )
 
         // App Information Section
         ModernCard(
@@ -470,4 +481,72 @@ fun SettingsScreen(
             modifier = Modifier.padding(top = ComponentStyles.defaultPadding)
         )
     }
+}
+
+@Composable
+private fun LanguageSettingsCard(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val currentLanguageTag = remember { getCurrentAppLanguage(context) }
+    val currentLanguageLabel = remember(currentLanguageTag) {
+        currentLanguageTag?.let { tag ->
+            try {
+                val locale = Locale.forLanguageTag(tag)
+                locale.getDisplayName(locale)
+            } catch (e: Exception) {
+                Timber.w(e, "Unable to format language tag: $tag")
+                tag
+            }
+        } ?: context.getString(R.string.language_settings_system_default)
+    }
+
+    ModernCard(modifier = modifier) {
+        Column(
+            modifier = Modifier.padding(ComponentStyles.defaultPadding),
+            verticalArrangement = Arrangement.spacedBy(ComponentStyles.smallPadding)
+        ) {
+            Text(
+                text = stringResource(R.string.language_settings_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = stringResource(R.string.language_settings_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                text = stringResource(R.string.language_settings_current, currentLanguageLabel),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            LanguageRestartNotice(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun LanguageRestartNotice(modifier: Modifier = Modifier) {
+    val restartRequired = !supportsPerAppLanguagePreferences()
+    val messageRes = if (restartRequired) {
+        R.string.language_restart_required
+    } else {
+        R.string.language_restart_not_required
+    }
+    val messageColor = if (restartRequired) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Text(
+        text = stringResource(messageRes),
+        style = MaterialTheme.typography.bodySmall,
+        color = messageColor,
+        modifier = modifier.testTag("languageRestartNotice")
+    )
 }
