@@ -20,6 +20,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
 
+data class DownloadQueueItem(
+    val name: String,
+    val source: String,
+    val destination: String,
+    val sizeBytes: Long? = null,
+    val checksum: String? = null
+)
+
 private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val KEY_DEFAULT_MODEL_NAME = "default_model_name"
 private const val KEY_HUGGINGFACE_TOKEN = "huggingface_token"
@@ -36,6 +44,7 @@ private const val KEY_MODEL_CHAT_FORMAT = "model_chat_format"
 private const val KEY_MODEL_THREAD_COUNT = "model_thread_count"
 private const val KEY_MODEL_GPU_LAYERS = "model_gpu_layers"
 private const val KEY_CACHED_MODELS = "cached_models"
+private const val KEY_DOWNLOAD_QUEUE = "download_queue"
 private const val KEY_MODEL_CONFIG_PREFIX = "model_config_"
 private const val KEY_SHOW_THINKING_TOKENS = "show_thinking_tokens"
 private const val KEY_THINKING_TOKEN_STYLE = "thinking_token_style"
@@ -80,6 +89,7 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         val modelThreadCount = intPreferencesKey(KEY_MODEL_THREAD_COUNT)
         val modelGpuLayers = intPreferencesKey(KEY_MODEL_GPU_LAYERS)
         val cachedModels = stringPreferencesKey(KEY_CACHED_MODELS)
+        val downloadQueue = stringPreferencesKey(KEY_DOWNLOAD_QUEUE)
         val showThinkingTokens = booleanPreferencesKey(KEY_SHOW_THINKING_TOKENS)
         val thinkingTokenStyle = stringPreferencesKey(KEY_THINKING_TOKEN_STYLE)
         val templates = stringPreferencesKey(KEY_TEMPLATES)
@@ -197,6 +207,64 @@ open class UserPreferencesRepository protected constructor(context: Context) {
         preferenceFlow(PreferenceKeys.cachedModels, "")
 
     open suspend fun getCachedModels(): String = cachedModelsFlow.first()
+
+    open suspend fun getDownloadQueue(): List<DownloadQueueItem> {
+        return try {
+            val stored = dataStore.data.first()[PreferenceKeys.downloadQueue] ?: "[]"
+            val array = JSONArray(stored)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val obj = array.optJSONObject(i) ?: continue
+                    val name = obj.optString("name")
+                    val source = obj.optString("source")
+                    val destination = obj.optString("destination")
+                    if (name.isBlank() || source.isBlank() || destination.isBlank()) {
+                        continue
+                    }
+                    val size = if (obj.has("sizeBytes") && !obj.isNull("sizeBytes")) {
+                        obj.optLong("sizeBytes")
+                    } else {
+                        null
+                    }
+                    val checksum = obj.optString("checksum", null)?.takeIf { it.isNotBlank() }
+                    add(
+                        DownloadQueueItem(
+                            name = name,
+                            source = source,
+                            destination = destination,
+                            sizeBytes = size,
+                            checksum = checksum
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to read persisted download queue")
+            emptyList()
+        }
+    }
+
+    open suspend fun setDownloadQueue(queue: List<DownloadQueueItem>) {
+        runCatching {
+            val array = JSONArray()
+            queue.forEach { item ->
+                val obj = JSONObject()
+                obj.put("name", item.name)
+                obj.put("source", item.source)
+                obj.put("destination", item.destination)
+                item.sizeBytes?.let { obj.put("sizeBytes", it) }
+                item.checksum?.takeIf { it.isNotBlank() }?.let { obj.put("checksum", it) }
+                array.put(obj)
+            }
+            setPreference(PreferenceKeys.downloadQueue, array.toString())
+        }.onFailure { e ->
+            Timber.e(e, "Failed to persist download queue")
+        }
+    }
+
+    open suspend fun clearDownloadQueue() {
+        setPreference(PreferenceKeys.downloadQueue, "[]")
+    }
 
     open suspend fun setCachedModels(json: String) {
         setPreference(PreferenceKeys.cachedModels, json)
