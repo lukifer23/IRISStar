@@ -1,18 +1,23 @@
 package com.nervesparks.iris.platform
 
 import android.app.Activity
+import android.app.LocaleManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.activity.compose.BackHandler
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
+import com.nervesparks.iris.data.UserPreferencesRepository
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 
 /**
@@ -101,16 +106,35 @@ fun supportsPerAppLanguagePreferences(): Boolean {
  * Get the current per-app language setting (Android 13+)
  */
 fun getCurrentAppLanguage(context: Context): String? {
-    return if (supportsPerAppLanguagePreferences()) {
-        try {
-            // This would require proper locale handling
-            // For now, return null as placeholder
-            null
-        } catch (e: Exception) {
-            Timber.e(e, "Error getting app language")
-            null
+    return try {
+        if (supportsPerAppLanguagePreferences()) {
+            val localeFromManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val localeManager = context.getSystemService(LocaleManager::class.java)
+                val locales = localeManager?.applicationLocales
+                if (locales != null && !locales.isEmpty) {
+                    locales[0]?.toLanguageTag()
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+
+            localeFromManager
+                ?: AppCompatDelegate.getApplicationLocales()
+                    .takeIf { !it.isEmpty }
+                    ?.get(0)
+                    ?.toLanguageTag()
+                ?: getDefaultLocaleFromResources(context)
+        } else {
+            AppCompatDelegate.getApplicationLocales()
+                .takeIf { !it.isEmpty }
+                ?.get(0)
+                ?.toLanguageTag()
+                ?: getDefaultLocaleFromResources(context)
         }
-    } else {
+    } catch (e: Exception) {
+        Timber.e(e, "Error getting app language")
         null
     }
 }
@@ -119,16 +143,47 @@ fun getCurrentAppLanguage(context: Context): String? {
  * Set per-app language preference (Android 13+)
  */
 fun setAppLanguage(context: Context, languageTag: String): Boolean {
-    return if (supportsPerAppLanguagePreferences()) {
-        try {
-            // This would require proper locale handling
-            // For now, return false as placeholder
-            false
-        } catch (e: Exception) {
-            Timber.e(e, "Error setting app language")
-            false
+    return try {
+        val sanitizedTag = languageTag.trim()
+        val localeListCompat = if (sanitizedTag.isEmpty()) {
+            LocaleListCompat.getEmptyLocaleList()
+        } else {
+            LocaleListCompat.forLanguageTags(sanitizedTag)
         }
-    } else {
+
+        if (supportsPerAppLanguagePreferences()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val localeManager = context.getSystemService(LocaleManager::class.java)
+                val localeList = if (sanitizedTag.isEmpty()) {
+                    android.os.LocaleList.getEmptyLocaleList()
+                } else {
+                    android.os.LocaleList.forLanguageTags(sanitizedTag)
+                }
+                localeManager?.setApplicationLocales(localeList)
+            } else {
+                AppCompatDelegate.setApplicationLocales(localeListCompat)
+            }
+        } else {
+            AppCompatDelegate.setApplicationLocales(localeListCompat)
+        }
+
+        val preferences = UserPreferencesRepository.getInstance(context)
+        runBlocking {
+            preferences.setAppLanguage(sanitizedTag.ifEmpty { null })
+        }
+        true
+    } catch (e: Exception) {
+        Timber.e(e, "Error setting app language")
         false
+    }
+}
+
+private fun getDefaultLocaleFromResources(context: Context): String? {
+    val configuration = context.resources.configuration
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        configuration.locales.get(0)?.toLanguageTag()
+    } else {
+        @Suppress("DEPRECATION")
+        configuration.locale?.toLanguageTag()
     }
 }
