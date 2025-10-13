@@ -141,6 +141,14 @@ class MainViewModel @Inject constructor(
         } catch (_: Exception) {}
     }
 
+    private fun backendDisplayName(backend: String): String {
+        return when (backend.lowercase()) {
+            "vulkan" -> "Vulkan"
+            "opencl" -> "OpenCL"
+            else -> "CPU"
+        }
+    }
+
     // Flag indicating if the currently loaded model supports reasoning tokens
     var supportsReasoning by mutableStateOf(false)
 
@@ -1846,10 +1854,10 @@ class MainViewModel @Inject constructor(
                 }
 
                 Timber.d("Setting backend to: $backend")
+                var actualBackend = backend.lowercase()
                 try {
                     // For Vulkan backend, do additional validation since it can fail during model loading
-                    var actualBackend = backend.lowercase()
-                    if (backend.lowercase() == "vulkan") {
+                    if (actualBackend == "vulkan") {
                         Timber.d("Validating Vulkan backend...")
                         val vulkanSuccess = llamaAndroid.setBackend("vulkan")
                         Timber.d("Vulkan backend set result: $vulkanSuccess")
@@ -1880,7 +1888,6 @@ class MainViewModel @Inject constructor(
                         }
                     }
 
-                    Timber.d("Final backend selection: $actualBackend")
                 } catch (e: Exception) {
                     Timber.e("Exception setting backend: ${e.message}")
                     try {
@@ -1889,7 +1896,11 @@ class MainViewModel @Inject constructor(
                     } catch (e2: Exception) {
                         Timber.e("Failed to fallback to CPU backend: ${e2.message}")
                     }
+                    actualBackend = "cpu"
                 }
+
+                currentBackend = backendDisplayName(actualBackend)
+                Timber.d("Active backend after probe: $actualBackend (display=${currentBackend})")
 
                 Timber.d("Using initial backend=$backend for validation")
 
@@ -1984,11 +1995,10 @@ class MainViewModel @Inject constructor(
                 }
 
                 // Override backend selection based on memory constraints
-                val finalBackend = if (shouldUseCpu && backend.lowercase() != "cpu") {
-                    Timber.d("Switching from $backend to CPU due to memory constraints")
-                    "cpu"
-                } else {
-                    backend
+                var finalBackend = actualBackend
+                if (shouldUseCpu && finalBackend != "cpu") {
+                    Timber.d("Switching from $finalBackend to CPU due to memory constraints")
+                    finalBackend = "cpu"
                 }
 
                 // Update gpuLayers for final backend choice
@@ -1997,17 +2007,25 @@ class MainViewModel @Inject constructor(
                     else -> modelGpuLayers  // Use configured value for GPU backends
                 }
 
-                Timber.d("Final backend selection: $finalBackend (gpuLayers=$effectiveGpuLayers)")
-
                 // If we switched backends due to memory constraints, actually set the new backend
-                if (finalBackend != backend) {
+                if (finalBackend != actualBackend) {
                     try {
                         val switchSuccess = llamaAndroid.setBackend(finalBackend.lowercase())
-                        Timber.d("Backend switch to $finalBackend: $switchSuccess")
+                        Timber.d("Backend switch from $actualBackend to $finalBackend: $switchSuccess")
+                        if (switchSuccess) {
+                            actualBackend = finalBackend
+                        } else {
+                            Timber.w("Backend switch to $finalBackend failed; continuing with $actualBackend")
+                            finalBackend = actualBackend
+                        }
                     } catch (e: Exception) {
                         Timber.e("Failed to switch to final backend $finalBackend: ${e.message}")
+                        finalBackend = actualBackend
                     }
                 }
+
+                currentBackend = backendDisplayName(finalBackend)
+                Timber.d("Final backend selection: $finalBackend (gpuLayers=$effectiveGpuLayers)")
 
                 // For large models, use more conservative parameters to avoid memory issues
                 val conservativeParams = if (modelSizeMB > maxMemoryMB * 0.5) {
