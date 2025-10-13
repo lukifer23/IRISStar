@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.llama.cpp.LLamaAndroid
 import android.net.Uri
 import android.os.Bundle
+import android.os.Debug
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -1932,26 +1933,40 @@ class MainViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Check available memory (rough estimate)
-                val runtime = Runtime.getRuntime()
-                val maxMemoryMB = runtime.maxMemory() / (1024 * 1024)
-                val freeMemoryMB = (runtime.maxMemory() - runtime.totalMemory() + runtime.freeMemory()) / (1024 * 1024)
+                // Gather real device memory information for heuristics
+                val bytesPerMb = 1024L * 1024L
+                val memoryInfo = try {
+                    val activityManager = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    ActivityManager.MemoryInfo().apply { activityManager.getMemoryInfo(this) }
+                } catch (e: Exception) {
+                    Timber.w("Could not query ActivityManager memory info: ${e.message}")
+                    null
+                }
 
-                Timber.d("Memory: max=${maxMemoryMB}MB, free=${freeMemoryMB}MB")
+                val totalMemMB = memoryInfo?.totalMem?.div(bytesPerMb)
+                val availMemMB = memoryInfo?.availMem?.div(bytesPerMb)
+                val lowMemory = memoryInfo?.lowMemory ?: false
+
+                val nativeHeapAllocatedMB = Debug.getNativeHeapAllocatedSize() / bytesPerMb
+                val nativeHeapFreeMB = Debug.getNativeHeapFreeSize() / bytesPerMb
+                val nativeHeapSizeMB = Debug.getNativeHeapSize() / bytesPerMb
+
+                Timber.d(
+                    "Memory (ActivityManager): total=${totalMemMB ?: "unknown"}MB, " +
+                        "available=${availMemMB ?: "unknown"}MB, lowMemory=$lowMemory"
+                )
+                Timber.d(
+                    "Native heap (MB): allocated=${nativeHeapAllocatedMB}, free=${nativeHeapFreeMB}, size=${nativeHeapSizeMB}"
+                )
 
                 // Let llama.cpp handle memory management - other Android LLM apps work
                 // Only reject models that are truly impossible (e.g., larger than device RAM)
-                val deviceRamGB = try {
-                    val activityManager = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-                    val memoryInfo = ActivityManager.MemoryInfo()
-                    activityManager.getMemoryInfo(memoryInfo)
-                    memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0) // Convert to GB
-                } catch (e: Exception) {
-                    Timber.w("Could not detect device RAM: ${e.message}")
-                    8.0 // Assume 8GB if detection fails
+                val deviceRamGB = totalMemMB?.toDouble()?.div(1024.0) ?: run {
+                    Timber.w("Falling back to default device RAM assumption (8GB)")
+                    8.0
                 }
 
-                Timber.i("Device RAM: ${deviceRamGB}GB, Model size: ${modelSizeMB}MB")
+                Timber.i("Device RAM: ${"%.2f".format(deviceRamGB)}GB, Model size: ${modelSizeMB}MB")
 
                 // Only reject if model is larger than device RAM (accounting for OS usage)
                 val maxModelSizeMB = (deviceRamGB * 1024 * 0.7).toInt() // 70% of RAM
@@ -1965,22 +1980,43 @@ class MainViewModel @Inject constructor(
                 // Allow llama.cpp to manage memory - it uses native allocation
                 Timber.i("Allowing model load - llama.cpp will manage memory allocation")
 
-                // Check if model is too large for available memory - force CPU if needed
-                // With largeHeap=true, we can use more memory, so be less conservative
-                val shouldUseCpu = when {
-                    modelSizeMB > maxMemoryMB * 1.2 -> { // Model > 1.2x max heap is too big
-                        Timber.w("Model size (${modelSizeMB}MB) greatly exceeds max heap (${maxMemoryMB}MB) - forcing CPU backend")
-                        true
+                // Check if model is too large for available memory - force CPU if needed using real RAM metrics
+                val shouldUseCpu = memoryInfo?.let { info ->
+                    val safetyMarginMB = 512L // Keep headroom for the rest of the system
+                    val totalMb = info.totalMem / bytesPerMb
+                    val availableMb = info.availMem / bytesPerMb
+                    val availableAfterMargin = (availableMb - safetyMarginMB).coerceAtLeast(0L)
+
+                    when {
+                        info.lowMemory -> {
+                            Timber.w("System reports low memory; forcing CPU backend")
+                            true
+                        }
+
+                        modelSizeMB > totalMb * 9 / 10 -> {
+                            Timber.w(
+                                "Model size (${modelSizeMB}MB) close to total system memory (${totalMb}MB) - forcing CPU backend"
+                            )
+                            true
+                        }
+
+                        modelSizeMB > availableAfterMargin -> {
+                            Timber.w(
+                                "Model size (${modelSizeMB}MB) exceeds available memory after margin (${availableAfterMargin}MB) - forcing CPU backend"
+                            )
+                            true
+                        }
+
+                        else -> {
+                            Timber.d(
+                                "Model size (${modelSizeMB}MB) within available memory (${availableMb}MB) with ${safetyMarginMB}MB safety margin"
+                            )
+                            false
+                        }
                     }
-                    modelSizeMB > maxMemoryMB * 0.9 -> { // Model > 0.9x max heap may cause issues
-                        Timber.w("Model size (${modelSizeMB}MB) approaches heap limit (${maxMemoryMB}MB) - consider smaller model")
-                        // Still try but warn heavily
-                        false
-                    }
-                    else -> {
-                        Timber.d("Model size (${modelSizeMB}MB) within heap limits (${maxMemoryMB}MB)")
-                        false
-                    }
+                } ?: run {
+                    Timber.w("ActivityManager memory metrics unavailable; not forcing CPU backend")
+                    false
                 }
 
                 // Override backend selection based on memory constraints
@@ -2010,7 +2046,9 @@ class MainViewModel @Inject constructor(
                 }
 
                 // For large models, use more conservative parameters to avoid memory issues
-                val conservativeParams = if (modelSizeMB > maxMemoryMB * 0.5) {
+                val memoryBudgetMB = (totalMemMB ?: (deviceRamGB * 1024).toLong()).toDouble()
+                val modelSizeMBDouble = modelSizeMB.toDouble()
+                val conservativeParams = if (modelSizeMBDouble > memoryBudgetMB * 0.5) {
                     Timber.d("Using conservative parameters for large model")
                     // Reduce thread count and use smaller defaults
                     mapOf(
@@ -2031,7 +2069,7 @@ class MainViewModel @Inject constructor(
                 }
 
                 // Use conservative context length for large models
-                val contextLength = if (modelSizeMB > maxMemoryMB * 0.4) {
+                val contextLength = if (modelSizeMBDouble > memoryBudgetMB * 0.4) {
                     1024 // Smaller context for large models
                 } else {
                     2048 // Default context length
