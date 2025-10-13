@@ -43,10 +43,16 @@ class MemoryMonitor(private val context: Context) {
             }
         }
 
-        val runtime = Runtime.getRuntime()
-        val usedMemory = runtime.totalMemory() - runtime.freeMemory()
-        val availableMemory = runtime.freeMemory()
-        val totalMemory = runtime.totalMemory()
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+        val memoryInfo = android.app.ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+
+        val totalMemory = memoryInfo.totalMem
+        val availableMemory = memoryInfo.availMem
+        val baseUsedMemory = (totalMemory - availableMemory).coerceAtLeast(0L)
+        val nativeHeapUsage = Debug.getNativeHeapAllocatedSize().coerceAtLeast(0L)
+        val usedMemory = (baseUsedMemory + nativeHeapUsage).coerceAtMost(totalMemory)
+
         val memoryUsagePercent = if (totalMemory > 0) {
             (usedMemory.toFloat() / totalMemory.toFloat()) * 100
         } else {
@@ -55,11 +61,8 @@ class MemoryMonitor(private val context: Context) {
 
         // Check if device is in low memory state (cached for performance)
         val isLowMemory = if (currentTime - lastUpdateTime < 2000L) {
-            cachedStats?.isLowMemory ?: false
+            cachedStats?.isLowMemory ?: memoryInfo.lowMemory
         } else {
-            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-            val memoryInfo = android.app.ActivityManager.MemoryInfo()
-            activityManager.getMemoryInfo(memoryInfo)
             memoryInfo.lowMemory
         }
 
