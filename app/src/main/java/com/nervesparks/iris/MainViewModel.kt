@@ -47,7 +47,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
@@ -1319,33 +1318,31 @@ class MainViewModel @Inject constructor(
                 first = false
             }
 
-            // Compute RAG context before adding message
-            val effectiveMessage = runBlocking {
-                try {
-                    val userEmbedding = embeddingService.embed(userMessage)
-                    val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
-                    val contextDocs = similarDocs.joinToString("\n") { it.text }
-                    if (contextDocs.isNotEmpty()) {
-                        "Context: $contextDocs\n\nQuestion: $userMessage"
-                    } else {
+            viewModelScope.launch {
+                // Compute RAG context before adding message
+                val effectiveMessage = withContext(Dispatchers.IO) {
+                    try {
+                        val userEmbedding = embeddingService.embed(userMessage)
+                        val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
+                        val contextDocs = similarDocs.joinToString("\n") { it.text }
+                        if (contextDocs.isNotEmpty()) {
+                            "Context: $contextDocs\n\nQuestion: $userMessage"
+                        } else {
+                            userMessage
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to compute RAG context, using plain message")
                         userMessage
                     }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to compute RAG context, using plain message")
-                    userMessage
                 }
-            }
 
-            viewModelScope.launch {
                 pruneForNewTokens(llamaAndroid.countTokens(effectiveMessage))
-            }
-            addMessage("user", effectiveMessage)
-            persistChat()
+                addMessage("user", effectiveMessage)
+                persistChat()
 
-            // Start performance monitoring
-            generationViewModel.startGeneration()
+                // Start performance monitoring
+                generationViewModel.startGeneration()
 
-            viewModelScope.launch {
                 try {
                     var workingMessages = messages.toMutableList()
                     val reserve = reserveTokens
