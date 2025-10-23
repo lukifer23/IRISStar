@@ -5,8 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,53 +44,50 @@ fun ModelsScreen(
     dm: DownloadManager,
     onQuantizeScreenButtonClicked: () -> Unit
 ) {
-    // Observe viewModel.refresh to trigger recomposition
-    val refresh = viewModel.refresh
+    val installedModels = modelViewModel.availableModels
+    val defaultModels = modelViewModel.defaultModels
 
-    // Reset refresh to false after the screen is recomposed
-    if (refresh) {
-        viewModel.refresh = false
-    }
-
-    Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+    ) {
         if (viewModel.showAlert) {
-            // Modal dialog to show download options
             LoadingModal(
                 message = "Loading Model",
                 onDismiss = { }
             )
         }
 
-        val installedModels = modelViewModel.availableModels
-        val suggestedModels = installedModels.filter { it["supportsReasoning"] == "true" }.take(3)
-
-        LazyColumn(modifier = Modifier.padding(horizontal = ComponentStyles.defaultPadding)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = ComponentStyles.defaultPadding),
+            contentPadding = PaddingValues(bottom = ComponentStyles.largePadding)
+        ) {
+            // Header Actions
             item {
                 Column {
+                    // Search Models Action
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = ComponentStyles.defaultSpacing, vertical = ComponentStyles.smallPadding)
-                            .clickable {
-                                onSearchResultButtonClick()
-                            }
+                            .padding(vertical = ComponentStyles.smallPadding)
+                            .clickable { onSearchResultButtonClick() }
                     ) {
                         Icon(
                             modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.search_svgrepo_com__3_),
-                            contentDescription = "Parameters",
+                            contentDescription = "Search Models",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(Modifier.width(ComponentStyles.defaultSpacing))
                         Text(
                             text = "Search Hugging-Face Models",
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 18.sp,
-                            modifier = Modifier
-                                .padding(vertical = ComponentStyles.defaultSpacing, horizontal = ComponentStyles.smallPadding)
+                            fontSize = 16.sp,
+                            modifier = Modifier.weight(1f)
                         )
-                        Spacer(Modifier.weight(1f))
                         Icon(
                             modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.right_arrow_svgrepo_com),
@@ -96,30 +95,28 @@ fun ModelsScreen(
                             tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
+
+                    // Quantize Models Action
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = ComponentStyles.defaultSpacing, vertical = ComponentStyles.smallPadding)
-                            .clickable {
-                                onQuantizeScreenButtonClicked()
-                            }
+                            .padding(vertical = ComponentStyles.smallPadding)
+                            .clickable { onQuantizeScreenButtonClicked() }
                     ) {
                         Icon(
                             modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.ic_quantize),
-                            contentDescription = "Quantize",
+                            contentDescription = "Quantize Models",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(Modifier.width(ComponentStyles.defaultSpacing))
                         Text(
                             text = "Quantize Models",
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 18.sp,
-                            modifier = Modifier
-                                .padding(vertical = ComponentStyles.defaultSpacing, horizontal = ComponentStyles.smallPadding)
+                            fontSize = 16.sp,
+                            modifier = Modifier.weight(1f)
                         )
-                        Spacer(Modifier.weight(1f))
                         Icon(
                             modifier = Modifier.size(ComponentStyles.defaultIconSize),
                             painter = painterResource(id = R.drawable.right_arrow_svgrepo_com),
@@ -127,29 +124,46 @@ fun ModelsScreen(
                             tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
+
                     Divider(
                         modifier = Modifier
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .padding(vertical = ComponentStyles.defaultPadding),
                         color = MaterialTheme.colorScheme.outline,
                         thickness = ComponentStyles.defaultBorderWidth
-                    )
-                    Spacer(Modifier.height(ComponentStyles.largePadding))
-                    // Suggested Models Section
-                    Text(
-                        text = "Suggested Models",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(ComponentStyles.smallPadding),
-                        fontSize = 18.sp
                     )
                 }
             }
 
-            // Show first three suggested models that support reasoning
-            items(suggestedModels, key = { it["name"] ?: it["source"] ?: "" }) { model ->
+            // Suggested Models Section
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = ComponentStyles.smallPadding),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Suggested Models",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 18.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "Browse More",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp,
+                        modifier = Modifier.clickable { onSearchResultButtonClick() }
+                    )
+                }
+            }
+
+            // Show suggested models from default models
+            items(defaultModels.take(6), key = { it["name"] ?: it["destination"] ?: "" }) { model ->
                 extFileDir?.let {
                     model["source"]?.let { source ->
                         ModelCard(
-                            model["name"].toString(),
+                            modelName = model["name"]?.toString() ?: "",
                             supportsReasoning = model["supportsReasoning"] == "true",
                             supportsVision = model["supportsVision"] == "true",
                             viewModel = viewModel,
@@ -157,55 +171,60 @@ fun ModelsScreen(
                             dm = dm,
                             extFilesDir = extFileDir,
                             downloadLink = source,
-                            showDeleteButton = true
+                            showDeleteButton = false // Don't show delete for suggested models
                         )
                     }
                 }
             }
+
+            // Divider between sections
             item {
                 Divider(
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(vertical = ComponentStyles.largePadding),
                     color = MaterialTheme.colorScheme.outline,
                     thickness = ComponentStyles.defaultBorderWidth
                 )
             }
 
+            // My Models Section
             item {
-                // My Models Section
                 Text(
                     text = "My Models",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(ComponentStyles.smallPadding),
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(vertical = ComponentStyles.smallPadding)
                 )
             }
 
-            // Display all models not in Suggested Models
-            items(installedModels.filterNot { suggestedModels.contains(it) }, key = { it["name"] ?: it["source"] ?: "" }) { model ->
-                extFileDir?.let {
-                    model["source"]?.let { source ->
-                        ModelCard(
-                            model["name"].toString(),
-                            supportsReasoning = model["supportsReasoning"] == "true",
-                            supportsVision = model["supportsVision"] == "true",
-                            viewModel = viewModel,
-                            modelViewModel = modelViewModel,
-                            dm = dm,
-                            extFilesDir = extFileDir,
-                            downloadLink = source,
-                            showDeleteButton = true
-                        )
-                    }
-                }
-            }
-            item {
-                if (installedModels.drop(3).isEmpty()) {
+            // Show installed models
+            if (installedModels.isEmpty()) {
+                item {
                     Text(
-                        text = "No models to show",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = ComponentStyles.smallPadding, start = ComponentStyles.smallPadding)
+                        text = "No models installed. Download a suggested model above to get started!",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(vertical = ComponentStyles.defaultPadding)
                     )
+                }
+            } else {
+                items(installedModels, key = { it["name"] ?: it["destination"] ?: "" }) { model ->
+                    extFileDir?.let {
+                        model["source"]?.let { source ->
+                            ModelCard(
+                                modelName = model["name"]?.toString() ?: "",
+                                supportsReasoning = model["supportsReasoning"] == "true",
+                                supportsVision = model["supportsVision"] == "true",
+                                viewModel = viewModel,
+                                modelViewModel = modelViewModel,
+                                dm = dm,
+                                extFilesDir = extFileDir,
+                                downloadLink = source,
+                                showDeleteButton = true
+                            )
+                        }
+                    }
                 }
             }
         }

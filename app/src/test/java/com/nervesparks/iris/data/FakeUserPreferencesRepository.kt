@@ -35,9 +35,9 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
     private val modelConfigurations = mutableMapOf<String, ModelConfiguration>()
 
     // Sensitive data stored in memory for testing
-    override var huggingFaceToken: String = ""
-    override var huggingFaceUsername: String = ""
-    override var googleApiKey: String = ""
+    var huggingFaceToken: String = ""
+    var huggingFaceUsername: String = ""
+    var googleApiKey: String = ""
 
     override val defaultModelNameFlow: Flow<String> = defaultModelNameState
     override suspend fun getDefaultModelName(): String = defaultModelNameState.value

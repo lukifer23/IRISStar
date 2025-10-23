@@ -133,6 +133,10 @@ class ModelRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getDefaultModels(): List<Map<String, String>> {
+        return curatedDefaultModels()
+    }
+
     override suspend fun getAvailableModels(directory: File): List<Map<String, String>> {
         return try {
             val installedModels = listInstalledModels(directory)

@@ -44,6 +44,9 @@ class ModelViewModel @Inject constructor(
     var modelLoadingProgress by mutableStateOf(0f)
     var currentSessionId by mutableStateOf<String?>(null)
 
+    // Default/suggested models
+    var defaultModels by mutableStateOf<List<Map<String, String>>>(emptyList())
+
     // Backend and hardware
     var currentBackend by mutableStateOf("cpu")
     var availableBackends by mutableStateOf("")
@@ -69,6 +72,24 @@ class ModelViewModel @Inject constructor(
     init {
         loadModelSettings()
         detectHardwareCapabilities()
+        loadDefaultModels()
+    }
+
+    /**
+     * Load the curated default/suggested models
+     */
+    private fun loadDefaultModels() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val models = modelRepository.getDefaultModels()
+                withContext(Dispatchers.Main) {
+                    defaultModels = models
+                }
+                Timber.tag(tag).d("Loaded ${models.size} default models")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Failed to load default models")
+            }
+        }
     }
 
     // Benchmark function (delegate to benchmark logic)
@@ -371,7 +392,7 @@ class ModelViewModel @Inject constructor(
                 availableBackends = backends.joinToString(",")
 
                 isAdrenoGpu = llamaAndroid.isAdrenoGpu()
-                optimalBackend = if (isAdrenoGpu) "opencl" else "cpu"
+                optimalBackend = "cpu" // Force CPU as optimal to avoid Vulkan/OpenCL issues
 
                 backendError = null
                 Timber.tag(tag).d("Hardware detection: Available backends: $availableBackends")

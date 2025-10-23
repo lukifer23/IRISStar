@@ -120,6 +120,7 @@ class ModelViewModelTest {
 
     private class FakeModelRepository : ModelRepository {
         var availableModelsResponse: List<Map<String, String>> = emptyList()
+        var defaultModelsResponse: List<Map<String, String>> = emptyList()
         var shouldThrow: Boolean = false
         private var cached: List<Map<String, String>> = emptyList()
 
@@ -151,5 +152,9 @@ class ModelViewModelTest {
         override suspend fun getModelFileSize(modelName: String, directory: File): Long = 0L
 
         override suspend fun deleteModel(modelName: String, directory: File): Result<Unit> = Result.success(Unit)
+
+        override suspend fun getDefaultModels(): List<Map<String, String>> {
+            return defaultModelsResponse
+        }
     }
 }

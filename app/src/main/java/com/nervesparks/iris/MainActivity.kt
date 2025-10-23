@@ -98,21 +98,30 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
 
         // Initialize native library early
+        android.util.Log.d("MainActivity", "About to initialize native library...")
         try {
-            android.util.Log.d("MainActivity", "Initializing native library...")
-            val success = LLamaAndroid.instance().ensureLibraryLoaded()
+            android.util.Log.d("MainActivity", "Creating LLamaAndroid instance...")
+            val llamaInstance = LLamaAndroid.instance()
+            android.util.Log.d("MainActivity", "LLamaAndroid instance created, calling ensureLibraryLoaded...")
+            val success = llamaInstance.ensureLibraryLoaded()
             android.util.Log.d("MainActivity", "Native library initialization: $success")
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Failed to initialize native library", e)
+            android.util.Log.e("MainActivity", "Stack trace:", e)
+            // Don't crash, continue with app startup
         }
+        android.util.Log.d("MainActivity", "Native library init block completed")
 
         // Allow network operations on main thread for development
         val policy = VmPolicy.Builder()
             .detectAll()
             .build()
         StrictMode.setVmPolicy(policy)
+        android.util.Log.d("MainActivity", "StrictMode policy set")
 
+        android.util.Log.d("MainActivity", "Getting external files dir...")
         val extFilesDir = getExternalFilesDir(null)
+        android.util.Log.d("MainActivity", "External files dir: $extFilesDir")
 
         val models = listOf(
             Downloadable(
@@ -168,14 +177,20 @@ class MainActivity : FragmentActivity() {
             }
         }
 
+        android.util.Log.d("MainActivity", "About to set content...")
         lifecycleScope.launch {
+            android.util.Log.d("MainActivity", "Checking biometric settings...")
             val biometricEnabled = preferencesRepository.getSecurityBiometricEnabled()
+            android.util.Log.d("MainActivity", "Biometric enabled: $biometricEnabled")
             if (biometricEnabled) {
+                android.util.Log.d("MainActivity", "Setting up biometric authentication...")
                 val biometricAuthenticator = BiometricAuthenticator(this@MainActivity)
                 biometricAuthenticator.authenticate(this@MainActivity) {
+                    android.util.Log.d("MainActivity", "Biometric auth successful, setting content...")
                     setContent { content() }
                 }
             } else {
+                android.util.Log.d("MainActivity", "No biometric auth needed, setting content...")
                 setContent { content() }
             }
         }

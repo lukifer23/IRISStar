@@ -161,6 +161,27 @@ class DocumentViewModel @Inject constructor(
     }
 
     /**
+     * Compute RAG context for a user message
+     */
+    suspend fun computeRAGContext(userMessage: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userEmbedding = embeddingService.embed(userMessage)
+                val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
+                val contextDocs = similarDocs.joinToString("\n") { it.text }
+                if (contextDocs.isNotEmpty()) {
+                    "Context: $contextDocs\n\nQuestion: $userMessage"
+                } else {
+                    userMessage
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to compute RAG context, using plain message")
+                userMessage
+            }
+        }
+    }
+
+    /**
      * Generate a summary using the LLM
      */
     private suspend fun generateLLMSummary(prompt: String): String {

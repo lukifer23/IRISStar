@@ -13,6 +13,11 @@ interface ModelRepository {
     suspend fun getAvailableModels(directory: File): List<Map<String, String>>
 
     /**
+     * Get the curated list of default/suggested models
+     */
+    suspend fun getDefaultModels(): List<Map<String, String>>
+
+    /**
      * Refresh the model catalogue from remote or local storage and cache the results
      */
     suspend fun refreshAvailableModels(): List<Map<String, String>>

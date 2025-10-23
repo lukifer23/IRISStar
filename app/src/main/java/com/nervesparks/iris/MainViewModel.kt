@@ -36,7 +36,6 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import com.nervesparks.iris.data.repository.ChatRepository
-import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.viewmodel.ChatViewModel
 import com.nervesparks.iris.viewmodel.ModelViewModel
@@ -66,7 +65,6 @@ class MainViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
     private val huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
-    private val documentRepository: DocumentRepository,
     private val embeddingService: EmbeddingService,
     private val webSearchService: WebSearchService,
     private val androidSearchService: AndroidSearchService,
@@ -1220,21 +1218,7 @@ class MainViewModel @Inject constructor(
 
             viewModelScope.launch {
                 // Compute RAG context before adding message
-                val effectiveMessage = withContext(Dispatchers.IO) {
-                    try {
-                        val userEmbedding = embeddingService.embed(userMessage)
-                        val similarDocs = documentRepository.topKSimilar(userEmbedding, 3)
-                        val contextDocs = similarDocs.joinToString("\n") { it.text }
-                        if (contextDocs.isNotEmpty()) {
-                            "Context: $contextDocs\n\nQuestion: $userMessage"
-                        } else {
-                            userMessage
-                        }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to compute RAG context, using plain message")
-                        userMessage
-                    }
-                }
+                val effectiveMessage = documentViewModel.computeRAGContext(userMessage)
 
                 pruneForNewTokens(llamaAndroid.countTokens(effectiveMessage))
                 addMessage("user", effectiveMessage)

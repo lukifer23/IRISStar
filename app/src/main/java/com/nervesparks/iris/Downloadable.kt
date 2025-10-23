@@ -106,7 +106,7 @@ data class Downloadable(
 
                         viewModel.currentDownloadable = item
                         if(viewModel.loadedModelName.value == "") {
-                            viewModel.load(
+                            modelViewModel.load(
                                 item.destination.path,
                                 userThreads = viewModel.user_thread.toInt()
                             )
@@ -136,7 +136,7 @@ data class Downloadable(
                         val backend = viewModel.optimalBackend.ifEmpty { "cpu" } // Now safe (CPU-only)
                         Timber.d("Model loading parameters: path=${item.destination.path}, threads=$threadCount, backend=$backend")
                         Timber.d("Available backends: ${viewModel.availableBackends}, optimal: ${viewModel.optimalBackend}")
-                        viewModel.load(item.destination.path, userThreads = threadCount, backend = backend)
+                        modelViewModel.load(item.destination.path, userThreads = threadCount, backend = backend)
                     }
 
                     is Downloading -> {
