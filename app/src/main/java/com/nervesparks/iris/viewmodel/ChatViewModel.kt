@@ -168,12 +168,21 @@ class ChatViewModel @Inject constructor(
     }
 
     fun addMessage(role: String, content: String) {
-        val message = mapOf(
-            "role" to role,
-            "content" to content,
-            "timestamp" to System.currentTimeMillis()
-        )
-        messages.add(message)
+        if (messages.isNotEmpty() && messages.last()["role"] == role) {
+            val updatedLastMessage = messages.last().toMutableMap().apply {
+                val existingContent = this["content"]?.toString() ?: ""
+                this["content"] = existingContent + content
+                this["timestamp"] = System.currentTimeMillis()
+            }
+            messages[messages.lastIndex] = updatedLastMessage
+        } else {
+            val message = mapOf(
+                "role" to role,
+                "content" to content,
+                "timestamp" to System.currentTimeMillis()
+            )
+            messages.add(message)
+        }
         Timber.tag(tag).d("Message added: $role")
     }
 
@@ -211,6 +220,11 @@ class ChatViewModel @Inject constructor(
                 ErrorHandler.reportError(e, "Chat Persistence", ErrorHandler.ErrorSeverity.MEDIUM, "Failed to save chat. Please try again.")
             }
         }
+    }
+
+    fun replaceMessages(newMessages: List<Map<String, Any>>) {
+        messages.clear()
+        messages.addAll(newMessages)
     }
 
     // Thinking token settings
