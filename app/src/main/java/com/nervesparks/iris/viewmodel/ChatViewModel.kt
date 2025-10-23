@@ -256,7 +256,7 @@ class ChatViewModel @Inject constructor(
 
     // Per-chat settings management
     suspend fun updateChatSettings(
-        chatId: Long,
+        chatId: Long?,
         modelName: String? = null,
         temperature: Float? = null,
         topP: Float? = null,
@@ -269,6 +269,11 @@ class ChatViewModel @Inject constructor(
         gpuLayers: Int? = null,
         backend: String? = null
     ) {
+        if (chatId == null || chatId <= 0L) {
+            Timber.tag(tag).w("Skipping chat settings update: invalid chat id $chatId")
+            return
+        }
+
         try {
             chatRepository.updateChatSettings(
                 chatId = chatId,
