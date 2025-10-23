@@ -40,7 +40,9 @@ fun ChatMessageList(chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
 
     // Memoize the message list to avoid recreating it on every recomposition
     val displayMessages = remember(messages) {
-        messages.drop(3)
+        messages.filter { message ->
+            (message["role"] as? String) != "system"
+        }
     }
 
     // Memoize supportsReasoning to avoid unnecessary recompositions
@@ -90,7 +92,7 @@ fun ChatMessageList(chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
                             )
                         } else {
                             // Memoize the grouping calculations to avoid expensive lookups
-                            // Note: idx here is the index in displayMessages (after drop(3))
+                            // Note: idx here corresponds to the filtered displayMessages list
                             val groupingInfo = remember(displayMessages, idx, role) {
                                 val prevRole = displayMessages.getOrNull(idx - 1)?.get("role")
                                 val nextRole = displayMessages.getOrNull(idx + 1)?.get("role")
@@ -117,8 +119,8 @@ fun ChatMessageList(chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
                         }
                     }
                     else -> {
-                        val prevRole = messages.getOrNull(idx + 2)?.get("role")
-                        val nextRole = messages.getOrNull(idx + 4)?.get("role")
+                        val prevRole = displayMessages.getOrNull(idx - 1)?.get("role")
+                        val nextRole = displayMessages.getOrNull(idx + 1)?.get("role")
                         val groupedPrev = prevRole == role
                         val groupedNext = nextRole == role
                         MessageBubble(
