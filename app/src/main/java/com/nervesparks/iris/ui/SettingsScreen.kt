@@ -48,6 +48,7 @@ import timber.log.Timber
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
+    settingsViewModel: com.nervesparks.iris.viewmodel.SettingsViewModel,
     generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel,
     preferencesRepository: UserPreferencesRepository,
     onModelsScreenButtonClicked: () -> Unit,

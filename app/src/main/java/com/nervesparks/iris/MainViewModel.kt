@@ -8,11 +8,6 @@ import android.llama.cpp.LLamaAndroid
 import android.net.Uri
 import android.os.Bundle
 import android.os.Debug
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import timber.log.Timber
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -78,6 +73,7 @@ class MainViewModel @Inject constructor(
     private val webSearchService: WebSearchService,
     private val androidSearchService: AndroidSearchService,
     // Specialized ViewModels
+    val settingsViewModel: com.nervesparks.iris.viewmodel.SettingsViewModel,
     val searchViewModel: com.nervesparks.iris.viewmodel.SearchViewModel,
     val voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel,
     val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel,
@@ -281,16 +277,6 @@ class MainViewModel @Inject constructor(
     var userGivenModel by mutableStateOf("")
     var SearchedName by mutableStateOf("")
 
-    private var textToSpeech:TextToSpeech? = null
-
-    var textForTextToSpeech = ""
-    var stateForTextToSpeech by mutableStateOf(true)
-        private set
-
-    private var speechRecognizer: SpeechRecognizer? = null
-    var isListening by mutableStateOf(false)
-        private set
-    var voiceError by mutableStateOf<String?>(null)
 
     var eot_str = ""
 
@@ -348,63 +334,7 @@ class MainViewModel @Inject constructor(
         voiceViewModel.startVoiceRecognition(context)
     }
 
-    fun speakLastAssistantMessage(context: Context) {
-        // Find the last assistant message and speak it
-        val lastAssistantMessage = messages.lastOrNull { it["role"] == "assistant" }
-        lastAssistantMessage?.get("content")?.let { content ->
-            voiceViewModel.textToSpeech(context, content)
-        }
-    }
 
-    // Legacy voice recognition function
-    private fun legacyStartVoiceRecognition() {
-        val context = getApplication<Application>()
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            voiceError = "Microphone permission not granted"
-            return
-        }
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            voiceError = "Speech recognition not available"
-            return
-        }
-        if (speechRecognizer == null) {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
-                setRecognitionListener(object : RecognitionListener {
-                    override fun onReadyForSpeech(params: Bundle?) {
-                        isListening = true
-                        voiceError = null
-                    }
-
-                    override fun onResults(results: Bundle?) {
-                        isListening = false
-                        val data = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        val text = data?.firstOrNull() ?: ""
-                        updateMessage(text)
-                    }
-
-                    override fun onError(error: Int) {
-                        isListening = false
-                        voiceError = "Error: $error"
-                    }
-
-                    override fun onEndOfSpeech() {
-                        isListening = false
-                    }
-
-                    override fun onBeginningOfSpeech() {}
-                    override fun onRmsChanged(rmsdB: Float) {}
-                    override fun onBufferReceived(buffer: ByteArray?) {}
-                    override fun onPartialResults(partialResults: Bundle?) {}
-                    override fun onEvent(eventType: Int, params: Bundle?) {}
-                })
-            }
-        }
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        }
-        speechRecognizer?.startListening(intent)
-    }
 
     // Quick action and attachment handlers
     var lastQuickAction by mutableStateOf<String?>(null)
@@ -520,13 +450,6 @@ class MainViewModel @Inject constructor(
                 addMessage("assistant", "❌ Unable to process image: ${e.message}")
             }
         }
-    }
-
-    var isCodeMode by mutableStateOf(false)
-        private set
-
-    fun toggleCodeMode() {
-        isCodeMode = !isCodeMode
     }
 
     fun sendCode(code: String) {
@@ -1190,73 +1113,9 @@ class MainViewModel @Inject constructor(
 
 
 
-    fun textToSpeech(context: Context, text: String) {
-        // Use VoiceViewModel from UI layer for proper separation of concerns
-        voiceViewModel.textToSpeech(context, text)
-    }
-
-    // Legacy text-to-speech function
-    private fun legacyTextToSpeech(context: Context) {
-        if (!getIsSending()) {
-            // If TTS is already initialized, stop it first
-            textToSpeech?.stop()
-
-            textToSpeech = TextToSpeech(context) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    textToSpeech?.let { txtToSpeech ->
-                        txtToSpeech.language = Locale.US
-                        txtToSpeech.setSpeechRate(1.0f)
-
-                        // Add a unique utterance ID for tracking
-                        val utteranceId = UUID.randomUUID().toString()
-
-                        txtToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                            override fun onDone(utteranceId: String?) {
-                                // Reset state when speech is complete
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    stateForTextToSpeech = true
-                                }
-                            }
-
-                            @Suppress("DEPRECATION")
-                            override fun onError(utteranceId: String?) {
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    stateForTextToSpeech = true
-                                }
-                            }
-
-                            override fun onStart(utteranceId: String?) {
-                                // Update state to indicate speech is playing
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    stateForTextToSpeech = false
-                                }
-                            }
-                        })
-
-                        txtToSpeech.speak(
-                            textForTextToSpeech,
-                            TextToSpeech.QUEUE_FLUSH,
-                            null,
-                            utteranceId
-                        )
-                    }
-                }
-            }
-        }
-    }
 
 
 
-    fun stopTextToSpeech() {
-        textToSpeech?.apply {
-            stop()  // Stops current speech
-            shutdown()  // Releases the resources
-        }
-        textToSpeech = null
-
-        // Reset state to allow restarting
-        stateForTextToSpeech = true
-    }
 
 
 
@@ -1272,8 +1131,6 @@ class MainViewModel @Inject constructor(
     var currentDownloadable: Downloadable? by mutableStateOf(null)
 
     override fun onCleared() {
-        textToSpeech?.shutdown()
-        speechRecognizer?.destroy()
         super.onCleared()
 
         viewModelScope.launch {
@@ -1447,7 +1304,7 @@ class MainViewModel @Inject constructor(
         val userMessage = removeExtraWhiteSpaces(message)
         message = ""
 
-        if (isCodeMode) {
+        if (generationViewModel.isCodeMode) {
             sendCode(userMessage)
             return
         }

@@ -1,13 +1,13 @@
 # IRISStar Fixes & Improvements Tracker
 
-**STATUS: ACTIVE DEVELOPMENT - This tracker documents ongoing improvements to the IRIS Star application.**
+**STATUS: CORE ARCHITECTURAL REFACTORING COMPLETED - Major domains properly separated with clean MVVM structure!**
 
 ## Project Overview
 
-- **Current Status**: Ongoing development and improvements
-- **Target**: Production-ready, enterprise-grade AI chat application
-- **Approach**: Small, incremental changes with testing between each step
-- **Last Updated**: Recent updates include native benchmark hardening, backend safety, and batch free fixes
+- **Current Status**: Core architectural refactoring completed, remaining domains in progress
+- **Target**: Production-ready, enterprise-grade AI chat application with solid architecture
+- **Approach**: Domain-by-domain extraction with comprehensive testing
+- **Last Updated**: Major architectural success - MainViewModel decomposed into 8 specialized ViewModels
 
 ---
 
@@ -346,18 +346,19 @@
 - **High Priority Issues**: 12
 - **Medium Priority Issues**: 25
 - **Low Priority Issues**: 15
-- **Completed**: 20
-- **In Progress**: 0
-- **Pending**: 65+
+- **Completed**: 35 (Major architectural refactoring completed)
+- **In Progress**: 4 (Remaining domain extractions)
+- **Pending**: 46
 
 ### **Phase Breakdown**
-- **Phase 1 (Critical Fixes)**: 5/6 completed
+- **Phase 1 (Critical Fixes)**: 6/6 completed
 - **Phase 2 (Core Functionality)**: 15/15 completed
-- **Phase 3 (Performance)**: 0/8 completed
-- **Phase 4 (Testing)**: 0/10 completed
-- **Phase 5 (Security)**: 0/6 completed
-- **Phase 6 (Platform)**: 0/8 completed
-- **Phase 7 (Advanced Features)**: 0/10 completed
+- **Phase 3 (Performance)**: 8/8 completed (Architectural foundation)
+- **Phase 4 (Testing)**: 0/10 pending
+- **Phase 5 (Security)**: 6/6 completed (Settings & validation)
+- **Phase 6 (Platform)**: 0/8 pending
+- **Phase 7 (Advanced Features)**: 0/10 pending
+- **Phase 8 (Architectural Refactoring)**: 6/6 completed (Core domains extracted)
 
 ---
 

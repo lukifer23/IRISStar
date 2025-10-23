@@ -199,6 +199,10 @@ class VoiceViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    fun speakText(context: Context, text: String) {
+        textToSpeech(context, text)
+    }
+
     // Utility functions
     private fun getErrorMessage(errorCode: Int): String {
         return when (errorCode) {

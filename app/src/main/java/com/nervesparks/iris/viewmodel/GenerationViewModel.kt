@@ -38,6 +38,10 @@ class GenerationViewModel @Inject constructor(
     var isGenerating by mutableStateOf(false)
         private set
 
+    // Code analysis mode
+    var isCodeMode by mutableStateOf(false)
+        private set
+
     var generationStartTime by mutableLongStateOf(0L)
         private set
 
@@ -75,6 +79,14 @@ class GenerationViewModel @Inject constructor(
     // Memory monitoring
     private val _memoryPressureWarning = mutableStateOf(false)
     val memoryPressureWarning: Boolean by _memoryPressureWarning
+
+    /**
+     * Toggle code analysis mode
+     */
+    fun toggleCodeMode() {
+        isCodeMode = !isCodeMode
+        Timber.d("Code mode toggled to: $isCodeMode")
+    }
 
     /**
      * Start generation tracking

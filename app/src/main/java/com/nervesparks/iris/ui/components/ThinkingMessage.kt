@@ -32,14 +32,14 @@ import timber.log.Timber
 @Composable
 fun ThinkingMessage(
     message: String,
-    viewModel: MainViewModel,
+    chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
     showThinkingTokens: Boolean,
     onLongClick: () -> Unit
 ) {
     var isThinkingExpanded by remember { mutableStateOf(showThinkingTokens) }
     
     // Parse via centralised parser
-    val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message, viewModel.supportsReasoning)
+    val (thinkingContent, outputContent) = com.nervesparks.iris.llm.ReasoningParser.parse(message, chatViewModel.supportsReasoning)
     
     // Update expanded state when showThinkingTokens changes
     LaunchedEffect(showThinkingTokens) {
@@ -99,7 +99,7 @@ fun ThinkingMessage(
                     IconButton(
                         onClick = {
                             isThinkingExpanded = !isThinkingExpanded
-                            viewModel.updateShowThinkingTokens(isThinkingExpanded)
+                            chatViewModel.updateShowThinkingTokens(isThinkingExpanded)
                         }
                     ) {
                         val rotation by animateFloatAsState(
@@ -208,7 +208,7 @@ fun ThinkingMessage(
                         checked = isThinkingExpanded,
                         onCheckedChange = { 
                             isThinkingExpanded = it
-                            viewModel.updateShowThinkingTokens(it)
+                            chatViewModel.updateShowThinkingTokens(it)
                         },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,

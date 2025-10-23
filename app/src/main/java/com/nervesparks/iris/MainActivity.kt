@@ -71,6 +71,7 @@ import com.nervesparks.iris.ui.theme.ThemeViewModel
 import com.nervesparks.iris.ui.theme.ThemeViewModelFactory
 import com.nervesparks.iris.ui.navigation.AppNavigation
 import com.nervesparks.iris.viewmodel.ModelViewModel
+import com.nervesparks.iris.viewmodel.ChatViewModel
 import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -87,6 +88,7 @@ class MainActivity : FragmentActivity() {
     private val clipboardManager by lazy { getSystemService<ClipboardManager>()!! }
 
     private val viewModel: MainViewModel by viewModels()
+    private val chatViewModel: ChatViewModel by viewModels()
     private val modelViewModel: ModelViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -153,6 +155,7 @@ class MainActivity : FragmentActivity() {
             ManagedIrisStarTheme(themeViewModel = themeViewModel) {
                 AppNavigation(
                     viewModel = viewModel,
+                    chatViewModel = chatViewModel,
                     modelViewModel = modelViewModel,
                     clipboardManager = clipboardManager,
                     downloadManager = downloadManager,

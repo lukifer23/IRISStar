@@ -34,8 +34,8 @@ import com.nervesparks.iris.ui.theme.ComponentStyles
 
 
 @Composable
-fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
-    val messages = viewModel.messages
+fun ChatMessageList(chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel, viewModel: MainViewModel, scrollState: LazyListState) {
+    val messages = chatViewModel.messages
     val context = LocalContext.current
 
     // Memoize the message list to avoid recreating it on every recomposition
@@ -44,24 +44,24 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
     }
 
     // Memoize supportsReasoning to avoid unnecessary recompositions
-    val supportsReasoning = viewModel.supportsReasoning
+    val supportsReasoning = chatViewModel.supportsReasoning
 
     LazyColumn(state = scrollState) {
         itemsIndexed(
             items = displayMessages,
-            key = { idx: Int, messageMap: Map<String, String> ->
+            key = { idx: Int, messageMap: Map<String, Any> ->
                 // Use a stable key based on content hash to avoid unnecessary recompositions
-                val role = messageMap["role"] ?: ""
-                val content = messageMap["content"] ?: ""
+                val role = (messageMap["role"] as? String) ?: ""
+                val content = (messageMap["content"] as? String) ?: ""
                 "$idx-$role-${content.hashCode()}"
             },
-            contentType = { _: Int, messageMap: Map<String, String> ->
+            contentType = { _: Int, messageMap: Map<String, Any> ->
                 // Use content type for better item reuse
-                messageMap["role"] ?: "unknown"
+                (messageMap["role"] as? String) ?: "unknown"
             }
-        ) { idx: Int, messageMap: Map<String, String> ->
-            val role = messageMap["role"] ?: ""
-            val content = (messageMap["content"] ?: "").trimEnd()
+        ) { idx: Int, messageMap: Map<String, Any> ->
+            val role = (messageMap["role"] as? String) ?: ""
+            val content = ((messageMap["content"] as? String) ?: "").trimEnd()
             if (role != "system") {
                 when (role) {
                     "codeBlock" -> CodeBlockMessage(content)
@@ -74,8 +74,8 @@ fun ChatMessageList(viewModel: MainViewModel, scrollState: LazyListState) {
                         if (supportsReasoning && reasoningContent.isNotEmpty()) {
                             ThinkingMessage(
                                 message = content,
-                                viewModel = viewModel,
-                                showThinkingTokens = viewModel.showThinkingTokens,
+                                chatViewModel = chatViewModel,
+                                showThinkingTokens = chatViewModel.showThinkingTokens,
                                 onLongClick = {
                                     if (viewModel.getIsSending()) {
                                         Toast.makeText(

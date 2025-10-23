@@ -58,6 +58,9 @@ class ChatViewModel @Inject constructor(
     // Current chat state
     private var currentChat: Chat? = null
 
+    val currentChatPublic: Chat?
+        get() = currentChat
+
     // UI State
     var messages by mutableStateOf(mutableStateListOf<Map<String, Any>>())
     var showThinkingTokens by mutableStateOf(true)
@@ -172,6 +175,42 @@ class ChatViewModel @Inject constructor(
         )
         messages.add(message)
         Timber.tag(tag).d("Message added: $role")
+    }
+
+    fun persistChat() {
+        // Don't persist empty chats (no user messages)
+        val hasUserMessages = messages.any { (it["role"] as? String) == "user" && ((it["content"] as? String)?.isNotBlank() == true) }
+        if (!hasUserMessages) {
+            Timber.tag(tag).d("Not persisting chat: no user messages found")
+            return
+        }
+
+        val title = messages.firstOrNull { (it["role"] as? String) == "user" }?.get("content")?.toString()?.take(64) ?: "Chat"
+        val baseChat = currentChat?.copy(title = title, updated = System.currentTimeMillis())
+            ?: Chat(title = title)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val id = chatRepository.saveChatWithMessages(
+                    baseChat,
+                    messages.mapIndexed { idx, m ->
+                        Message(
+                            chatId = baseChat.id,
+                            role = (m["role"] as? String) ?: "assistant",
+                            content = (m["content"] as? String) ?: "",
+                            index = idx
+                        )
+                    }
+                )
+                if (currentChat == null || currentChat?.id != id) {
+                    currentChat = baseChat.copy(id = id)
+                }
+                Timber.tag(tag).d("Chat persisted successfully with id: $id")
+            } catch (e: Exception) {
+                Timber.tag(tag).e(e, "Error persisting chat")
+                ErrorHandler.reportError(e, "Chat Persistence", ErrorHandler.ErrorSeverity.MEDIUM, "Failed to save chat. Please try again.")
+            }
+        }
     }
 
     // Thinking token settings

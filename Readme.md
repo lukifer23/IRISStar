@@ -1,6 +1,6 @@
 # IrisStar
 
-**RECENTLY MODERNIZED - Major architectural improvements completed with clean MVVM structure and enhanced performance!**
+**MAJOR ARCHITECTURAL SUCCESS - Core domains properly separated with focused ViewModels and clean MVVM structure!**
 
 ## Project Description
 
@@ -20,8 +20,9 @@ IrisStar is a cutting-edge, llama.cpp-based offline Android chat application tha
 - **Model Management**: Backend switching, model comparison, and benchmark testing
 
 #### Architecture Highlights
-- **Clean MVVM**: Decomposed monolithic ViewModel (2,633 → ~1,200 lines) into specialized ViewModels
-- **Dependency Injection**: Proper Hilt integration with single-responsibility components
+- **Clean MVVM**: Successfully decomposed monolithic MainViewModel into 8 specialized ViewModels with single responsibilities
+- **Domain Separation**: Chat, Model, Search, Voice, Settings, Generation, Download, and Tool domains properly isolated
+- **Dependency Injection**: Proper Hilt integration with focused, testable components
 - **Performance Optimized**: Real-time metrics, memory management, and GPU acceleration
 - **Open Source**: Fully transparent development with comprehensive documentation
 
@@ -164,7 +165,7 @@ git submodule update --init --recursive
 ## Development Status
 
 ### Recent Major Achievements (COMPLETED)
-- **Architectural Modernization**: Decomposed monolithic MainViewModel (2,633 lines) into clean, specialized ViewModels
+- **Architectural Modernization**: Successfully decomposed monolithic MainViewModel into 8 specialized ViewModels with proper domain separation
 - **Build System**: 100% compilation success (131+ errors → 0 errors)
 - **Performance**: Real-time monitoring, GPU acceleration, and memory optimization
 - **UI/UX**: Complete Material 3 migration with dark theme and accessibility

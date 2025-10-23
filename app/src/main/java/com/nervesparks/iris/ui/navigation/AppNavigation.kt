@@ -41,6 +41,7 @@ object AppDestinations {
 @Composable
 fun AppNavigation(
     viewModel: MainViewModel,
+    chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
     modelViewModel: ModelViewModel,
     clipboardManager: ClipboardManager,
     downloadManager: DownloadManager,
@@ -48,8 +49,9 @@ fun AppNavigation(
     extFilesDir: File?,
     preferencesRepository: UserPreferencesRepository
 ) {
-    // Extract specialized ViewModels from MainViewModel
-    val chatViewModel = viewModel.chatViewModel
+    // Extract remaining specialized ViewModels from MainViewModel
+    val settingsViewModel = viewModel.settingsViewModel
+    val searchViewModel = viewModel.searchViewModel
     val documentViewModel = viewModel.documentViewModel
     val generationViewModel = viewModel.generationViewModel
     val toolViewModel = viewModel.toolViewModel
@@ -67,12 +69,13 @@ fun AppNavigation(
         composable(AppDestinations.CHAT_LIST) {
             ChatListScreen(
                 viewModel = viewModel,
+                chatViewModel = chatViewModel,
                 modelViewModel = modelViewModel,
                 onChatSelected = { chatId ->
                     navController.navigate("${AppDestinations.CHAT}?chatId=$chatId")
                 },
                 onNewChat = {
-                    viewModel.clear()
+                    chatViewModel.clearChat()
                     navController.navigate(AppDestinations.CHAT)
                 },
                 onMenuClick = {
@@ -83,12 +86,14 @@ fun AppNavigation(
         composable("${AppDestinations.CHAT}?chatId={chatId}") { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId")?.toLongOrNull()
             if (chatId != null) {
-                viewModel.loadChat(chatId)
+                chatViewModel.loadChat(chatId)
             }
             MainChatScreen2(
                 navController = navController,
                 viewModel = viewModel,
+                chatViewModel = chatViewModel,
                 modelViewModel = modelViewModel,
+                searchViewModel = searchViewModel,
                 generationViewModel = generationViewModel,
                 voiceViewModel = voiceViewModel
             )
@@ -96,6 +101,7 @@ fun AppNavigation(
         composable(AppDestinations.SETTINGS) {
             SettingsScreen(
                 viewModel = viewModel,
+                settingsViewModel = settingsViewModel,
                 generationViewModel = generationViewModel,
                 preferencesRepository = preferencesRepository,
                 onModelsScreenButtonClicked = { navController.navigate(AppDestinations.MODELS) },

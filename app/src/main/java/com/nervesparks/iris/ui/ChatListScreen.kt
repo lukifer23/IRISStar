@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.viewmodel.ModelViewModel
+import com.nervesparks.iris.viewmodel.ChatViewModel
 import com.nervesparks.iris.data.db.Chat
 import com.nervesparks.iris.data.repository.ChatStats
 import com.nervesparks.iris.ui.components.ModernTopAppBar
@@ -169,6 +170,7 @@ private fun shareFile(context: Context, file: File, mimeType: String) {
 @Composable
 fun ChatListScreen(
     viewModel: MainViewModel,
+    chatViewModel: ChatViewModel,
     modelViewModel: ModelViewModel,
     onChatSelected: (Long) -> Unit,
     onNewChat: () -> Unit,
@@ -176,8 +178,8 @@ fun ChatListScreen(
 ) {
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
-    val chats by viewModel.chats.collectAsState(initial = emptyList())
-    val chatStatsMap by viewModel.chatStats.collectAsState(initial = emptyMap())
+    val chats by chatViewModel.chats.collectAsState(initial = emptyList())
+    val chatStatsMap by chatViewModel.chatStats.collectAsState(initial = emptyMap())
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
     var showDeleteAllDialog by remember { mutableStateOf(false) }

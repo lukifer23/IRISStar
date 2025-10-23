@@ -160,7 +160,9 @@ fun NavDrawer(
 fun MainChatScreen2(
     navController: NavController,
     viewModel: MainViewModel,
+    chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
     modelViewModel: ModelViewModel,
+    searchViewModel: com.nervesparks.iris.viewmodel.SearchViewModel,
     generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel,
     voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel
 ) {
@@ -171,7 +173,6 @@ fun MainChatScreen2(
     val context = LocalContext.current
     val extFilesDir = context.getExternalFilesDir(null)
     val actionHandler = remember { LocalActionHandler(context) }
-    val chatViewModel: ChatViewModel = viewModel()
 
     var showModelDropdown by remember { mutableStateOf(false) }
     var showPerChatSettings by remember { mutableStateOf(false) }
@@ -215,8 +216,8 @@ fun MainChatScreen2(
                     }
                 },
                 onNewChat = {
-                    viewModel.persistChat() // Save current chat first
-                    viewModel.clear()
+                    chatViewModel.persistChat() // Save current chat first
+                    chatViewModel.clearChat()
                     navController.navigate(AppDestinations.CHAT) {
                         // Pop up to chat list to avoid stacking CHAT destinations
                         popUpTo(AppDestinations.CHAT_LIST) { inclusive = false }
@@ -226,7 +227,7 @@ fun MainChatScreen2(
                     navController.navigate(AppDestinations.SETTINGS)
                 },
                 onChatList = {
-                    viewModel.persistChat()
+                    chatViewModel.persistChat()
                     navController.navigate(AppDestinations.CHAT_LIST)
                 },
                 viewModel = viewModel
@@ -265,13 +266,13 @@ fun MainChatScreen2(
                         .fillMaxSize()
                         .padding(it)
                 ) {
-                    ChatMessageList(viewModel = viewModel, scrollState = scrollState)
+                    ChatMessageList(chatViewModel = chatViewModel, viewModel = viewModel, scrollState = scrollState)
                     
                     // Show search loading modal when searching
-                    if (viewModel.isSearching) {
+                    if (searchViewModel.isSearching) {
                         SearchLoadingModal(
-                            message = viewModel.searchProgress,
-                            searchQuery = viewModel.currentSearchQuery,
+                            message = "Searching...", // TODO: Add progress tracking to SearchViewModel
+                            searchQuery = "", // TODO: Add current query tracking to SearchViewModel
                             onDismiss = { }
                         )
                     }
@@ -297,19 +298,24 @@ fun MainChatScreen2(
                         onValueChange = { viewModel.updateMessage(it) },
                         onSend = { viewModel.send() },
                         onAttachmentClick = {},
-                        onVoiceClick = { viewModel.startVoiceRecognition(context) },
+                        onVoiceClick = { voiceViewModel.startVoiceRecognition(context) },
                         isVoiceListening = voiceViewModel.isListening,
-                        onSpeakClick = { viewModel.speakLastAssistantMessage(context) },
+                        onSpeakClick = {
+                            val lastAssistantMessage = chatViewModel.messages.lastOrNull { (it["role"] as? String) == "assistant" }
+                            lastAssistantMessage?.get("content")?.let { content ->
+                                voiceViewModel.speakText(context, content as String)
+                            }
+                        },
                         isSpeaking = voiceViewModel.isSpeaking,
                         onCameraClick = { viewModel.onCameraAttachment() },
                         onPhotosClick = { viewModel.onPhotosAttachment() },
                         onFilesClick = { viewModel.onFilesAttachment() },
-                        onCodeClick = { viewModel.toggleCodeMode() },
-                        isCodeMode = viewModel.isCodeMode,
+                        onCodeClick = { generationViewModel.toggleCodeMode() },
+                        isCodeMode = generationViewModel.isCodeMode,
                         onTranslateClick = { viewModel.translate(viewModel.message, "English") },
                         onWebSearchClick = { 
                             if (viewModel.message.isNotBlank()) {
-                                viewModel.performWebSearch(viewModel.message)
+                                searchViewModel.performWebSearch(viewModel.message, summarize = true)
                             }
                         },
                         enabled = !generationViewModel.isGenerating
