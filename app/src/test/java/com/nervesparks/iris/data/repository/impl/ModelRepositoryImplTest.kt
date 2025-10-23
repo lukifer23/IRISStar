@@ -32,7 +32,9 @@ class ModelRepositoryImplTest {
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
         userPreferencesRepository = FakeUserPreferencesRepository(context)
-        userPreferencesRepository.clearAll()
+        runTest {
+            userPreferencesRepository.clearAll()
+        }
 
         server = MockWebServer()
         server.start()
@@ -59,13 +61,15 @@ class ModelRepositoryImplTest {
     @After
     fun tearDown() {
         server.shutdown()
-        userPreferencesRepository.clearAll()
+        runTest {
+            userPreferencesRepository.clearAll()
+        }
     }
 
     @Test
     fun refreshAvailableModelsPrefixesBearerToken() = runBlocking {
         val token = "hf_test_token"
-        userPreferencesRepository.setHuggingFaceToken(token)
+        userPreferencesRepository.huggingFaceToken = token
 
         val body = """[{"id":"model1","modelId":"Model 1","downloads":10,"likes":5,"tags":[],"siblings":[]}]"""
         server.enqueue(MockResponse().setBody(body).setResponseCode(200))

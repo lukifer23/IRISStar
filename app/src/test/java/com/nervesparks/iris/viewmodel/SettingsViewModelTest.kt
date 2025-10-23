@@ -9,6 +9,7 @@ import com.nervesparks.iris.data.repository.ThinkingTokenSettings
 import com.nervesparks.iris.data.repository.UISettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -177,7 +178,9 @@ class SettingsViewModelTest {
     }
 
     private fun newUserPreferences(): FakeUserPreferencesRepository {
-        return FakeUserPreferencesRepository(context).apply { clearAll() }
+        return FakeUserPreferencesRepository(context).apply {
+            runBlocking { clearAll() }
+        }
     }
 
     private class FakeSettingsRepository : SettingsRepository {

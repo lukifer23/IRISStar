@@ -11,24 +11,24 @@ import kotlin.math.sqrt
 class DocumentRepository @Inject constructor(
     private val documentDao: DocumentDao
 ) {
-    suspend fun addDocument(text: String, embedding: List<Float>) = withContext(Dispatchers.IO) {
+    suspend fun addDocument(text: String, embedding: List<Float>): Long = withContext(Dispatchers.IO) {
         // Validate input parameters
         if (text.isBlank()) {
             throw ValidationException("Document text cannot be blank")
         }
-        
+
         if (text.length > 10000) {
             throw ValidationException("Document text too long (max 10000 characters)")
         }
-        
+
         if (embedding.isEmpty()) {
             throw ValidationException("Document embedding cannot be empty")
         }
-        
+
         if (embedding.size > 4096) {
             throw ValidationException("Document embedding too large (max 4096 dimensions)")
         }
-        
+
         documentDao.insertDocument(Document(text = text, embedding = embedding))
     }
 

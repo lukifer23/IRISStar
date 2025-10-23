@@ -161,7 +161,8 @@ fun MainChatScreen2(
     navController: NavController,
     viewModel: MainViewModel,
     modelViewModel: ModelViewModel,
-    generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel
+    generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel,
+    voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -185,6 +186,15 @@ fun MainChatScreen2(
     LaunchedEffect(viewModel.lastAttachmentAction) {
         viewModel.lastAttachmentAction?.let {
             actionHandler.handleAttachmentAction(it, viewModel)
+        }
+    }
+
+    // Observe voice recognition results
+    LaunchedEffect(voiceViewModel.speechRecognitionResult) {
+        if (voiceViewModel.speechRecognitionResult.isNotBlank()) {
+            viewModel.updateMessage(voiceViewModel.speechRecognitionResult)
+            // Clear the result after using it
+            // Note: VoiceViewModel doesn't expose a clear method, so we'll rely on it being reset on next recognition
         }
     }
 
@@ -288,6 +298,9 @@ fun MainChatScreen2(
                         onSend = { viewModel.send() },
                         onAttachmentClick = {},
                         onVoiceClick = { viewModel.startVoiceRecognition(context) },
+                        isVoiceListening = voiceViewModel.isListening,
+                        onSpeakClick = { viewModel.speakLastAssistantMessage(context) },
+                        isSpeaking = voiceViewModel.isSpeaking,
                         onCameraClick = { viewModel.onCameraAttachment() },
                         onPhotosClick = { viewModel.onPhotosAttachment() },
                         onFilesClick = { viewModel.onFilesAttachment() },

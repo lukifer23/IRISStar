@@ -337,8 +337,23 @@ class MainViewModel @Inject constructor(
     
 
     fun startVoiceRecognition(context: Context) {
+        // Check for microphone permission before starting voice recognition
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            // Permission not granted - this should be handled in the UI layer
+            Timber.w("Microphone permission not granted for voice recognition")
+            return
+        }
+
         // Use VoiceViewModel from UI layer for proper separation of concerns
         voiceViewModel.startVoiceRecognition(context)
+    }
+
+    fun speakLastAssistantMessage(context: Context) {
+        // Find the last assistant message and speak it
+        val lastAssistantMessage = messages.lastOrNull { it["role"] == "assistant" }
+        lastAssistantMessage?.get("content")?.let { content ->
+            voiceViewModel.textToSpeech(context, content)
+        }
     }
 
     // Legacy voice recognition function

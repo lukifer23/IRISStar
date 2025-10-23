@@ -363,6 +363,24 @@ class LLamaAndroid {
         return res
     }
 
+    /**
+     * Check for memory pressure and trigger cleanup if needed
+     */
+    private suspend fun checkMemoryPressure() {
+        withContext(runLoop) {
+            when (val state = threadLocalState.get()) {
+                is State.Loaded -> {
+                    // Force garbage collection to free up memory
+                    System.gc()
+                    System.runFinalization()
+
+                    Log.d(tag, "Memory pressure check completed - GC triggered")
+                }
+                else -> {}
+            }
+        }
+    }
+
     suspend fun send(message: String): Flow<String> = flow {
         stopGeneration = false
         _isSending.value = true
@@ -377,6 +395,8 @@ class LLamaAndroid {
         when (val state = threadLocalState.get()) {
             is State.Loaded -> {
                 try {
+                    // Memory pressure check before generation
+                    checkMemoryPressure()
                     val initVal = completion_init(state.context, state.batch, message, nlen)
                     if (initVal < 0) {
                         emit("Error: prompt exceeds context window. Reduce prompt length or increase context.")

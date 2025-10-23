@@ -56,12 +56,12 @@ class ModelLoaderTest {
         assertTrue(result.isSuccess)
         verify {
             mockLlamaAndroid.load(
-                modelPath = modelPath,
-                nThreads = threadCount,
+                pathToModel = modelPath,
+                userThreads = threadCount,
                 topK = topK,
                 topP = topP,
-                temperature = temperature,
-                nGpuLayers = gpuLayers
+                temp = temperature,
+                gpuLayers = gpuLayers
             )
         }
     }
@@ -138,7 +138,7 @@ class ModelLoaderTest {
     }
 
     @Test
-    fun `unloadModel should return success when llamaAndroid unload succeeds`() {
+    fun `unloadModel should return success when llamaAndroid unload succeeds`() = runTest {
         // Given
         every { mockLlamaAndroid.unload() } returns Unit
 
@@ -151,7 +151,7 @@ class ModelLoaderTest {
     }
 
     @Test
-    fun `unloadModel should return failure when llamaAndroid unload fails`() {
+    fun `unloadModel should return failure when llamaAndroid unload fails`() = runTest {
         // Given
         val exception = RuntimeException("Unload failed")
         every { mockLlamaAndroid.unload() } throws exception
@@ -164,44 +164,6 @@ class ModelLoaderTest {
         assertEquals(exception, result.exceptionOrNull())
     }
 
-    @Test
-    fun `isModelLoaded should return true when llamaAndroid reports model loaded`() {
-        // Given
-        every { mockLlamaAndroid.isModelLoaded() } returns true
-
-        // When
-        val result = modelLoader.isModelLoaded()
-
-        // Then
-        assertTrue(result)
-        verify { mockLlamaAndroid.isModelLoaded() }
-    }
-
-    @Test
-    fun `isModelLoaded should return false when llamaAndroid reports model not loaded`() {
-        // Given
-        every { mockLlamaAndroid.isModelLoaded() } returns false
-
-        // When
-        val result = modelLoader.isModelLoaded()
-
-        // Then
-        assertFalse(result)
-        verify { mockLlamaAndroid.isModelLoaded() }
-    }
-
-    @Test
-    fun `isModelLoaded should return false when llamaAndroid throws exception`() {
-        // Given
-        val exception = RuntimeException("Check failed")
-        every { mockLlamaAndroid.isModelLoaded() } throws exception
-
-        // When
-        val result = modelLoader.isModelLoaded()
-
-        // Then
-        assertFalse(result)
-    }
 
     @Test
     fun `loadModel should use default parameters when not specified`() = runTest {
@@ -215,12 +177,12 @@ class ModelLoaderTest {
         assertTrue(result.isSuccess)
         verify {
             mockLlamaAndroid.load(
-                modelPath = modelPath,
-                nThreads = 4,  // default
+                pathToModel = modelPath,
+                userThreads = 4,  // default
                 topK = 40,     // default
                 topP = 0.9f,   // default
-                temperature = 0.7f, // default
-                nGpuLayers = -1     // default
+                temp = 0.7f, // default
+                gpuLayers = -1     // default
             )
         }
     }

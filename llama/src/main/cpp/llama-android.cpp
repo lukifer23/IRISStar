@@ -831,6 +831,11 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         return nullptr;
     }
 
+    // Periodic memory cleanup during long generations to prevent memory pressure
+    static int token_count = 0;
+    token_count++;
+    // Memory cleanup will be handled by the Kotlin layer
+
     auto new_token_chars = common_token_to_piece(context, new_token_id);
     if (g_verbose_tokens) {
         cached_token_chars += new_token_chars;

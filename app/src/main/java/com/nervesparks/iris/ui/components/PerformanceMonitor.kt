@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import com.nervesparks.iris.MainViewModel
 import com.nervesparks.iris.ui.theme.ComponentStyles
 import com.nervesparks.iris.ui.theme.IrisStarTheme
@@ -26,7 +28,8 @@ data class PerformanceMonitorState(
     val tokensGenerated: Int,
     val isGenerating: Boolean,
     val backend: String? = null,
-    val offload: Pair<Int,Int>? = null
+    val offload: Pair<Int,Int>? = null,
+    val memoryPressureWarning: Boolean = false
 )
 
 @Composable
@@ -42,7 +45,8 @@ fun PerformanceMonitor(generationViewModel: GenerationViewModel, mainViewModel: 
             tokensGenerated = generationViewModel.tokensGenerated,
             isGenerating = generationViewModel.isGenerating,
             backend = mainViewModel.currentBackend,
-            offload = (generationViewModel.offloadedLayers to generationViewModel.totalLayers)
+            offload = (generationViewModel.offloadedLayers to generationViewModel.totalLayers),
+            memoryPressureWarning = generationViewModel.memoryPressureWarning
         )
     )
 }
@@ -114,6 +118,29 @@ fun PerformanceMonitor(state: PerformanceMonitorState) {
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.primaryContainer
                 )
+            }
+
+            // Memory pressure warning
+            if (state.memoryPressureWarning) {
+                Spacer(modifier = Modifier.height(ComponentStyles.smallSpacing))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Memory warning",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
+                    Text(
+                        text = "High memory usage detected",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

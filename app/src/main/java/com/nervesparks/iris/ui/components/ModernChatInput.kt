@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.AttachFile
@@ -41,6 +42,9 @@ fun ModernChatInput(
     onSend: () -> Unit,
     onAttachmentClick: () -> Unit,
     onVoiceClick: () -> Unit,
+    isVoiceListening: Boolean = false,
+    onSpeakClick: () -> Unit = {},
+    isSpeaking: Boolean = false,
     onCameraClick: () -> Unit = {},
     onPhotosClick: () -> Unit = {},
     onFilesClick: () -> Unit = {},
@@ -174,17 +178,32 @@ fun ModernChatInput(
                         )
                     }
                 } else {
-                    ModernIconButton(
-                        onClick = onVoiceClick,
-                        modifier = Modifier.size(ComponentStyles.defaultIconSize),
-                        enabled = enabled
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.mic_svgrepo_com),
-                            contentDescription = "Voice Input",
-                            tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(ComponentStyles.defaultIconSize)
-                        )
+                    Row {
+                        ModernIconButton(
+                            onClick = onSpeakClick,
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                            enabled = enabled
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = if (isSpeaking) "Speaking..." else "Speak Last Response",
+                                tint = if (isSpeaking) MaterialTheme.colorScheme.error else if (enabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(ComponentStyles.smallPadding))
+                        ModernIconButton(
+                            onClick = onVoiceClick,
+                            modifier = Modifier.size(ComponentStyles.defaultIconSize),
+                            enabled = enabled
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.mic_svgrepo_com),
+                                contentDescription = if (isVoiceListening) "Listening..." else "Voice Input",
+                                tint = if (isVoiceListening) MaterialTheme.colorScheme.error else if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(ComponentStyles.defaultIconSize)
+                            )
+                        }
                     }
                 }
             }

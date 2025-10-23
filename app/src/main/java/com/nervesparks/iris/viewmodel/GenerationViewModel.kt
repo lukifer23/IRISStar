@@ -12,6 +12,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.data.exceptions.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -26,6 +28,11 @@ class GenerationViewModel @Inject constructor(
     private val context: Context,
     private val errorHandler: ErrorHandler
 ) : ViewModel() {
+
+    init {
+        // Start background memory monitoring
+        startMemoryMonitoring()
+    }
 
     // Generation state
     var isGenerating by mutableStateOf(false)
@@ -64,6 +71,10 @@ class GenerationViewModel @Inject constructor(
 
     var totalLayers by mutableIntStateOf(-1)
         private set
+
+    // Memory monitoring
+    private val _memoryPressureWarning = mutableStateOf(false)
+    val memoryPressureWarning: Boolean by _memoryPressureWarning
 
     /**
      * Start generation tracking
@@ -132,11 +143,45 @@ class GenerationViewModel @Inject constructor(
             val usedMemory = totalMemory - availableMemory
 
             // Convert to MB
-            (usedMemory / (1024 * 1024)).toLong()
+            val newMemoryUsage = (usedMemory / (1024 * 1024)).toLong()
+
+            // Update cached value
+            memoryUsage = newMemoryUsage
+            newMemoryUsage
         } catch (e: Exception) {
             Timber.e(e, "Failed to get memory usage")
             errorHandler.reportError(e, "Memory measurement failed")
             memoryUsage // Return last known value
+        }
+    }
+
+    /**
+     * Start background memory monitoring to avoid blocking UI thread
+     */
+    fun startMemoryMonitoring() {
+        viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                try {
+                    getCurrentMemoryUsage() // Updates cached memoryUsage
+                    // Check for memory pressure
+                    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    val memoryInfo = ActivityManager.MemoryInfo()
+                    activityManager.getMemoryInfo(memoryInfo)
+
+                    if (memoryInfo.lowMemory) {
+                        Timber.w("Low memory warning - used: ${memoryUsage}MB")
+                        // Trigger memory optimization if needed
+                        _memoryPressureWarning.value = true
+                    } else {
+                        _memoryPressureWarning.value = false
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Error in memory monitoring")
+                }
+
+                // Update every 2 seconds to reduce overhead
+                delay(2000)
+            }
         }
     }
 

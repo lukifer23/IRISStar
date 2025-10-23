@@ -54,6 +54,7 @@ fun AppNavigation(
     val generationViewModel = viewModel.generationViewModel
     val toolViewModel = viewModel.toolViewModel
     val downloadViewModel = viewModel.downloadViewModel
+    val voiceViewModel = viewModel.voiceViewModel
     val navController = rememberNavController()
     NavHost(
         navController = navController,
@@ -88,7 +89,8 @@ fun AppNavigation(
                 navController = navController,
                 viewModel = viewModel,
                 modelViewModel = modelViewModel,
-                generationViewModel = generationViewModel
+                generationViewModel = generationViewModel,
+                voiceViewModel = voiceViewModel
             )
         }
         composable(AppDestinations.SETTINGS) {

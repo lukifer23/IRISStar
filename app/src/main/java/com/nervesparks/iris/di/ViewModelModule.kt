@@ -6,7 +6,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ViewModelComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
+import okhttp3.OkHttpClient
 
 /**
  * PHASE 1.7: ViewModelModule - Provides specialized ViewModels
@@ -111,11 +113,12 @@ object ViewModelModule {
     @Provides
     @ViewModelScoped
     fun provideDownloadViewModel(
+        @ApplicationContext appContext: Context,
         huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
-        modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
         userPreferencesRepository: com.nervesparks.iris.data.UserPreferencesRepository,
-        errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler
+        errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler,
+        okHttpClient: OkHttpClient
     ): DownloadViewModel {
-        return DownloadViewModel(huggingFaceApiService, modelRepository, userPreferencesRepository, errorHandler)
+        return DownloadViewModel(appContext, huggingFaceApiService, userPreferencesRepository, errorHandler, okHttpClient)
     }
 }
