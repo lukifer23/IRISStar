@@ -13,7 +13,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -38,7 +37,6 @@ import android.content.Context
 import com.nervesparks.iris.data.repository.ChatRepository
 import com.nervesparks.iris.data.DocumentRepository
 import com.nervesparks.iris.data.db.Chat
-import com.nervesparks.iris.data.db.Message
 import com.nervesparks.iris.viewmodel.ChatViewModel
 import com.nervesparks.iris.viewmodel.ModelViewModel
 import com.nervesparks.iris.viewmodel.SearchViewModel
@@ -102,10 +100,8 @@ class MainViewModel @Inject constructor(
     }
 
 
-    private var currentChat: com.nervesparks.iris.data.db.Chat? = null
-
-    val currentChatPublic: com.nervesparks.iris.data.db.Chat?
-        get() = currentChat
+    val currentChatPublic: Chat?
+        get() = chatViewModel.currentChatPublic
     companion object {
 //        @JvmStatic
 //        private val NanosPerSecond = 1_000_000_000.0
@@ -114,15 +110,8 @@ class MainViewModel @Inject constructor(
     // Load existing chat
     fun loadChat(chatId: Long) {
         if (chatId <= 0) return
-        viewModelScope.launch {
-            val chat = chatRepository.observeChat(chatId).first()
-            val msgs = chatRepository.loadMessages(chatId)
-            messages = msgs.sortedBy { it.index }.map { m ->
-                mapOf("role" to m.role, "content" to m.content)
-            }
-            currentChat = chat
-            first = false
-        }
+        chatViewModel.loadChat(chatId)
+        first = false
     }
 
     // Thinking token settings - moved to top to ensure initialization
@@ -251,11 +240,8 @@ class MainViewModel @Inject constructor(
     lateinit var selectedModel: String
     private val tag: String? = this::class.simpleName
 
-    var messages by mutableStateOf(
-
-            listOf<Map<String, String>>(),
-        )
-        private set
+    private val messages: MutableList<Map<String, Any>>
+        get() = chatViewModel.messages
     var showModal by mutableStateOf(true)
     var showDownloadInfoModal by mutableStateOf(false)
     var showModelSelection by mutableStateOf(false)
@@ -499,7 +485,7 @@ class MainViewModel @Inject constructor(
                 }
 
                 if (workingMessages.size != messages.size) {
-                    messages = workingMessages
+                    chatViewModel.replaceMessages(workingMessages)
                     addMessage(
                         "system",
                         "⚠️ Earlier messages were removed to stay within the model's context limit."
@@ -1214,7 +1200,7 @@ class MainViewModel @Inject constructor(
         }
 
         if (wasPruned) {
-            messages = workingMessages
+            chatViewModel.replaceMessages(workingMessages)
             generationViewModel.updateContextLimit(currentContextLimit, generationViewModel.maxContextLimit)
             addMessage(
                 "system",
@@ -1380,7 +1366,7 @@ class MainViewModel @Inject constructor(
                     }
 
                     if (workingMessages.size != messages.size) {
-                        messages = workingMessages
+                        chatViewModel.replaceMessages(workingMessages)
                         addMessage(
                             "system",
                             "⚠️ Earlier messages were removed to stay within the model's context limit."
@@ -2345,32 +2331,18 @@ class MainViewModel @Inject constructor(
         }
     }
     private fun addMessage(role: String, content: String) {
-        val newMessage = mapOf("role" to role, "content" to content)
-
-        messages = if (messages.isNotEmpty() && messages.last()["role"] == role) {
-            val lastMessageContent = messages.last()["content"] ?: ""
-            val updatedContent = "$lastMessageContent$content"
-            val updatedLastMessage = messages.last() + ("content" to updatedContent)
-            messages.toMutableList().apply {
-                set(messages.lastIndex, updatedLastMessage)
-            }
-        } else {
-            messages + listOf(newMessage)
-        }
+        chatViewModel.addMessage(role, content)
     }
 
     private fun trimEOT() {
         if (messages.isEmpty()) return
-        val lastMessageContent = messages.last()["content"] ?: ""
+        val lastMessageContent = messages.last()["content"]?.toString() ?: ""
         // Only slice if the content is longer than the EOT string
         if (lastMessageContent.length < eot_str.length) return
 
-        val updatedContent = lastMessageContent.slice(0..(lastMessageContent.length-eot_str.length))
-        val updatedLastMessage = messages.last() + ("content" to updatedContent)
-        messages = messages.toMutableList().apply {
-            set(messages.lastIndex, updatedLastMessage)
-        }
-        messages.last()["content"]?.let { Timber.e(it) }
+        val updatedContent = lastMessageContent.dropLast(eot_str.length)
+        chatViewModel.updateLastMessage(updatedContent)
+        messages.last()["content"]?.let { Timber.e(it.toString()) }
     }
 
     private fun removeExtraWhiteSpaces(input: String): String {
@@ -2379,38 +2351,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun persistChat() {
-        // Don't persist empty chats (no user messages)
-        val hasUserMessages = messages.any { it["role"] == "user" && it["content"]?.isNotBlank() == true }
-        if (!hasUserMessages) {
-            Timber.d("Not persisting chat: no user messages found")
-            return
-        }
-
-        val title = messages.firstOrNull { it["role"] == "user" }?.get("content")?.take(64) ?: "Chat"
-        val baseChat = currentChat?.copy(title = title, updated = System.currentTimeMillis())
-            ?: Chat(title = title)
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val id = chatRepository.saveChatWithMessages(
-                    baseChat,
-                    messages.mapIndexed { idx, m ->
-                        Message(
-                            chatId = baseChat.id,
-                            role = m["role"] ?: "assistant",
-                            content = m["content"] ?: "",
-                            index = idx
-                        )
-                    }
-                )
-                if (currentChat == null || currentChat?.id != id) {
-                    currentChat = baseChat.copy(id = id)
-                }
-                Timber.d("Chat persisted successfully with id: $id")
-            } catch (e: Exception) {
-                Timber.e(e, "Error persisting chat")
-            }
-        }
+        chatViewModel.persistChat()
     }
 
     private fun parseTemplateJson(chatData: List<Map<String, String>> ):String{
@@ -2430,9 +2371,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun clear() {
-        messages = listOf(
-
-        )
+        chatViewModel.clearChat()
         first = true
     }
 
@@ -2590,7 +2529,7 @@ class MainViewModel @Inject constructor(
                 // Clear message history if it's too large
                 if (messages.size > 100) {
                     val keepCount = 50
-                    messages = messages.takeLast(keepCount)
+                    chatViewModel.replaceMessages(messages.takeLast(keepCount))
                     Timber.d("Cleared message history, kept last $keepCount messages")
                 }
 
