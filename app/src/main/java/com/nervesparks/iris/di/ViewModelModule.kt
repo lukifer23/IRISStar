@@ -117,8 +117,9 @@ object ViewModelModule {
         huggingFaceApiService: com.nervesparks.iris.data.HuggingFaceApiService,
         userPreferencesRepository: com.nervesparks.iris.data.UserPreferencesRepository,
         errorHandler: com.nervesparks.iris.data.exceptions.ErrorHandler,
+        modelRepository: com.nervesparks.iris.data.repository.ModelRepository,
         okHttpClient: OkHttpClient
     ): DownloadViewModel {
-        return DownloadViewModel(appContext, huggingFaceApiService, userPreferencesRepository, errorHandler, okHttpClient)
+        return DownloadViewModel(appContext, huggingFaceApiService, userPreferencesRepository, errorHandler, modelRepository, okHttpClient)
     }
 }

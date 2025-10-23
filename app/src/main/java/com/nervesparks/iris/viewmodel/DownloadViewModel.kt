@@ -13,6 +13,7 @@ import com.nervesparks.iris.data.DownloadQueueItem
 import com.nervesparks.iris.data.HuggingFaceApiService
 import com.nervesparks.iris.data.UserPreferencesRepository
 import com.nervesparks.iris.data.exceptions.ErrorHandler
+import com.nervesparks.iris.data.repository.ModelRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,7 @@ class DownloadViewModel @Inject constructor(
     private val huggingFaceApiService: HuggingFaceApiService,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val errorHandler: ErrorHandler,
+    private val modelRepository: ModelRepository,
     private val okHttpClient: OkHttpClient
 ) : ViewModel() {
 
@@ -165,7 +167,13 @@ class DownloadViewModel @Inject constructor(
     fun loadExistingModels(directory: File) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val models = directory.listFiles { file ->
+                // Load models from repository (includes metadata and validation)
+                val installedModels = modelRepository.getAvailableModels(directory)
+
+                Timber.d("Repository returned ${installedModels.size} installed models")
+
+                // Also load simple file listing for UI
+                val fileModels = directory.listFiles { file ->
                     file.isFile && file.name.endsWith(".gguf", ignoreCase = true)
                 }?.map { file ->
                     Downloadable(
@@ -177,14 +185,24 @@ class DownloadViewModel @Inject constructor(
                 } ?: emptyList()
 
                 withContext(Dispatchers.Main) {
-                    downloadableModels = models
+                    downloadableModels = fileModels
+                    // Store repository metadata for later use
+                    _installedModelMetadata.clear()
+                    _installedModelMetadata.addAll(installedModels)
                 }
+
+                Timber.d("Loaded ${fileModels.size} models from filesystem")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load existing models")
-                errorHandler.reportError(e, "Failed to load existing models")
+                errorHandler.reportError(e, "Model Loading Failed", ErrorHandler.ErrorSeverity.MEDIUM, "Failed to load existing models from storage.")
             }
         }
     }
+
+    private val _installedModelMetadata = mutableListOf<Map<String, Any>>()
+
+    val installedModelMetadata: List<Map<String, Any>>
+        get() = _installedModelMetadata.toList()
 
     /**
      * Enqueue a model download. Destination can be overridden per call.
@@ -276,7 +294,7 @@ class DownloadViewModel @Inject constructor(
                 Timber.i("Download for ${nextDownload.destination.name} cancelled")
                 throw e
             } catch (e: Exception) {
-                failure = if (e is Exception) e else IOException(e)
+                failure = e
             }
 
             if (downloadResult != null) {

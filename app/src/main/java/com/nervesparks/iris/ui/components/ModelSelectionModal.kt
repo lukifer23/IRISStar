@@ -41,6 +41,7 @@ import java.io.File
 fun ModelSelectionModal(
     viewModel: MainViewModel,
     modelViewModel: ModelViewModel,
+    benchmarkViewModel: com.nervesparks.iris.viewmodel.BenchmarkViewModel? = null,
     onDismiss: () -> Unit,
     onNavigateToModels: () -> Unit = {},
     isForBenchmark: Boolean = false
@@ -393,7 +394,7 @@ fun ModelSelectionModal(
                             onClick = {
                                 if (isModelFileAvailable && extFilesDir != null) {
                                     if (isForBenchmark) {
-                                        viewModel.showBenchmarkModelSelection = false
+                                        benchmarkViewModel?.hideBenchmarkModelSelection()
                                         onDismiss()
                                     } else {
                                         val modelName = selectedModel

@@ -52,6 +52,7 @@ fun AppNavigation(
     // Extract remaining specialized ViewModels from MainViewModel
     val settingsViewModel = viewModel.settingsViewModel
     val searchViewModel = viewModel.searchViewModel
+    val benchmarkViewModel = viewModel.benchmarkViewModel
     val documentViewModel = viewModel.documentViewModel
     val generationViewModel = viewModel.generationViewModel
     val toolViewModel = viewModel.toolViewModel
@@ -135,7 +136,7 @@ fun AppNavigation(
             AboutScreen()
         }
         composable(AppDestinations.BENCHMARK) {
-            BenchMarkScreen(viewModel = viewModel, modelViewModel = modelViewModel)
+            BenchMarkScreen(viewModel = viewModel, modelViewModel = modelViewModel, benchmarkViewModel = benchmarkViewModel)
         }
         composable(AppDestinations.QUANTIZE) {
             com.nervesparks.iris.ui.screens.QuantizeScreen(

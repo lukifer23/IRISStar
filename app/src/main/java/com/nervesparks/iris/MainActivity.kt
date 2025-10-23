@@ -72,6 +72,7 @@ import com.nervesparks.iris.ui.theme.ThemeViewModelFactory
 import com.nervesparks.iris.ui.navigation.AppNavigation
 import com.nervesparks.iris.viewmodel.ModelViewModel
 import com.nervesparks.iris.viewmodel.ChatViewModel
+import com.nervesparks.iris.viewmodel.DownloadViewModel
 import com.nervesparks.iris.workers.ModelUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -90,6 +91,7 @@ class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private val chatViewModel: ChatViewModel by viewModels()
     private val modelViewModel: ModelViewModel by viewModels()
+    private val downloadViewModel: DownloadViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -142,7 +144,7 @@ class MainActivity : FragmentActivity() {
 
         if (extFilesDir != null) {
             modelViewModel.loadExistingModels(extFilesDir)
-            viewModel.loadExistingModels(extFilesDir)
+            downloadViewModel.loadExistingModels(extFilesDir)
         }
 
         ModelUpdateWorker.schedule(this)

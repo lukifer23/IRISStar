@@ -63,96 +63,110 @@ class FakeUserPreferencesRepository(context: Context) : UserPreferencesRepositor
         modelTopKState.value = value
     }
 
-    override val modelMaxTokensFlow: Flow<Int> = modelMaxTokensState    override suspend fun getModelMaxTokens(): Int = modelMaxTokensState.value
+    override val modelMaxTokensFlow: Flow<Int> = modelMaxTokensState
+    override suspend fun getModelMaxTokens(): Int = modelMaxTokensState.value
     override suspend fun setModelMaxTokens(value: Int) {
         modelMaxTokensState.value = value
     }
 
-    override val modelContextLengthFlow: Flow<Int> = modelContextLengthState    override suspend fun getModelContextLength(): Int = modelContextLengthState.value
+    override val modelContextLengthFlow: Flow<Int> = modelContextLengthState
+    override suspend fun getModelContextLength(): Int = modelContextLengthState.value
     override suspend fun setModelContextLength(value: Int) {
         modelContextLengthState.value = value
     }
 
-    override val modelSystemPromptFlow: Flow<String> = modelSystemPromptState    override suspend fun getModelSystemPrompt(): String = modelSystemPromptState.value
+    override val modelSystemPromptFlow: Flow<String> = modelSystemPromptState
+    override suspend fun getModelSystemPrompt(): String = modelSystemPromptState.value
     override suspend fun setModelSystemPrompt(value: String) {
         modelSystemPromptState.value = value
     }
 
-    override val modelChatFormatFlow: Flow<String> = modelChatFormatState    override suspend fun getModelChatFormat(): String = modelChatFormatState.value
+    override val modelChatFormatFlow: Flow<String> = modelChatFormatState
+    override suspend fun getModelChatFormat(): String = modelChatFormatState.value
     override suspend fun setModelChatFormat(value: String) {
         modelChatFormatState.value = value
     }
 
-    override val modelThreadCountFlow: Flow<Int> = modelThreadCountState    override suspend fun getModelThreadCount(): Int = modelThreadCountState.value
+    override val modelThreadCountFlow: Flow<Int> = modelThreadCountState
+    override suspend fun getModelThreadCount(): Int = modelThreadCountState.value
     override suspend fun setModelThreadCount(value: Int) {
         modelThreadCountState.value = value
     }
 
-    override val modelGpuLayersFlow: Flow<Int> = modelGpuLayersState    override suspend fun getModelGpuLayers(): Int = modelGpuLayersState.value
+    override val modelGpuLayersFlow: Flow<Int> = modelGpuLayersState
+    override suspend fun getModelGpuLayers(): Int = modelGpuLayersState.value
     override suspend fun setModelGpuLayers(value: Int) {
         modelGpuLayersState.value = value
     }
 
-    override val cachedModelsFlow: Flow<String> = cachedModelsState    override suspend fun getCachedModels(): String = cachedModelsState.value
+    override val cachedModelsFlow: Flow<String> = cachedModelsState
+    override suspend fun getCachedModels(): String = cachedModelsState.value
     override suspend fun setCachedModels(json: String) {
         cachedModelsState.value = json
     }
 
-    override val showThinkingTokensFlow: Flow<Boolean> = showThinkingTokensState    override suspend fun getShowThinkingTokens(): Boolean = showThinkingTokensState.value
+    override val showThinkingTokensFlow: Flow<Boolean> = showThinkingTokensState
+    override suspend fun getShowThinkingTokens(): Boolean = showThinkingTokensState.value
     override suspend fun setShowThinkingTokens(value: Boolean) {
         showThinkingTokensState.value = value
     }
 
-    override val thinkingTokenStyleFlow: Flow<String> = thinkingTokenStyleState    override suspend fun getThinkingTokenStyle(): String = thinkingTokenStyleState.value
+    override val thinkingTokenStyleFlow: Flow<String> = thinkingTokenStyleState
+    override suspend fun getThinkingTokenStyle(): String = thinkingTokenStyleState.value
     override suspend fun setThinkingTokenStyle(value: String) {
         thinkingTokenStyleState.value = value
     }
 
-    override val templatesFlow: Flow<List<Template>> = templatesState    override suspend fun getTemplates(): List<Template> = templatesState.value
+    override val templatesFlow: Flow<List<Template>> = templatesState
+    override suspend fun getTemplates(): List<Template> = templatesState.value
     override suspend fun saveTemplates(templates: List<Template>) {
         templatesState.value = templates
     }
 
-    override val uiThemeFlow: Flow<String> = uiThemeState    override suspend fun getUITheme(): String = uiThemeState.value
+    override val uiThemeFlow: Flow<String> = uiThemeState
+    override suspend fun getUITheme(): String = uiThemeState.value
     override suspend fun setUITheme(value: String) {
         uiThemeState.value = value
     }
 
-    override val uiFontSizeFlow: Flow<Float> = uiFontSizeState    override suspend fun getUIFontSize(): Float = uiFontSizeState.value
+    override val uiFontSizeFlow: Flow<Float> = uiFontSizeState
+    override suspend fun getUIFontSize(): Float = uiFontSizeState.value
     override suspend fun setUIFontSize(value: Float) {
         uiFontSizeState.value = value
     }
 
-    override val uiEnableAnimationsFlow: Flow<Boolean> = uiEnableAnimationsState    override suspend fun getUIEnableAnimations(): Boolean = uiEnableAnimationsState.value
+    override val uiEnableAnimationsFlow: Flow<Boolean> = uiEnableAnimationsState
+    override suspend fun getUIEnableAnimations(): Boolean = uiEnableAnimationsState.value
     override suspend fun setUIEnableAnimations(value: Boolean) {
         uiEnableAnimationsState.value = value
     }
 
-    override val uiEnableHapticFeedbackFlow: Flow<Boolean> = uiEnableHapticFeedbackState    override suspend fun getUIEnableHapticFeedback(): Boolean = uiEnableHapticFeedbackState.value
+    override val uiEnableHapticFeedbackFlow: Flow<Boolean> = uiEnableHapticFeedbackState
+    override suspend fun getUIEnableHapticFeedback(): Boolean = uiEnableHapticFeedbackState.value
     override suspend fun setUIEnableHapticFeedback(value: Boolean) {
         uiEnableHapticFeedbackState.value = value
     }
 
-    override val appLanguageFlow: Flow<String?> = appLanguageState    override suspend fun getAppLanguage(): String? = appLanguageState.value
+    override val appLanguageFlow: Flow<String?> = appLanguageState
+    override suspend fun getAppLanguage(): String? = appLanguageState.value
     override suspend fun setAppLanguage(value: String?) {
         appLanguageState.value = value
     }
 
-    override val perfEnableMemoryOptimizationFlow: Flow<Boolean> =
-        perfEnableMemoryOptimizationState    override suspend fun getPerfEnableMemoryOptimization(): Boolean = perfEnableMemoryOptimizationState.value
+    override val perfEnableMemoryOptimizationFlow: Flow<Boolean> = perfEnableMemoryOptimizationState
+    override suspend fun getPerfEnableMemoryOptimization(): Boolean = perfEnableMemoryOptimizationState.value
     override suspend fun setPerfEnableMemoryOptimization(value: Boolean) {
         perfEnableMemoryOptimizationState.value = value
     }
 
-    override val perfEnableBackgroundProcessingFlow: Flow<Boolean> =
-        perfEnableBackgroundProcessingState    override suspend fun getPerfEnableBackgroundProcessing(): Boolean =
-        perfEnableBackgroundProcessingState.value
+    override val perfEnableBackgroundProcessingFlow: Flow<Boolean> = perfEnableBackgroundProcessingState
+    override suspend fun getPerfEnableBackgroundProcessing(): Boolean = perfEnableBackgroundProcessingState.value
     override suspend fun setPerfEnableBackgroundProcessing(value: Boolean) {
         perfEnableBackgroundProcessingState.value = value
     }
 
-    override val securityBiometricEnabledFlow: Flow<Boolean> =
-        securityBiometricEnabledState    override suspend fun getSecurityBiometricEnabled(): Boolean = securityBiometricEnabledState.value
+    override val securityBiometricEnabledFlow: Flow<Boolean> = securityBiometricEnabledState
+    override suspend fun getSecurityBiometricEnabled(): Boolean = securityBiometricEnabledState.value
     override suspend fun setSecurityBiometricEnabled(value: Boolean) {
         securityBiometricEnabledState.value = value
     }

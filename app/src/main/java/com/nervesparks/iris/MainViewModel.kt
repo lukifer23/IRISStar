@@ -12,6 +12,7 @@ import timber.log.Timber
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
@@ -74,6 +75,7 @@ class MainViewModel @Inject constructor(
     val searchViewModel: com.nervesparks.iris.viewmodel.SearchViewModel,
     val voiceViewModel: com.nervesparks.iris.viewmodel.VoiceViewModel,
     val modelViewModel: com.nervesparks.iris.viewmodel.ModelViewModel,
+    val benchmarkViewModel: com.nervesparks.iris.viewmodel.BenchmarkViewModel,
     val chatViewModel: com.nervesparks.iris.viewmodel.ChatViewModel,
     val documentViewModel: com.nervesparks.iris.viewmodel.DocumentViewModel,
     val generationViewModel: com.nervesparks.iris.viewmodel.GenerationViewModel,
@@ -360,51 +362,7 @@ class MainViewModel @Inject constructor(
 
     fun handleToolCall(toolCall: com.nervesparks.iris.data.ToolCall) {
         Timber.d("Handling tool call: $toolCall")
-
-        viewModelScope.launch {
-            try {
-                when (toolCall.name) {
-                    "web_search", "brave_search" -> {
-                        val query = toolCall.args["query"] as? String
-                        if (query != null) {
-                            Timber.d("Executing web search for: $query")
-
-                            // Show tool execution in progress
-                            addMessage("assistant", "🔍 Executing web search for \"$query\"...")
-
-                            // Perform the search
-                            val searchResponse = webSearchService.searchWeb(query)
-
-                            if (searchResponse.success && searchResponse.results != null) {
-                                // Format and display results
-                                val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
-                                addMessage("assistant", formattedResults)
-                            } else {
-                                val errorMessage = searchResponse.error ?: "Unknown search error"
-                                addMessage("assistant", "❌ Web search failed: $errorMessage")
-                            }
-                        } else {
-                            addMessage("assistant", "❌ Invalid search query provided")
-                        }
-                    }
-                    else -> {
-                        // Delegate other tools to ToolViewModel
-                        toolViewModel.handleToolCall(toolCall)
-                        // Handle the result - wait a bit for async processing
-                        kotlinx.coroutines.delay(100)
-                        toolViewModel.toolCallResult?.let { result ->
-                            addMessage("assistant", result)
-                        }
-                        toolViewModel.toolCallError?.let { error ->
-                            addMessage("assistant", "❌ Tool execution error: $error")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error handling tool call")
-                addMessage("assistant", "❌ Tool execution error: ${e.message}")
-            }
-        }
+        toolViewModel.handleToolCall(toolCall, ::addMessage)
     }
 
     fun sendImage(uri: Uri) {
@@ -464,9 +422,16 @@ class MainViewModel @Inject constructor(
                         val context = mapOf("messages" to workingMessages)
                         jinjava.render(template, context)
                     } else {
+                        // Convert to proper types for template rendering
+                        val stringMessages = workingMessages.map { msg ->
+                            mapOf(
+                                "role" to (msg["role"] as? String ?: ""),
+                                "content" to (msg["content"] as? String ?: "")
+                            )
+                        }
                         com.nervesparks.iris.llm.TemplateRegistry.render(
                             modelChatFormat,
-                            workingMessages,
+                            stringMessages,
                             modelSystemPrompt,
                             includeThinkingTags = supportsReasoning
                         )
@@ -855,57 +820,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun loadExistingModels(directory: File) {
-        Timber.d("loadExistingModels called with directory: ${directory.absolutePath}")
-        Timber.d("Directory exists: ${directory.exists()}")
-        Timber.d("Directory is readable: ${directory.canRead()}")
-
-        viewModelScope.launch {
-            try {
-                val installedModels = withContext(Dispatchers.IO) {
-                    modelRepository.getAvailableModels(directory)
-                }
-
-                Timber.d("Repository returned ${installedModels.size} installed models")
-
-                availableModelMetadata = mergeModelMetadata(availableModelMetadata, installedModels)
-
-                if (installedModels.isNotEmpty()) {
-                    Timber.d("Models available, setting up UI for model selection")
-
-                    val firstModel = installedModels.first()
-                    val destinationPath = File(directory, firstModel["destination"].toString())
-                    currentDownloadable = Downloadable(
-                        firstModel["name"].toString(),
-                        Uri.parse(firstModel["source"].toString()),
-                        destinationPath
-                    )
-
-                    if (defaultModelName.value.isNotEmpty()) {
-                        val defaultModel = installedModels.find { model -> model["name"] == defaultModelName.value }
-                        if (defaultModel != null) {
-                            val defaultPath = File(directory, defaultModel["destination"].toString())
-                            currentDownloadable = Downloadable(
-                                defaultModel["name"].toString(),
-                                Uri.parse(defaultModel["source"].toString()),
-                                defaultPath
-                            )
-                        }
-                    }
-
-                    showModal = false
-                    showModelSelection = true
-                    Timber.d("Set showModal=false, showModelSelection=true")
-                } else {
-                    Timber.d("No models available, showing download modal")
-                    showModal = true
-                    showModelSelection = false
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error loading existing models")
-            }
-        }
-    }
 
     private fun mergeModelMetadata(
         existing: List<Map<String, String>>,
@@ -1341,9 +1255,16 @@ class MainViewModel @Inject constructor(
                             val context = mapOf("messages" to workingMessages)
                             jinjava.render(template, context)
                         } else {
+                            // Convert to proper types for template rendering
+                            val stringMessages = workingMessages.map { msg ->
+                                mapOf(
+                                    "role" to (msg["role"] as? String ?: ""),
+                                    "content" to (msg["content"] as? String ?: "")
+                                )
+                            }
                             com.nervesparks.iris.llm.TemplateRegistry.render(
                                 modelChatFormat,
-                                workingMessages,
+                                stringMessages,
                                 modelSystemPrompt,
                                 includeThinkingTags = supportsReasoning
                             )
@@ -1463,225 +1384,24 @@ class MainViewModel @Inject constructor(
     }
 
     var tokensList = mutableListOf<String>() // Store emitted tokens
-    var benchmarkStartTime: Long = 0L // Track the benchmark start time
-    var tokensPerSecondsFinal: Double by mutableStateOf(0.0) // Track tokens per second and trigger UI updates
-    var isBenchmarkingComplete by mutableStateOf(false) // Flag to track if benchmarking is complete
-    
-    // Comparative benchmark results
-    var comparativeBenchmarkResults by mutableStateOf<Map<String, Any>?>(null)
-    var isComparativeBenchmarkRunning by mutableStateOf(false)
-    var selectedBenchmarkModel by mutableStateOf("")
-    var showBenchmarkModelSelection by mutableStateOf(false)
 
     fun myCustomBenchmark() {
-        viewModelScope.launch {
-            try {
-                tokensList.clear() // Reset the token list before benchmarking
-                benchmarkStartTime = System.currentTimeMillis() // Record the start time
-                isBenchmarkingComplete = false // Reset benchmarking flag
-
-                // Launch a coroutine to update the tokens per second every second
-                launch {
-                    while (!isBenchmarkingComplete) {
-                        delay(1000L) // Delay 1 second
-                        val elapsedTime = System.currentTimeMillis() - benchmarkStartTime
-                        if (elapsedTime > 0) {
-                            tokensPerSecondsFinal = tokensList.size.toDouble() / (elapsedTime / 1000.0)
-                        }
-                    }
-                }
-
-                llamaAndroid.myCustomBenchmark()
-                    .collect { emittedString ->
-                        // emittedString is guaranteed to be non-null from Flow.collect
-                        tokensList.add(emittedString) // Add each token to the list
-                        Timber.d("Token collected: $emittedString")
-                    }
-                    .also {
-                        isBenchmarkingComplete = true // Mark benchmarking as complete
-                    }
-            } catch (exc: IllegalStateException) {
-                Timber.e(exc, "myCustomBenchmark() failed")
-            } catch (exc: kotlinx.coroutines.TimeoutCancellationException) {
-                Timber.e(exc, "myCustomBenchmark() timed out")
-            } catch (exc: Exception) {
-                Timber.e(exc, "Unexpected error during myCustomBenchmark()")
-            } finally {
-                // Benchmark complete, log the final tokens per second value
-                val elapsedTime = System.currentTimeMillis() - benchmarkStartTime
-                val finalTokensPerSecond = if (elapsedTime > 0) {
-                    tokensList.size.toDouble() / (elapsedTime / 1000.0)
-                } else {
-                    0.0
-                }
-                Timber.d("Benchmark complete. Tokens/sec: $finalTokensPerSecond")
-
-                // Update the final tokens per second and stop updating the value
-                tokensPerSecondsFinal = finalTokensPerSecond
-                isBenchmarkingComplete = true // Mark benchmarking as complete
-            }
-        }
+        benchmarkViewModel.runStandardBenchmark()
     }
     
     fun runComparativeBenchmark() {
-        viewModelScope.launch {
-            try {
-                Timber.d("Starting comparative benchmark...")
-                isComparativeBenchmarkRunning = true
-                comparativeBenchmarkResults = null
-                
-                                    // Use actual model and context handles for real benchmarking
-                    Timber.d("Calling native benchmark function with real model...")
-                    val modelHandle = llamaAndroid.getModel()
-                    val contextHandle = llamaAndroid.getContext()
-                    val batchHandle = llamaAndroid.getBatch()
-                    val samplerHandle = llamaAndroid.getSampler()
-
-                    Timber.d("Model handle: $modelHandle, Context handle: $contextHandle")
-
-                    // Verify that all handles are valid before proceeding
-                    if (modelHandle == 0L || contextHandle == 0L || batchHandle == 0L || samplerHandle == 0L) {
-                        Timber.e("Model not loaded. Skipping comparative benchmark.")
-                        comparativeBenchmarkResults = mapOf("error" to "Model not loaded.")
-                        return@launch
-                    }
-
-                    // Ensure we're on the correct thread where the library is loaded
-                    val resultsJson = try {
-                        withContext(llamaAndroid.runLoop) {
-                            llamaAndroid.runComparativeBenchmark(modelHandle, contextHandle, batchHandle, samplerHandle)
-                        }
-                    } catch (e: IllegalStateException) {
-                        Timber.e(e, "Comparative benchmark failed")
-                        comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
-                        return@launch
-                    } catch (e: Exception) {
-                        Timber.e(e, "Comparative benchmark failed")
-                        comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
-                        return@launch
-                    }
-                Timber.d("Native benchmark returned: $resultsJson")
-                
-                // Parse the JSON results
-                try {
-                    val jsonObject = org.json.JSONObject(resultsJson)
-                    val results = mutableMapOf<String, Any>()
-                    
-                    // Parse CPU results
-                    val cpuObj = jsonObject.getJSONObject("cpu")
-                    results["cpu_tokens_per_sec"] = cpuObj.getDouble("tokens_per_sec")
-                    results["cpu_duration_ms"] = cpuObj.getInt("duration_ms")
-                    results["cpu_tokens_generated"] = cpuObj.getInt("tokens_generated")
-                    
-                    // Parse GPU results
-                    val gpuObj = jsonObject.getJSONObject("gpu")
-                    results["gpu_available"] = gpuObj.getBoolean("available")
-                    
-                    if (results["gpu_available"] as Boolean) {
-                        results["gpu_tokens_per_sec"] = gpuObj.getDouble("tokens_per_sec")
-                        results["gpu_duration_ms"] = gpuObj.getInt("duration_ms")
-                        results["gpu_tokens_generated"] = gpuObj.getInt("tokens_generated")
-                        
-                        // Calculate speedup
-                        val speedup = jsonObject.getDouble("speedup")
-                        results["speedup"] = speedup
-                        results["speedup_percentage"] = ((speedup - 1.0) * 100.0)
-                    } else {
-                        results["gpu_error"] = gpuObj.getString("error")
-                    }
-                    
-                    comparativeBenchmarkResults = results
-                    Timber.d("Comparative benchmark completed: $results")
-                    Timber.d("Setting comparativeBenchmarkResults to: $comparativeBenchmarkResults")
-                    
-                } catch (e: Exception) {
-                    Timber.e(e, "Error parsing benchmark results")
-                    comparativeBenchmarkResults = mapOf("error" to "Failed to parse results: ${e.message}")
-                }
-                
-            } catch (e: Exception) {
-                Timber.e(e, "Comparative benchmark failed")
-                comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${e.message}")
-            } finally {
-                isComparativeBenchmarkRunning = false
-            }
-        }
+        benchmarkViewModel.runComparativeBenchmark()
     }
-    
     fun showBenchmarkModelSelection() {
-        showBenchmarkModelSelection = true
+        benchmarkViewModel.showBenchmarkModelSelection()
     }
-    
+
     fun hideBenchmarkModelSelection() {
-        showBenchmarkModelSelection = false
-        selectedBenchmarkModel = ""
+        benchmarkViewModel.hideBenchmarkModelSelection()
     }
-    
+
     fun runBenchmarkWithModel(modelName: String, directory: File) {
-        viewModelScope.launch {
-            isComparativeBenchmarkRunning = true
-
-            // Save the currently loaded model so we can restore it later
-            val previousModelName = loadedModelName.value
-            val previousModelPath = availableModelMetadata
-                .find { it["name"] == previousModelName }
-                ?.let { File(directory, it["destination"].toString()).path }
-
-            try {
-                Timber.d("Starting benchmark with model: $modelName")
-
-                // Attempt to load the user selected model
-                val loaded = loadModelByName(modelName, directory)
-                if (!loaded) {
-                    comparativeBenchmarkResults = mapOf("error" to "Failed to load model: $modelName")
-                    return@launch
-                }
-                
-                // Wait for the model to fully load and get valid handles
-                var attempts = 0
-                var modelHandle = 0L
-                var contextHandle = 0L
-                var batchHandle = 0L
-                var samplerHandle = 0L
-                
-                while (attempts < 10 && (modelHandle == 0L || contextHandle == 0L || batchHandle == 0L || samplerHandle == 0L)) {
-                    delay(500) // Wait 500ms between attempts
-                    modelHandle = llamaAndroid.getModel()
-                    contextHandle = llamaAndroid.getContext()
-                    batchHandle = llamaAndroid.getBatch()
-                    samplerHandle = llamaAndroid.getSampler()
-                    attempts++
-                    Timber.d("Attempt $attempts: Model=$modelHandle, Context=$contextHandle, Batch=$batchHandle, Sampler=$samplerHandle")
-                }
-                
-                if (modelHandle == 0L || contextHandle == 0L || batchHandle == 0L || samplerHandle == 0L) {
-                    Timber.e("Model handles still invalid after $attempts attempts")
-                    comparativeBenchmarkResults = mapOf("error" to "Model not properly loaded after $attempts attempts")
-                    return@launch
-                }
-
-                // Run the benchmark and capture any errors
-                try {
-                    runComparativeBenchmark()
-                } catch (benchExc: Exception) {
-                    Timber.e(benchExc, "Benchmark with model failed")
-                    comparativeBenchmarkResults = mapOf("error" to "Benchmark failed: ${benchExc.message}")
-                }
-
-            } finally {
-                // Restore the previously loaded model
-                if (previousModelPath != null) {
-                    try {
-                        val backend = if (currentBackend.equals("OpenCL", true)) "opencl" else "cpu"
-                        load(previousModelPath, userThreads = modelThreadCount, backend = backend)
-                    } catch (restoreExc: Exception) {
-                        Timber.e(restoreExc, "Failed to reload previous model")
-                    }
-                }
-                isComparativeBenchmarkRunning = false
-                hideBenchmarkModelSelection()
-            }
-        }
+        benchmarkViewModel.runBenchmarkWithModel(modelName, directory)
     }
 
     var loadedModelName = mutableStateOf("");

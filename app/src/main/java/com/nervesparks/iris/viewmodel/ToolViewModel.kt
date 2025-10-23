@@ -91,9 +91,59 @@ class ToolViewModel @Inject constructor(
     }
 
     /**
-     * Handle tool call execution
+     * Handle tool call execution with UI messaging
      */
-    suspend fun handleToolCall(toolCall: ToolCall) {
+    fun handleToolCall(toolCall: ToolCall, onMessage: (String, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                when (toolCall.name) {
+                    "web_search", "brave_search" -> {
+                        val query = toolCall.args["query"] as? String
+                        if (query != null) {
+                            Timber.d("Executing web search for: $query")
+
+                            // Show tool execution in progress
+                            onMessage("assistant", "🔍 Executing web search for \"$query\"...")
+
+                            // Perform the search
+                            val searchResponse = webSearchService.searchWeb(query)
+
+                            if (searchResponse.success && searchResponse.results != null) {
+                                // Format and display results
+                                val formattedResults = webSearchService.formatSearchResults(searchResponse.results, query)
+                                onMessage("assistant", formattedResults)
+                            } else {
+                                val errorMessage = searchResponse.error ?: "Unknown search error"
+                                onMessage("assistant", "❌ Web search failed: $errorMessage")
+                            }
+                        } else {
+                            onMessage("assistant", "❌ Invalid search query provided")
+                        }
+                    }
+                    else -> {
+                        // Handle other tools
+                        handleToolCallInternal(toolCall)
+                        // Handle the result - wait a bit for async processing
+                        kotlinx.coroutines.delay(100)
+                        toolCallResult?.let { result ->
+                            onMessage("assistant", result)
+                        }
+                        toolCallError?.let { error ->
+                            onMessage("assistant", "❌ Tool execution error: $error")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling tool call")
+                onMessage("assistant", "❌ Tool execution error: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Handle tool call execution (internal)
+     */
+    private suspend fun handleToolCallInternal(toolCall: ToolCall) {
         withContext(Dispatchers.Main) {
             isProcessingTool = true
             toolCallError = null

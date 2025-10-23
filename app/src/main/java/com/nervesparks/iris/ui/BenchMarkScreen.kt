@@ -33,7 +33,7 @@ data class BenchmarkState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
+fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel, benchmarkViewModel: com.nervesparks.iris.viewmodel.BenchmarkViewModel) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
@@ -102,7 +102,7 @@ fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
                         state = state.copy(showConfirmDialog = true)
                     }
                 },
-                enabled = !state.isRunning && !viewModel.isComparativeBenchmarkRunning,
+                enabled = !state.isRunning && !benchmarkViewModel.isBenchmarkRunning,
             ) {
                 Text(if (state.isRunning) "Benchmarking..." else "Standard Benchmark", color = MaterialTheme.colorScheme.onPrimary)
             }
@@ -112,11 +112,11 @@ fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
                     .weight(1f)
                     .padding(start = ComponentStyles.smallPadding),
                 onClick = {
-                    viewModel.showBenchmarkModelSelection()
+                    benchmarkViewModel.showBenchmarkModelSelection()
                 },
-                enabled = !state.isRunning && !viewModel.isComparativeBenchmarkRunning,
+                enabled = !state.isRunning && !benchmarkViewModel.isBenchmarkRunning,
             ) {
-                Text(if (viewModel.isComparativeBenchmarkRunning) "Testing..." else "CPU vs GPU Test", color = MaterialTheme.colorScheme.onPrimary)
+                Text(if (benchmarkViewModel.isBenchmarkRunning) "Testing..." else "CPU vs GPU Test", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
 
@@ -159,8 +159,8 @@ fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
 
         // Token Per Second Speed Display
         Text(
-            text = if (viewModel.tokensPerSecondsFinal > 0) {
-                "Tokens per second: %.2f".format(viewModel.tokensPerSecondsFinal)
+            text = if (benchmarkViewModel.tokensPerSecond > 0) {
+                "Tokens per second: %.2f".format(benchmarkViewModel.tokensPerSecond)
             } else {
                 "Calculating tokens per second..."
             },
@@ -170,7 +170,7 @@ fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
         )
         
         // Comparative Benchmark Results
-        viewModel.comparativeBenchmarkResults?.let { results ->
+        benchmarkViewModel.benchmarkResults.takeIf { it.isNotEmpty() }?.let { results ->
             ModernCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -304,7 +304,7 @@ fun BenchMarkScreen(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
     }
     
     // Model Selection Modal for Benchmark
-    BenchmarkModelSelectionModal(viewModel, modelViewModel)
+    BenchmarkModelSelectionModal(viewModel, modelViewModel, benchmarkViewModel)
 }
 
 
@@ -322,12 +322,13 @@ private fun buildDeviceInfo(viewModel: MainViewModel): String {
 
 // Model Selection Modal for Benchmark
 @Composable
-fun BenchmarkModelSelectionModal(viewModel: MainViewModel, modelViewModel: ModelViewModel) {
-    if (viewModel.showBenchmarkModelSelection) {
+fun BenchmarkModelSelectionModal(viewModel: MainViewModel, modelViewModel: ModelViewModel, benchmarkViewModel: com.nervesparks.iris.viewmodel.BenchmarkViewModel) {
+    if (benchmarkViewModel.showModelSelection) {
         ModelSelectionModal(
             viewModel = viewModel,
             modelViewModel = modelViewModel,
-            onDismiss = { viewModel.hideBenchmarkModelSelection() },
+            benchmarkViewModel = benchmarkViewModel,
+            onDismiss = { benchmarkViewModel.hideBenchmarkModelSelection() },
             onNavigateToModels = { /* Navigate to models screen */ },
             isForBenchmark = true
         )
