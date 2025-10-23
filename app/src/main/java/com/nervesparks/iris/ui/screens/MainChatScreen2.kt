@@ -328,7 +328,7 @@ fun MainChatScreen2(
         if (showPerChatSettings) {
             PerChatSettingsBottomSheet(
                 chatViewModel = chatViewModel,
-                chatId = viewModel.currentChatPublic?.id ?: 1L,
+                chatId = chatViewModel.currentChatPublic?.id,
                 currentSettings = currentChatSettings,
                 onDismiss = { showPerChatSettings = false },
                 onSave = { settings ->

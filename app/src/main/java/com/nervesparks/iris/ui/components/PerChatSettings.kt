@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PerChatSettingsBottomSheet(
     chatViewModel: ChatViewModel,
-    chatId: Long,
+    chatId: Long?,
     currentSettings: ChatSettings,
     onDismiss: () -> Unit,
     onSave: (ChatSettings) -> Unit
@@ -28,6 +28,7 @@ fun PerChatSettingsBottomSheet(
     var settings by remember { mutableStateOf(currentSettings) }
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val hasValidChatId = chatId != null && chatId > 0L
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -59,6 +60,18 @@ fun PerChatSettingsBottomSheet(
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
                     }
+                }
+
+                if (!hasValidChatId) {
+                    AssistChip(
+                        onClick = {},
+                        label = {
+                            Text("Create or open a chat to edit per-chat settings.")
+                        },
+                        enabled = false
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -215,6 +228,9 @@ fun PerChatSettingsBottomSheet(
 
                     Button(
                         onClick = {
+                            if (!hasValidChatId) {
+                                return@Button
+                            }
                             isLoading = true
                             coroutineScope.launch {
                                 try {
@@ -242,7 +258,7 @@ fun PerChatSettingsBottomSheet(
                             }
                         },
                         modifier = Modifier.weight(1f),
-                        enabled = !isLoading
+                        enabled = !isLoading && hasValidChatId
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
