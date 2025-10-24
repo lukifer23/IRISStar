@@ -9,8 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.nervesparks.iris.data.AndroidSearchService
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.exceptions.ErrorHandler
+import com.nervesparks.iris.data.search.SearchResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Locale
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,24 +28,24 @@ class SearchViewModel @Inject constructor(
 
     // Search state
     var isSearching by mutableStateOf(false)
-    var searchResults by mutableStateOf<List<Map<String, String>>>(emptyList())
+    var searchResults by mutableStateOf<List<SearchResult>>(emptyList())
     var searchError by mutableStateOf<String?>(null)
+    var searchProgress by mutableStateOf("")
 
     // Search caching for performance
     private val searchCache = mutableMapOf<String, SearchCacheEntry>()
     private val maxCacheSize = 50
-    private val cacheExpiryMs = 30 * 60 * 1000L // 30 minutes
 
     /**
      * Cache entry for search results
      */
     data class SearchCacheEntry(
-        val results: List<Map<String, String>>,
+        val results: List<SearchResult>,
         val timestamp: Long,
         val query: String
     ) {
         fun isExpired(): Boolean {
-            return System.currentTimeMillis() - timestamp > 30 * 60 * 1000L // 30 minutes
+            return System.currentTimeMillis() - timestamp > CACHE_EXPIRY_MS
         }
     }
 
@@ -55,6 +55,7 @@ class SearchViewModel @Inject constructor(
             try {
                 isSearching = true
                 searchError = null
+                searchProgress = "Searching the web for \"$query\"..."
 
                 // Check cache first
                 val cacheKey = "web:$query"
@@ -63,6 +64,7 @@ class SearchViewModel @Inject constructor(
                 if (cachedEntry != null && !cachedEntry.isExpired()) {
                     Timber.tag(tag).d("Using cached search results for: $query")
                     searchResults = cachedEntry.results
+                    searchProgress = "Loaded ${cachedEntry.results.size} cached results for \"$query\""
                     isSearching = false
                     return@launch
                 }
@@ -71,13 +73,7 @@ class SearchViewModel @Inject constructor(
                 val response = webSearchService.searchWeb(query)
 
                 if (response.success && response.results?.isNotEmpty() == true) {
-                    searchResults = response.results.map { result ->
-                        mapOf(
-                            "title" to result.title,
-                            "snippet" to result.snippet,
-                            "link" to result.url
-                        )
-                    }
+                    searchResults = response.results
 
                     // Cache the results
                     cacheSearchResults(cacheKey, searchResults, query)
@@ -85,9 +81,12 @@ class SearchViewModel @Inject constructor(
                     if (summarize && searchResults.isNotEmpty()) {
                         Timber.tag(tag).d("Search completed with ${searchResults.size} results - summarization available")
                     }
+
+                    searchProgress = getSearchSummary()
                 } else {
                     searchResults = emptyList()
                     searchError = response.error ?: "No search results found"
+                    searchProgress = searchError ?: ""
                 }
 
             } catch (e: Exception) {
@@ -95,6 +94,7 @@ class SearchViewModel @Inject constructor(
                 ErrorHandler.reportError(e, "Web Search", ErrorHandler.ErrorSeverity.MEDIUM, "Web search failed. Please check your internet connection and try again.")
                 searchError = "Search failed: ${e.message}"
                 searchResults = emptyList()
+                searchProgress = searchError ?: ""
             } finally {
                 isSearching = false
             }
@@ -107,6 +107,7 @@ class SearchViewModel @Inject constructor(
             try {
                 isSearching = true
                 searchError = null
+                searchProgress = "Searching documents for \"$query\"..."
 
                 // Check cache first
                 val cacheKey = "doc:$query"
@@ -115,6 +116,7 @@ class SearchViewModel @Inject constructor(
                 if (cachedEntry != null && !cachedEntry.isExpired()) {
                     Timber.tag(tag).d("Using cached document search results for: $query")
                     searchResults = cachedEntry.results
+                    searchProgress = "Loaded ${cachedEntry.results.size} cached document results for \"$query\""
                     isSearching = false
                     return@launch
                 }
@@ -123,29 +125,20 @@ class SearchViewModel @Inject constructor(
 
                 val results = androidSearchService.searchDocuments(query)
 
-                searchResults = results.map { result ->
-                    buildMap {
-                        put("title", result.title)
-                        put("snippet", result.snippet)
-                        put("link", result.url)
-                        put("type", "document")
-                        put("source", result.source)
-                        result.confidence?.let { confidence ->
-                            put("confidence", String.format(Locale.US, "%.2f", confidence))
-                        }
-                    }
-                }
+                searchResults = results
 
                 // Cache the results
                 cacheSearchResults(cacheKey, searchResults, query)
 
                 Timber.tag(tag).d("Document search completed with ${searchResults.size} results")
+                searchProgress = getSearchSummary()
 
             } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error searching documents")
                 ErrorHandler.reportError(e, "Document Search", ErrorHandler.ErrorSeverity.MEDIUM, "Document search failed. Please try again.")
                 searchError = "Document search failed: ${e.message}"
                 searchResults = emptyList()
+                searchProgress = searchError ?: ""
             } finally {
                 isSearching = false
             }
@@ -158,6 +151,7 @@ class SearchViewModel @Inject constructor(
             try {
                 isSearching = true
                 searchError = null
+                searchProgress = "Launching Android search for \"$query\"..."
 
                 Timber.tag(tag).d("Performing Android system search for: $query")
 
@@ -165,18 +159,13 @@ class SearchViewModel @Inject constructor(
                 val response = androidSearchService.launchBrowserSearch(query)
 
                 if (response.success && response.results?.isNotEmpty() == true) {
-                    searchResults = response.results.map { result ->
-                        mapOf(
-                            "title" to result.title,
-                            "snippet" to result.snippet,
-                            "link" to result.url,
-                            "type" to "browser"
-                        )
-                    }
+                    searchResults = response.results
                     Timber.tag(tag).d("Android search completed with ${searchResults.size} results")
+                    searchProgress = getSearchSummary()
                 } else {
                     searchError = response.error ?: "Android search failed"
                     searchResults = emptyList()
+                    searchProgress = searchError ?: ""
                 }
 
             } catch (e: Exception) {
@@ -184,6 +173,7 @@ class SearchViewModel @Inject constructor(
                 ErrorHandler.reportError(e, "Android Search", ErrorHandler.ErrorSeverity.MEDIUM, "Android search failed. Please check if a browser is installed and try again.")
                 searchError = "Android search failed: ${e.message}"
                 searchResults = emptyList()
+                searchProgress = searchError ?: ""
             } finally {
                 isSearching = false
             }
@@ -194,12 +184,13 @@ class SearchViewModel @Inject constructor(
     fun clearSearchResults() {
         searchResults = emptyList()
         searchError = null
+        searchProgress = ""
         searchCache.clear() // Clear cache as well
         Timber.tag(tag).d("Search results and cache cleared")
     }
 
     // Cache search results with automatic cleanup
-    private fun cacheSearchResults(cacheKey: String, results: List<Map<String, String>>, query: String) {
+    private fun cacheSearchResults(cacheKey: String, results: List<SearchResult>, query: String) {
         // Remove expired entries to prevent memory leaks
         val expiredKeys = searchCache.entries.filter { it.value.isExpired() }.map { it.key }
         expiredKeys.forEach { searchCache.remove(it) }
@@ -245,8 +236,8 @@ class SearchViewModel @Inject constructor(
         summary.append("Found ${searchResults.size} results for your query.\n\n")
 
         searchResults.take(3).forEachIndexed { index, result ->
-            summary.append("${index + 1}. **${result["title"]}**\n")
-            summary.append("${result["snippet"]}\n\n")
+            summary.append("${index + 1}. **${result.title}**\n")
+            summary.append("${result.snippet}\n\n")
         }
 
         if (searchResults.size > 3) {
@@ -274,11 +265,16 @@ class SearchViewModel @Inject constructor(
         }
 
         searchError = null
+        searchProgress = ""
         Timber.tag(tag).d("SearchViewModel cleaned up")
     }
 
     override fun onCleared() {
         super.onCleared()
         cleanup()
+    }
+
+    companion object {
+        private const val CACHE_EXPIRY_MS = 30 * 60 * 1000L // 30 minutes
     }
 }

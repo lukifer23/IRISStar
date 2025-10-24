@@ -2265,12 +2265,20 @@ class MainViewModel @Inject constructor(
     // Track temporary processing data for cleanup
     private val tempProcessingData = mutableMapOf<String, Any>()
 
-    // Search state management
-    var isSearching by mutableStateOf(false)
-    var searchResults by mutableStateOf<List<SearchResult>>(emptyList())
+    // Search state delegates to SearchViewModel
+    val isSearching: Boolean
+        get() = searchViewModel.isSearching
+
+    val searchResults: List<SearchResult>
+        get() = searchViewModel.searchResults
+
     var currentSearchQuery by mutableStateOf("")
-    var searchError by mutableStateOf<String?>(null)
-    var searchProgress by mutableStateOf("")
+
+    val searchError: String?
+        get() = searchViewModel.searchError
+
+    val searchProgress: String
+        get() = searchViewModel.searchProgress
 
 }
 
