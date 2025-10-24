@@ -29,7 +29,7 @@ class AndroidSearchService @Inject constructor(
     /**
      * Launch search in user's default browser
      */
-    suspend fun launchBrowserSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    suspend fun launchBrowserSearch(query: String): SearchResponse<SearchResult> = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Launching browser search for: $query")
             
@@ -56,14 +56,14 @@ class AndroidSearchService @Inject constructor(
                     query = query
                 )
             } else {
-                return@withContext SearchResponse(
+                return@withContext SearchResponse<SearchResult>(
                     success = false,
                     error = "No browser app found to handle the search"
                 )
             }
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error launching browser search")
-            return@withContext SearchResponse(
+            return@withContext SearchResponse<SearchResult>(
                 success = false,
                 error = "Failed to launch browser search: ${e.message}"
             )
@@ -73,7 +73,7 @@ class AndroidSearchService @Inject constructor(
     /**
      * Launch search with multiple search engines
      */
-    suspend fun launchMultiSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    suspend fun launchMultiSearch(query: String): SearchResponse<SearchResult> = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Launching multi-search for: $query")
             
@@ -112,7 +112,7 @@ class AndroidSearchService @Inject constructor(
             )
         } catch (e: Exception) {
             Timber.tag(tag).e(e, "Error launching multi-search")
-            return@withContext SearchResponse(
+            return@withContext SearchResponse<SearchResult>(
                 success = false,
                 error = "Failed to launch multi-search: ${e.message}"
             )
