@@ -207,10 +207,10 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                         // Use searchModelsAsync for proper async search
                         val response = viewModel.searchModelsAsync(query)
 
-                        if (response.success && !response.data.isNullOrEmpty()) {
+                        if (response.success && !response.results.isNullOrEmpty()) {
                             // Convert search results to the expected format
                             // Note: Search results don't include siblings, so we'll show model info directly
-                            modelData = response.data.map { model ->
+                            modelData = response.results.map { model ->
                                 mapOf(
                                     "modelId" to model.id,
                                     "modelName" to model.name,
@@ -220,7 +220,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                                     "tags" to model.tags.joinToString(", ")
                                 )
                             }
-                        } else if (response.success && response.data.isNullOrEmpty()) {
+                        } else if (response.success && response.results.isNullOrEmpty()) {
                             errorMessage = "No models found for \"$query\""
                         } else {
                             errorMessage = response.error ?: "Failed to search models"

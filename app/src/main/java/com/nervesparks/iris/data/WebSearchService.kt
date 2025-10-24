@@ -20,7 +20,7 @@ class WebSearchService(
     /**
      * Perform a web search using Google Custom Search API or fallback to DuckDuckGo
      */
-    suspend fun searchWeb(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    suspend fun searchWeb(query: String): SearchResponse<SearchResult> = withContext(Dispatchers.IO) {
         try {
             Timber.tag(tag).d("Searching web for: $query")
             val apiKey = userPreferencesRepository.googleApiKey
@@ -32,7 +32,7 @@ class WebSearchService(
             }
         } catch (e: Exception) {
                 Timber.tag(tag).e(e, "Error performing web search")
-            SearchResponse(
+            SearchResponse<SearchResult>(
                 success = false,
                 error = "Search error: ${e.message}"
             )
@@ -42,7 +42,7 @@ class WebSearchService(
     /**
      * Perform search using Google Custom Search API
      */
-    private suspend fun performGoogleSearch(query: String, apiKey: String, cseId: String): SearchResponse = withContext(Dispatchers.IO) {
+    private suspend fun performGoogleSearch(query: String, apiKey: String, cseId: String): SearchResponse<SearchResult> = withContext(Dispatchers.IO) {
         Timber.tag(tag).d("Using Google Custom Search API")
         
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
@@ -56,7 +56,7 @@ class WebSearchService(
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 Timber.tag(tag).e("Google search failed with code: ${response.code}")
-                SearchResponse(
+                SearchResponse<SearchResult>(
                     success = false,
                     error = "Google search failed: HTTP ${response.code}"
                 )
@@ -96,7 +96,7 @@ class WebSearchService(
     /**
      * Fallback search using DuckDuckGo (with better error handling)
      */
-    private suspend fun performDuckDuckGoSearch(query: String): SearchResponse = withContext(Dispatchers.IO) {
+    private suspend fun performDuckDuckGoSearch(query: String): SearchResponse<SearchResult> = withContext(Dispatchers.IO) {
         Timber.tag(tag).d("Using DuckDuckGo fallback search")
         
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
@@ -111,7 +111,7 @@ class WebSearchService(
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 Timber.tag(tag).e("DuckDuckGo search failed with code: ${response.code}")
-                SearchResponse(
+                SearchResponse<SearchResult>(
                     success = false,
                     error = "DuckDuckGo search failed: HTTP ${response.code}"
                 )
@@ -197,7 +197,7 @@ class WebSearchService(
     /**
      * Fallback search method that provides basic information and search tips
      */
-    private suspend fun performFallbackSearch(query: String): SearchResponse {
+    private suspend fun performFallbackSearch(query: String): SearchResponse<SearchResult> {
         Timber.tag(tag).d("Performing fallback search for: $query")
         
         // Create a more helpful fallback response

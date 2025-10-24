@@ -14,9 +14,9 @@ data class SearchResult(
 /**
  * Wrapper for search responses from various services.
  */
-data class SearchResponse(
+data class SearchResponse<T>(
     val success: Boolean,
-    val results: List<SearchResult>? = null,
+    val results: List<T>? = null,
     val error: String? = null,
     val query: String = ""
 )

@@ -48,14 +48,19 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nervesparks.iris.data.WebSearchService
 import com.nervesparks.iris.data.AndroidSearchService
+import com.nervesparks.iris.data.search.ModelDetailResult
+import com.nervesparks.iris.data.search.ModelDetailsResponse
+import com.nervesparks.iris.data.search.ModelSearchResponse
+import com.nervesparks.iris.data.search.ModelSearchResult
+import com.nervesparks.iris.data.search.SearchResponse
 import com.nervesparks.iris.data.search.SearchResult
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.nervesparks.iris.llm.EmbeddingService
 import com.nervesparks.iris.llm.performDocumentIndexing
-import com.nervesparks.iris.data.exceptions.ValidationException
 import com.nervesparks.iris.data.exceptions.ErrorHandler
+import com.nervesparks.iris.data.exceptions.ValidationException
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -2101,7 +2106,7 @@ class MainViewModel @Inject constructor(
         downloadViewModel.searchModels(query)
     }
 
-    suspend fun searchModelsAsync(query: String): SearchResponse {
+    suspend fun searchModelsAsync(query: String): ModelSearchResponse {
         return try {
             val token = userPreferencesRepository.huggingFaceToken
             val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
@@ -2121,14 +2126,15 @@ class MainViewModel @Inject constructor(
 
             SearchResponse(
                 success = true,
-                data = searchResults,
-                error = null
+                results = searchResults,
+                error = null,
+                query = query
             )
         } catch (e: Exception) {
             Timber.e(e, "Error searching models")
-            SearchResponse(
+            SearchResponse<ModelSearchResult>(
                 success = false,
-                data = null,
+                results = null,
                 error = "Search failed: ${e.message}"
             )
         }
@@ -2136,9 +2142,9 @@ class MainViewModel @Inject constructor(
 
     fun getModelDetails(modelId: String): ModelDetailsResponse {
         // This is now a synchronous wrapper for the async search
-        return ModelDetailsResponse(
+        return SearchResponse<ModelDetailResult>(
             success = false,
-            data = null,
+            results = null,
             error = "Use getModelDetailsAsync() for proper async search"
         )
     }
@@ -2147,9 +2153,9 @@ class MainViewModel @Inject constructor(
         return try {
             val token = userPreferencesRepository.huggingFaceToken
             val authHeader = if (token.isNotEmpty()) "Bearer $token" else null
-            
+
             val model = huggingFaceApiService.getModelDetails(modelId, authHeader)
-            
+
             val detailResult = ModelDetailResult(
                 id = model.id,
                 name = model.name,
@@ -2157,25 +2163,20 @@ class MainViewModel @Inject constructor(
                 downloads = model.downloads,
                 likes = model.likes,
                 tags = model.tags,
-                siblings = model.siblings.map { file ->
-                    ModelFile(
-                        filename = file.filename,
-                        size = file.size,
-                        quantType = null // Not available in current API response
-                    )
-                }
+                siblings = model.siblings
             )
-            
-            ModelDetailsResponse(
+
+            SearchResponse(
                 success = true,
-                data = listOf(detailResult),
-                error = null
+                results = listOf(detailResult),
+                error = null,
+                query = modelId
             )
         } catch (e: Exception) {
             Timber.e(e, "Error getting model details")
-            ModelDetailsResponse(
+            SearchResponse<ModelDetailResult>(
                 success = false,
-                data = null,
+                results = null,
                 error = "Failed to get model details: ${e.message}"
             )
         }
@@ -2273,44 +2274,6 @@ class MainViewModel @Inject constructor(
     var searchProgress by mutableStateOf("")
 
 }
-
-// Add data class for search response with proper structure
-data class SearchResponse(
-    val success: Boolean,
-    val data: List<ModelSearchResult>?,
-    val error: String?
-)
-
-data class ModelSearchResult(
-    val id: String,
-    val name: String,
-    val description: String?,
-    val downloads: Int,
-    val likes: Int,
-    val tags: List<String>
-)
-
-data class ModelDetailsResponse(
-    val success: Boolean,
-    val data: List<ModelDetailResult>?,
-    val error: String?
-)
-
-data class ModelDetailResult(
-    val id: String,
-    val name: String,
-    val description: String?,
-    val downloads: Int,
-    val likes: Int,
-    val tags: List<String>,
-    val siblings: List<ModelFile>
-)
-
-data class ModelFile(
-    val filename: String,
-    val size: Long?,
-    val quantType: String?
-)
 
 fun sentThreadsValue(){
 
