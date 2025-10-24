@@ -71,6 +71,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    val searchViewModel = viewModel.searchViewModel
     val kc = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
@@ -244,7 +245,7 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
 
         // Web search status/progress
         when {
-            viewModel.isSearching -> {
+            searchViewModel.isSearching -> {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -257,17 +258,17 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                         strokeWidth = 2.dp
                     )
                     Text(
-                        text = viewModel.searchProgress,
+                        text = searchViewModel.searchProgress,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
-            viewModel.searchProgress.isNotBlank() -> {
-                val isError = viewModel.searchProgress.contains("failed", ignoreCase = true) ||
-                    viewModel.searchProgress.contains("error", ignoreCase = true)
+            searchViewModel.searchProgress.isNotBlank() -> {
+                val isError = searchViewModel.searchProgress.contains("failed", ignoreCase = true) ||
+                    searchViewModel.searchProgress.contains("error", ignoreCase = true)
                 Text(
-                    text = viewModel.searchProgress,
+                    text = searchViewModel.searchProgress,
                     color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier
@@ -275,6 +276,20 @@ fun SearchResultScreen(viewModel: MainViewModel, dm: DownloadManager, extFilesDi
                         .padding(vertical = 8.dp)
                 )
             }
+        }
+
+        // Surface any errors reported by the SearchViewModel
+        searchViewModel.searchError
+            ?.takeIf { it.isNotBlank() && it != searchViewModel.searchProgress }
+            ?.let { searchError ->
+            Text(
+                text = searchError,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            )
         }
 
         // Error Message
